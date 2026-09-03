@@ -21,6 +21,7 @@ internal static class UiVisualPolishService
         PolishDatePickers(window);
         NormalizeButtons(window);
         NormalizePanels(window);
+        AddDiagnosticButton(window);
     }
 
     private static void ApplyVersionAndCopy(MainWindow window)
@@ -173,6 +174,56 @@ internal static class UiVisualPolishService
                 && border.CornerRadius.TopRight is >= 8 and <= 12)
                 border.SnapsToDevicePixels = true;
         }
+    }
+
+    private static void AddDiagnosticButton(MainWindow window)
+    {
+        if (UiTree.Descendants<Button>(window).Any(button => Equals(button.Content, "TANILAMA PAKETİ")))
+            return;
+
+        var logButton = UiTree.Descendants<Button>(window)
+            .FirstOrDefault(button => Equals(button.Content, "LOG KLASÖRÜ"));
+        var panel = logButton is null ? null : UiTree.FindAncestor<WrapPanel>(logButton);
+        if (panel is null) return;
+
+        var button = new Button
+        {
+            Content = "TANILAMA PAKETİ",
+            Width = 190,
+            Height = 42,
+            MinHeight = 42,
+            Margin = new Thickness(0, 0, 8, 8),
+            Background = BrushFrom("#315371"),
+            Foreground = White,
+            ToolTip = "Destek için tanılama ZIP'i oluşturur. Fatura verileri ve PDF belgeleri pakete eklenmez."
+        };
+        if (window.TryFindResource("ModernButton") is Style style)
+            button.Style = style;
+        AutomationProperties.SetName(button, "Tanılama paketi oluştur");
+        AutomationProperties.SetHelpText(button, "Fatura kayıtlarını ve PDF belgelerini içermeyen destek paketi oluşturur.");
+
+        button.Click += (_, _) =>
+        {
+            try
+            {
+                var safety = new ApplicationSafetyService();
+                var path = new DiagnosticPackageService().Create(safety);
+                UiNotificationService.Show(
+                    window,
+                    "Tanılama paketi oluşturuldu:\n" + path,
+                    TimeSpan.FromSeconds(6));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    window,
+                    "Tanılama paketi oluşturulamadı:\n\n" + ex.Message,
+                    "DoğruFatura - Tanılama",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        };
+        panel.Children.Add(button);
     }
 
     private static Brush BrushFrom(string value) =>
