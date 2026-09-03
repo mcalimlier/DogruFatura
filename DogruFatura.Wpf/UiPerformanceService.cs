@@ -46,7 +46,7 @@ internal static class UiPerformanceService
             var text = new TextBlock
             {
                 Text = message,
-                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#70879C")),
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#5F768B")),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 14,
                 FontWeight = FontWeights.SemiBold,
