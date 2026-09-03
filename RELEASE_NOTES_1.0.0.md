@@ -18,7 +18,7 @@ DoğruFatura 1.0.0; fatura ödeme listelerinin hazırlanması, hesap kontrolü, 
 
 ## Kalite güvencesi
 
-1.0.0 yayın adayı GitHub Actions üzerinde Windows Release derlemesi, otomatik birim/entegrasyon/PDF regresyon testleri ve gerçek sessiz Setup smoke testi ile denetlenir. Setup smoke testi temiz kurulum, mevcut kurulum üstüne güncelleme, eski program artığı temizleme, kullanıcı verisini koruma ve kaldırma sonrası kullanıcı verisinin kalması senaryolarını kapsar.
+1.0.0 sürümü GitHub Actions üzerinde Windows Release derlemesi, otomatik birim/entegrasyon/PDF regresyon testleri ve gerçek sessiz Setup smoke testi ile denetlenir. Setup smoke testi temiz kurulum, mevcut kurulum üstüne güncelleme, eski program artığı temizleme, kullanıcı verisini koruma ve kaldırma sonrası kullanıcı verisinin kalması senaryolarını kapsar.
 
 ## Dağıtım
 
@@ -27,5 +27,3 @@ Final paket `DogruFatura_Setup_1.0.0_x64.exe` olarak hazırlanır ve yanında SH
 ## Kullanıcı verisi
 
 Kurulum veya kaldırma işlemleri `Masaüstü\DoğruFatura` altındaki kullanıcı verilerini, yedekleri, logları ve PDF belgelerini silmez.
-
-> Bu dosya RC1 boyunca yayın notu taslağıdır. `VersionSuffix` kaldırılıp v1.0.0 onaylanmadan final sürüm olarak değerlendirilmez.
