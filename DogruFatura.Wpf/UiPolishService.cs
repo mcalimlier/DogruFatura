@@ -17,6 +17,15 @@ internal static class UiPolishService
             UiPerformanceService.Apply(window);
             UiAccessibilityService.Apply(window);
             UnsavedChangesGuard.Attach(window);
+
+            if (!string.IsNullOrWhiteSpace(RecoverySessionService.PendingNotice))
+            {
+                UiNotificationService.Show(
+                    window,
+                    RecoverySessionService.PendingNotice,
+                    TimeSpan.FromSeconds(8));
+                RecoverySessionService.ClearPendingNotice();
+            }
         };
     }
 }
