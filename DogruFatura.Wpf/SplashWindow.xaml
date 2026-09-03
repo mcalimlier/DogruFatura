@@ -16,11 +16,15 @@
                 </RadialGradientBrush>
             </Border.Background>
             <Grid ClipToBounds="True">
-                <Canvas Opacity="0.20">
+                <Canvas Opacity="0.25">
                     <Path Stroke="#1794FF" StrokeThickness="1" Data="M0,82 L190,275 L330,126 L505,315 L600,210"/>
                     <Path Stroke="#1794FF" StrokeThickness="1" Data="M35,0 L242,210 L360,85 L560,284"/>
                     <Path Stroke="#FFB41F" StrokeThickness="1" Data="M0,710 Q155,600 302,760 T600,690"/>
                     <Path Stroke="#1794FF" StrokeThickness="1" Data="M0,765 Q190,640 355,805 T600,735"/>
+                    <Ellipse Width="7" Height="7" Fill="#FFB41F" Canvas.Left="63" Canvas.Top="752"/>
+                    <Ellipse Width="6" Height="6" Fill="#1794FF" Canvas.Left="505" Canvas.Top="738"/>
+                    <Ellipse Width="5" Height="5" Fill="#FFFFFF" Canvas.Left="410" Canvas.Top="799"/>
+                    <Ellipse Width="5" Height="5" Fill="#FFB41F" Canvas.Left="185" Canvas.Top="786"/>
                 </Canvas>
 
                 <StackPanel VerticalAlignment="Top" Margin="0,126,0,0" HorizontalAlignment="Center">
@@ -36,18 +40,23 @@
                     </Grid>
                 </StackPanel>
 
-                <Border Background="#D9041C36" BorderBrush="#25496B" BorderThickness="1" CornerRadius="14" Width="515" Height="138" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,376,0,0">
+                <Border Background="#D9041C36" BorderBrush="#25496B" BorderThickness="1" CornerRadius="14" Width="515" Height="164" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,366,0,0">
                     <StackPanel Width="470" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Grid Width="30" Height="30" Margin="0,0,13,0">
+                            <Grid Width="26" Height="26" Margin="0,0,12,0">
                                 <Ellipse Stroke="#344C67" StrokeThickness="3"/>
-                                <Path Stroke="#FFB41F" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M15,1 A14,14 0 0 1 29,15">
-                                    <Path.RenderTransform><RotateTransform x:Name="SpinnerRotate" CenterX="15" CenterY="15"/></Path.RenderTransform>
+                                <Path Stroke="#FFB41F" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M13,1 A12,12 0 0 1 25,13">
+                                    <Path.RenderTransform><RotateTransform x:Name="SpinnerRotate" CenterX="13" CenterY="13"/></Path.RenderTransform>
                                 </Path>
                             </Grid>
-                            <TextBlock Text="DoğruFatura hazırlanıyor..." Foreground="White" FontSize="19" FontWeight="SemiBold"/>
+                            <TextBlock Text="Yükleniyor, lütfen bekleyiniz..." Foreground="White" FontSize="19"/>
                         </StackPanel>
-                        <TextBlock x:Name="StageText" Text="Başlangıç denetimleri hazırlanıyor..." Foreground="#B8C6D8" FontSize="13.5" HorizontalAlignment="Center" Margin="0,18,0,0"/>
+                        <Grid Margin="0,25,0,0">
+                            <Border Height="15" Background="#17395B" CornerRadius="8" Margin="10,0,65,0"/>
+                            <Border x:Name="ProgressFill" Height="15" Background="#FFB41F" CornerRadius="8" Width="0" HorizontalAlignment="Left" Margin="10,0,0,0"/>
+                            <TextBlock x:Name="PercentText" Text="%0" Foreground="#FFB41F" FontSize="21" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,-8,5,0"/>
+                        </Grid>
+                        <TextBlock x:Name="StageText" Text="Bileşenler hazırlanıyor..." Foreground="#B8C6D8" FontSize="12" HorizontalAlignment="Center" Margin="0,14,0,0"/>
                     </StackPanel>
                 </Border>
 
@@ -58,7 +67,7 @@
                         <Border Width="120" Height="1.5" Background="#B77E0A" VerticalAlignment="Center"/>
                     </StackPanel>
                     <TextBlock Text="Murat ÇALIMLIER" Foreground="#FFB41F" FontSize="31" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,12,0,0"/>
-                    <TextBlock x:Name="VersionText" Text="v1.0.0 RC1" Foreground="#9FB5C8" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,9,0,0"/>
+                    <TextBlock x:Name="VersionText" Text="v1.0.0" Foreground="#9FB5C8" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,9,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>
