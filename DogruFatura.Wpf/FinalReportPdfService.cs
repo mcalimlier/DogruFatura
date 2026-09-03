@@ -9,15 +9,11 @@ namespace DogruFatura.Wpf;
 
 public sealed class FinalReportPdfService
 {
-    private const double MarginX = 28.5;
-    private const double TableTop = 58.5;
-    private const double HeaderHeight = 27;
-    private const double RowHeight = 20.25;
-    private const double TotalHeight = 23.25;
-    private static readonly double[] ColumnWeights =
-        { 4.43, 24.86, 22.57, 17.86, 13.29, 18.29, 16.57, 22.14, 14.86, 14.29 };
-    private static readonly string[] Headers =
-        { "No", "Okul Adı", "Hizmet Numarası", "Fatura No", "Fatura Tarihi", "Son Ödeme Tarihi", "Ödenecek Tutar", "KDV Tutarı", "Damga Vergisi", "Ödeme Tutarı" };
+    private static double MarginX => FinalReportLayout.SideMarginPoints;
+    private static double TableTop => FinalReportLayout.TableTopPoints;
+    private static double HeaderHeight => FinalReportLayout.HeaderHeightPoints;
+    private static double RowHeight => FinalReportLayout.RowHeightPoints;
+    private static double TotalHeight => FinalReportLayout.TotalHeightPoints;
 
     private static readonly XColor Navy = XColor.FromArgb(3, 28, 56);
     private static readonly XColor Blue = XColor.FromArgb(13, 109, 166);
@@ -42,7 +38,7 @@ public sealed class FinalReportPdfService
         document.Info.Title = $"{data.InvoiceType} Faturaları Ödeme Listesi";
         document.Info.Author = "DoğruFatura";
         document.Info.Subject = "Fatura ödeme ve kontrol listesi";
-        document.Info.Creator = "DoğruFatura 1.0";
+        document.Info.Creator = $"DoğruFatura {AppVersionInfo.InformationalVersion}";
 
         for (var pageIndex = 0; pageIndex < slices.Count; pageIndex++)
         {
@@ -82,11 +78,11 @@ public sealed class FinalReportPdfService
             $"{FinalReportFormat.Date(data.ReportDate)}   •   Sayfa {pageNumber}/{pageCount}",
             new XRect(pageWidth - MarginX - 236.25, 24, 221.25, 18), 7.1, true, Light, XStringAlignment.Far);
 
-        var widths = CalculateColumnWidths(tableWidth);
+        var widths = FinalReportLayout.CalculateColumnWidths(tableWidth);
         var x = MarginX;
-        for (var column = 0; column < Headers.Length; column++)
+        for (var column = 0; column < FinalReportLayout.Headers.Length; column++)
         {
-            DrawCell(graphics, Headers[column], new XRect(x, TableTop, widths[column], HeaderHeight),
+            DrawCell(graphics, FinalReportLayout.Headers[column], new XRect(x, TableTop, widths[column], HeaderHeight),
                 HeaderBlue, Navy, 6.8, true, XStringAlignment.Center);
             x += widths[column];
         }
@@ -176,12 +172,6 @@ public sealed class FinalReportPdfService
             FinalReportFormat.Money(invoice.StampDuty),
             FinalReportFormat.Money(invoice.PaymentAmount)
         };
-
-    private static double[] CalculateColumnWidths(double tableWidth)
-    {
-        var totalWeight = ColumnWeights.Sum();
-        return ColumnWeights.Select(weight => tableWidth * weight / totalWeight).ToArray();
-    }
 
     private static void DrawCell(
         XGraphics graphics,
