@@ -28,7 +28,7 @@ internal static class UiNotificationService
             BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFB41F")),
             BorderThickness = new Thickness(1.2),
             CornerRadius = new CornerRadius(10),
-            Padding = new Thickness(18, 13),
+            Padding = new Thickness(18, 13, 18, 13),
             Effect = new System.Windows.Media.Effects.DropShadowEffect
             {
                 BlurRadius = 18,
