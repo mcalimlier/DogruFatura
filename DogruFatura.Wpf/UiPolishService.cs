@@ -129,7 +129,7 @@ internal static class UiPolishService
         }
 
         foreach (var title in Descendants<TextBlock>(home).Where(x => x.FontSize >= 24))
-            title.TextOptions.SetTextFormattingMode(title, TextFormattingMode.Display);
+            TextOptions.SetTextFormattingMode(title, TextFormattingMode.Display);
     }
 
     private static void PolishDatePickers(MainWindow window)
