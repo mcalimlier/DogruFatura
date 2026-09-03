@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 
@@ -32,12 +33,8 @@ internal static class TextSharpnessService
     {
         if (root is FrameworkElement element)
         {
-            element.SnapsToDevicePixels = true;
-            element.UseLayoutRounding = true;
-            TextOptions.SetTextFormattingMode(element, TextFormattingMode.Display);
-            TextOptions.SetTextRenderingMode(element, TextRenderingMode.ClearType);
-
-            if (element.Effect is DropShadowEffect && ContainsText(element))
+            ApplyTextRendering(element);
+            if (element.Effect is DropShadowEffect && IsTextBearing(element))
                 element.Effect = null;
         }
 
@@ -53,10 +50,8 @@ internal static class TextSharpnessService
         {
             if (current is FrameworkElement element)
             {
-                element.SnapsToDevicePixels = true;
-                TextOptions.SetTextFormattingMode(element, TextFormattingMode.Display);
-                TextOptions.SetTextRenderingMode(element, TextRenderingMode.ClearType);
-                if (element.Effect is DropShadowEffect && ContainsText(element))
+                ApplyTextRendering(element);
+                if (element.Effect is DropShadowEffect && IsTextBearing(element))
                     element.Effect = null;
             }
 
@@ -65,9 +60,27 @@ internal static class TextSharpnessService
         }
     }
 
+    private static void ApplyTextRendering(FrameworkElement element)
+    {
+        element.SnapsToDevicePixels = true;
+        element.UseLayoutRounding = true;
+        TextOptions.SetTextFormattingMode(element, TextFormattingMode.Display);
+        TextOptions.SetTextRenderingMode(element, TextRenderingMode.ClearType);
+    }
+
+    private static bool IsTextBearing(FrameworkElement element) =>
+        element is TextBlock
+            or TextBox
+            or ComboBox
+            or DatePicker
+            or Button
+            or Label
+        || ContainsText(element);
+
     private static bool ContainsText(DependencyObject root)
     {
-        if (root is System.Windows.Controls.TextBlock) return true;
+        if (root is TextBlock or TextBox or ComboBox or DatePicker or Button or Label)
+            return true;
 
         var count = VisualTreeHelper.GetChildrenCount(root);
         for (var index = 0; index < count; index++)
