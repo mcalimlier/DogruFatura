@@ -29,13 +29,13 @@ public partial class SplashWindow : Window
 
             var main = new MainWindow();
             UiPolishService.Apply(main);
-            TextSharpnessService.Apply(main);
 
             StageText.Text = "Hazır. Program açılıyor...";
             await Task.Delay(180);
 
             Application.Current.MainWindow = main;
             main.Show();
+            StartupPerformanceService.Complete();
             Close();
             Application.Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
         }
