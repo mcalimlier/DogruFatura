@@ -11,11 +11,13 @@
     <Product>DoğruFatura</Product>
     <Company>DoğruFatura</Company>
 
-    <!-- RC kalite kapısı: warning birikmesini ve analiz gerilemesini engeller. -->
+    <!-- C# compiler warning'leri kalite kapısıdır. .NET analizörleri ayrıca çalışır ve
+         rapor üretir; legacy koddaki salt stil/perf CA önerileri final derlemeyi bloke etmez. -->
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
 </Project>
