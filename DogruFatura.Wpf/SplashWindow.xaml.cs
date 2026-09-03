@@ -6,6 +6,8 @@ namespace DogruFatura.Wpf;
 
 public partial class SplashWindow : Window
 {
+    private const double ProgressTrackWidth = 395.0;
+
     public SplashWindow()
     {
         InitializeComponent();
@@ -21,17 +23,25 @@ public partial class SplashWindow : Window
 
         try
         {
-            StageText.Text = "Arayüz hazırlanıyor...";
+            SetProgress(12, "Arayüz bileşenleri hazırlanıyor...");
             await Dispatcher.Yield(DispatcherPriority.Background);
+            await Task.Delay(80);
 
-            StageText.Text = "Veriler, belgeler ve hesaplama kuralları denetleniyor...";
+            SetProgress(35, "Veri güvenliği ve çalışma alanları denetleniyor...");
+            await Dispatcher.Yield(DispatcherPriority.Background);
+            await Task.Delay(80);
+
+            SetProgress(72, "Kurum, fatura ve arşiv kayıtları yükleniyor...");
             await Dispatcher.Yield(DispatcherPriority.Background);
 
             var main = new MainWindow();
-            UiPolishService.Apply(main);
 
-            StageText.Text = "Hazır. Program açılıyor...";
-            await Task.Delay(180);
+            SetProgress(92, "PDF belgeleri ve arayüz düzeni doğrulanıyor...");
+            UiPolishService.Apply(main);
+            await Dispatcher.Yield(DispatcherPriority.Background);
+
+            SetProgress(100, "Hazır. Program açılıyor...");
+            await Task.Delay(220);
 
             Application.Current.MainWindow = main;
             main.Show();
@@ -50,5 +60,22 @@ public partial class SplashWindow : Window
                 MessageBoxImage.Error);
             Application.Current.Shutdown(-1);
         }
+    }
+
+    private void SetProgress(int percent, string stage)
+    {
+        var safePercent = Math.Clamp(percent, 0, 100);
+        PercentText.Text = $"%{safePercent}";
+        StageText.Text = stage;
+
+        var targetWidth = ProgressTrackWidth * safePercent / 100.0;
+        ProgressFill.BeginAnimation(
+            FrameworkElement.WidthProperty,
+            new DoubleAnimation
+            {
+                To = targetWidth,
+                Duration = TimeSpan.FromMilliseconds(180),
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            });
     }
 }
