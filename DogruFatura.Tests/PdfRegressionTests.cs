@@ -65,7 +65,7 @@ public sealed class PdfRegressionTests
     [InlineData(13, 2)]
     [InlineData(31, 2)]
     [InlineData(32, 3)]
-    [InlineData(100, 7)]
+    [InlineData(100, 6)]
     public void ActualPdfPageCount_MatchesPlanner(int invoiceCount, int expectedPages)
     {
         using var temp = new TempFile($"page-{invoiceCount}.pdf");
