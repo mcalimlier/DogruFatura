@@ -70,11 +70,13 @@ Function .onInit
   SetRegView 64
 
   ; Temiz kurulumda, sihirbaz açılmadan hemen önce kısa bir kullanıcı bilgilendirmesi göster.
-  ; SmartScreen Windows tarafından EXE başlamadan önce çalıştığı için bu pencere SmartScreen'den önce gösterilemez; ancak kurulum sihirbazından önce görünür.
+  ; Sessiz /S kurulumda CI ve kurumsal dağıtımın takılmaması için bu bilgilendirme atlanır.
   ReadRegStr $0 HKLM "${UNINSTKEY}" "DisplayVersion"
+  IfSilent skip_clean_install_info
   ${If} $0 == ""
     MessageBox MB_ICONINFORMATION|MB_OK "Kurulum bilgisi:$\r$\n$\r$\nWindows bazı bilgisayarlarda DoğruFatura kurulum dosyasını ilk açarken SmartScreen / Bilinmeyen yayıncı uyarısı gösterebilir.$\r$\n$\r$\nDosyayı kurumunuzdan veya güvenilir kaynaktan aldıysanız seçenek sunuluyorsa Daha fazla bilgi > Yine de çalıştır ile devam edebilirsiniz."
   ${EndIf}
+skip_clean_install_info:
 
   ; Daha yeni bir sürüm zaten kuruluysa yanlışlıkla geri sürüme dönmeyi engelle.
   ${If} $0 != ""

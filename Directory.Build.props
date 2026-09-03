@@ -1,0 +1,23 @@
+<Project>
+  <PropertyGroup>
+    <!-- DoğruFatura için tek sürüm kaynağı. Final yayında VersionSuffix boş bırakılır. -->
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionSuffix>rc1</VersionSuffix>
+    <Version Condition="'$(VersionSuffix)' != ''">$(VersionPrefix)-$(VersionSuffix)</Version>
+    <Version Condition="'$(VersionSuffix)' == ''">$(VersionPrefix)</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>$(Version)</InformationalVersion>
+    <Product>DoğruFatura</Product>
+    <Company>DoğruFatura</Company>
+
+    <!-- C# compiler warning'leri kalite kapısıdır. .NET analizörleri ayrıca çalışır ve
+         rapor üretir; legacy koddaki salt stil/perf CA önerileri final derlemeyi bloke etmez. -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+</Project>

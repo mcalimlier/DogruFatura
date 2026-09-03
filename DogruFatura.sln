@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DogruFatura.Core", "DogruFa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DogruFatura.Wpf", "DogruFatura.Wpf\DogruFatura.Wpf.csproj", "{B02D7148-EF08-459A-A891-99B0F09D29C1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DogruFatura.Tests", "DogruFatura.Tests\DogruFatura.Tests.csproj", "{A5B938A1-22B3-4D0E-9B42-54A5D79F44CB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,5 +22,9 @@ Global
 		{B02D7148-EF08-459A-A891-99B0F09D29C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B02D7148-EF08-459A-A891-99B0F09D29C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B02D7148-EF08-459A-A891-99B0F09D29C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5B938A1-22B3-4D0E-9B42-54A5D79F44CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5B938A1-22B3-4D0E-9B42-54A5D79F44CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5B938A1-22B3-4D0E-9B42-54A5D79F44CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5B938A1-22B3-4D0E-9B42-54A5D79F44CB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -10,6 +10,7 @@ public partial class App : Application
     private const string SingleInstanceMutexName = @"Local\DogruFatura.Desktop.SingleInstance.2D22EB36-5AA7-4AD9-9814-DB03D1DFBFD3";
     private static Mutex? _singleInstanceMutex;
     private static bool _ownsMutex;
+    private bool _fatalShutdown;
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern int SetCurrentProcessExplicitAppUserModelID(string appId);
@@ -24,6 +25,7 @@ public partial class App : Application
     private void Application_Startup(object sender, StartupEventArgs e)
     {
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        StartupPerformanceService.Begin();
         try
         {
             if (!TryAcquireSingleInstance())
@@ -37,11 +39,22 @@ public partial class App : Application
                 return;
             }
 
+            try
+            {
+                RecoverySessionService.Begin();
+            }
+            catch (Exception ex)
+            {
+                // Oturum korumasının kendisi programın açılmasını engellemesin.
+                ApplicationCrashLogger.Write(ex, "RecoverySession.Begin");
+            }
+
             try { SetCurrentProcessExplicitAppUserModelID("DogruFatura.Wpf.App"); } catch { }
             new SplashWindow().Show();
         }
         catch (Exception ex)
         {
+            _fatalShutdown = true;
             ShowFatalError("Program açılışı sırasında hata oluştu.", ex);
             Shutdown(-1);
         }
@@ -89,12 +102,17 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        if (!_fatalShutdown)
+        {
+            try { RecoverySessionService.EndCleanly(); } catch { }
+        }
         ReleaseSingleInstanceMutex();
         base.OnExit(e);
     }
 
     private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
+        _fatalShutdown = true;
         ShowFatalError("DoğruFatura beklenmeyen bir hatayla karşılaştı.", e.Exception);
         e.Handled = true;
         Shutdown(-1);
@@ -102,6 +120,7 @@ public partial class App : Application
 
     private void CurrentDomain_UnhandledException(object? sender, UnhandledExceptionEventArgs e)
     {
+        _fatalShutdown = true;
         if (e.ExceptionObject is Exception ex)
             ApplicationCrashLogger.Write(ex, "AppDomain.UnhandledException");
     }

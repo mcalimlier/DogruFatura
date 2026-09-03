@@ -11,11 +11,6 @@
     <RootNamespace>DogruFatura.Wpf</RootNamespace>
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
     <UseAppHost>true</UseAppHost>
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
-    <InformationalVersion>1.0.0-ASAMA10-R2</InformationalVersion>
-    <Product>DoğruFatura</Product>
     <Description>Fatura Ödeme Listesi Hazırlama ve Kontrol Programı</Description>
   </PropertyGroup>
   <ItemGroup>
