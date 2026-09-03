@@ -1,0 +1,64 @@
+name: DogruFatura Windows Build
+
+on:
+  push:
+    branches:
+      - main
+      - chore/r2-labels-ci
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  normalize-and-build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Kaynak kodu al
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: R2 surum etiketlerini duzelt
+        if: github.event_name == 'push' && github.ref == 'refs/heads/chore/r2-labels-ci'
+        shell: pwsh
+        run: |
+          $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+          $files = @(
+            'DogruFatura.Wpf/MainWindow.xaml',
+            'DogruFatura.Wpf/SplashWindow.xaml',
+            'DERLE_CALISTIR.bat'
+          )
+          foreach ($file in $files) {
+            $text = [System.IO.File]::ReadAllText($file)
+            $text = $text.Replace('AŞAMA 10 • R1', 'AŞAMA 10 • R2')
+            $text = $text.Replace('AŞAMA 10  •  R1', 'AŞAMA 10  •  R2')
+            $text = $text.Replace('Asama 10 R1', 'Asama 10 R2')
+            [System.IO.File]::WriteAllText($file, $text, $utf8NoBom)
+          }
+
+          if (-not (git status --porcelain)) {
+            Write-Host 'R2 etiketleri zaten guncel.'
+            exit 0
+          }
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add DogruFatura.Wpf/MainWindow.xaml DogruFatura.Wpf/SplashWindow.xaml DERLE_CALISTIR.bat
+          git commit -m 'R2 surum etiketlerini duzelt'
+          git push
+
+      - name: .NET 8 kur
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: NuGet paketlerini yukle
+        run: dotnet restore DogruFatura.sln
+
+      - name: Release derlemesi yap
+        run: dotnet build DogruFatura.sln -c Release --no-restore

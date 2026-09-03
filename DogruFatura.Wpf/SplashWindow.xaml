@@ -67,7 +67,7 @@
                         <Border Width="120" Height="1.5" Background="#B77E0A" VerticalAlignment="Center"/>
                     </StackPanel>
                     <TextBlock Text="Murat ÇALIMLIER" Foreground="#FFB41F" FontSize="31" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,12,0,0"/>
-                    <TextBlock Text="AŞAMA 10  •  R1" Foreground="#9FB5C8" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,9,0,0"/>
+                    <TextBlock Text="AŞAMA 10  •  R2" Foreground="#9FB5C8" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,9,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>

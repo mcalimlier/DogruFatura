@@ -135,7 +135,7 @@
                                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="315"/></Grid.ColumnDefinitions>
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal">
-                                                <Border Background="#1D4B70" CornerRadius="11" Padding="9,4" Margin="0,0,10,0"><TextBlock Text="AŞAMA 10 • R1" Foreground="#D9E9F6" FontSize="14" FontWeight="Bold"/></Border>
+                                                <Border Background="#1D4B70" CornerRadius="11" Padding="9,4" Margin="0,0,10,0"><TextBlock Text="AŞAMA 10 • R2" Foreground="#D9E9F6" FontSize="14" FontWeight="Bold"/></Border>
                                                 <TextBlock Text="AKILLI ÖZET" Foreground="#FFC75B" FontSize="13" FontWeight="Bold"/>
                                             </StackPanel>
                                             <TextBlock Text="Ödeme hareketlerinizi tek bakışta görün" FontSize="24" FontWeight="SemiBold" Foreground="White" Margin="0,9,20,0"/>
