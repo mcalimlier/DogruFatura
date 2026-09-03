@@ -1,0 +1,26 @@
+﻿DOGRU FATURA 1.0.0 - KURULUM NOTU
+================================
+
+DoğruFatura, Windows 10/11 64-bit bilgisayarlar için self-contained hazırlanmıştır.
+Hedef bilgisayarda .NET, SDK, Visual Studio veya Excel kurulması gerekmez.
+
+WINDOWS SMARTSCREEN / BİLİNMEYEN YAYINCI
+Bazı bilgisayarlarda kurulum dosyası ilk kez çalıştırılırken Windows SmartScreen veya
+"Bilinmeyen yayıncı" uyarısı görülebilir. Bu, kurulum dosyasının ticari kod imzalama
+sertifikasıyla imzalanmamış olmasından kaynaklanabilir.
+
+Kurulum dosyasını kurumunuzdan veya güvenilir bir kaynaktan aldıysanız ve SmartScreen
+ekranında seçenek sunuluyorsa:
+  1. "Daha fazla bilgi" seçeneğine tıklayın.
+  2. "Yine de çalıştır" seçeneğini kullanın.
+
+"Yine de çalıştır" seçeneği yoksa bilgisayar kurum politikasıyla kısıtlanmış olabilir.
+Bu durumda ayarları değiştirmeye çalışmak yerine kurumun BT/yetkili personeline başvurun.
+
+Kurulum yönetici izni isteyebilir; bu Program Files klasörüne kurulum için normaldir.
+
+VERİ VE YEDEKLER
+- Kalıcı JSON kayıtları, güvenlik yedekleri, hata logları ve PDF belgeleri Masaüstü\DoğruFatura altındadır.
+- Eski sürümde Belgeler\DoğruFatura altında bulunan Veri, Yedekler ve Loglar ilk açılışta güvenli biçimde Masaüstü\DoğruFatura altına taşınır.
+- Program güncellenirken veya kaldırılırken Masaüstü\DoğruFatura içindeki kullanıcı kayıtları silinmez.
+- Hakkında / Güvenlik ekranından tam yedek oluşturabilir ve gerektiğinde geri yükleyebilirsiniz.

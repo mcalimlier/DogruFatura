@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DogruFatura.Core", "DogruFatura.Core\DogruFatura.Core.csproj", "{5E73053F-5BB7-4D11-A3D8-1A71B5E9BB15}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DogruFatura.Wpf", "DogruFatura.Wpf\DogruFatura.Wpf.csproj", "{B02D7148-EF08-459A-A891-99B0F09D29C1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5E73053F-5BB7-4D11-A3D8-1A71B5E9BB15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E73053F-5BB7-4D11-A3D8-1A71B5E9BB15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E73053F-5BB7-4D11-A3D8-1A71B5E9BB15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E73053F-5BB7-4D11-A3D8-1A71B5E9BB15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B02D7148-EF08-459A-A891-99B0F09D29C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B02D7148-EF08-459A-A891-99B0F09D29C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B02D7148-EF08-459A-A891-99B0F09D29C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B02D7148-EF08-459A-A891-99B0F09D29C1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

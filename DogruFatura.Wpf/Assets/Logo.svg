@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1100" height="220" viewBox="0 0 1100 220">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFD45A"/>
+      <stop offset="1" stop-color="#F6A900"/>
+    </linearGradient>
+    <symbol id="mark" viewBox="0 0 512 512">
+      <rect x="16" y="16" width="480" height="480" rx="104" fill="#041B34" stroke="#31597A" stroke-width="8"/>
+      <path d="M151 91 H310 L375 156 V390 Q375 416 349 416 H151 Q125 416 125 390 V117 Q125 91 151 91Z" fill="#F4F7FA"/>
+      <path d="M310 91 V156 H375" fill="#D8E4EF"/>
+      <path d="M174 204 H316 M174 252 H298 M174 300 H277" fill="none" stroke="#174A74" stroke-width="24" stroke-linecap="round"/>
+      <path d="M104 337 A174 174 0 1 1 371 145" fill="none" stroke="url(#gold)" stroke-width="30" stroke-linecap="round"/>
+      <path d="M258 351 L316 405 L426 278" fill="none" stroke="#FFB41F" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+  <use xlink:href="#mark" x="12" y="12" width="196" height="196"/>
+  <text x="235" y="147" font-family="Segoe UI, Arial, sans-serif" font-size="112" font-weight="700">
+    <tspan fill="#FFFFFF">Doğru</tspan><tspan fill="#FFB41F">Fatura</tspan>
+  </text>
+</svg>
