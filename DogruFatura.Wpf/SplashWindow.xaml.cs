@@ -6,43 +6,48 @@ namespace DogruFatura.Wpf;
 
 public partial class SplashWindow : Window
 {
-    private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(30) };
-    private int _progress;
-
     public SplashWindow()
     {
         InitializeComponent();
         Loaded += SplashWindow_Loaded;
     }
 
-    private void SplashWindow_Loaded(object sender, RoutedEventArgs e)
+    private async void SplashWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        VersionText.Text = AppVersionInfo.DisplayVersion;
         SpinnerRotate.BeginAnimation(
             System.Windows.Media.RotateTransform.AngleProperty,
             new DoubleAnimation(0, 360, TimeSpan.FromSeconds(1)) { RepeatBehavior = RepeatBehavior.Forever });
 
-        _timer.Tick += (_, _) =>
+        try
         {
-            _progress++;
-            PercentText.Text = $"%{_progress}";
-            ProgressFill.Width = 395 * (_progress / 100.0);
-            StageText.Text = _progress switch
-            {
-                < 25 => "Arayüz bileşenleri hazırlanıyor...",
-                < 50 => "Veri güvenliği ve klasörler denetleniyor...",
-                < 75 => "Kurum, fatura ve arşiv kayıtları yükleniyor...",
-                < 95 => "PDF belgeleri ve hesap motoru doğrulanıyor...",
-                _ => "Hazır. Program açılıyor..."
-            };
+            StageText.Text = "Arayüz hazırlanıyor...";
+            await Dispatcher.Yield(DispatcherPriority.Background);
 
-            if (_progress < 100) return;
-            _timer.Stop();
+            StageText.Text = "Veriler, belgeler ve hesaplama kuralları denetleniyor...";
+            await Dispatcher.Yield(DispatcherPriority.Background);
+
             var main = new MainWindow();
+            UiPolishService.Apply(main);
+
+            StageText.Text = "Hazır. Program açılıyor...";
+            await Task.Delay(180);
+
             Application.Current.MainWindow = main;
             main.Show();
             Close();
             Application.Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
-        };
-        _timer.Start();
+        }
+        catch (Exception ex)
+        {
+            StageText.Text = "Program başlatılamadı.";
+            ApplicationCrashLogger.Write(ex, "Splash.Startup");
+            MessageBox.Show(
+                "DoğruFatura başlatılamadı:\n\n" + ex.Message,
+                "DoğruFatura - Açılış Hatası",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            Application.Current.Shutdown(-1);
+        }
     }
 }
