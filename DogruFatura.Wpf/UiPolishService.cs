@@ -122,14 +122,32 @@ internal static class UiPolishService
         var home = window.FindName("HomeView") as FrameworkElement;
         if (home is null) return;
 
+        // WPF bir Effect uygulanan ebeveynin altındaki metinleri ara yüzeyde bitmap'e
+        // dönüştürebilir. Ana "Akıllı Özet" kartındaki DropShadowEffect bu nedenle
+        // özellikle Viewbox ölçeklemesinde diğer kartlardan daha yumuşak görünüyordu.
+        // Kartın kendisi keskin kalsın; vurgu zaten kenarlık/renk düzeniyle sağlanıyor.
+        var smartSummaryLabel = Descendants<TextBlock>(home).FirstOrDefault(x => x.Text == "AKILLI ÖZET");
+        if (smartSummaryLabel is not null && FindAncestor<Border>(smartSummaryLabel) is { } smartSummaryCard)
+        {
+            smartSummaryCard.Effect = null;
+            smartSummaryCard.SnapsToDevicePixels = true;
+            smartSummaryCard.UseLayoutRounding = true;
+        }
+
         foreach (var border in Descendants<Border>(home))
         {
             if (border.CornerRadius.TopLeft is >= 10 and <= 12)
                 border.CornerRadius = new CornerRadius(10);
         }
 
-        foreach (var title in Descendants<TextBlock>(home).Where(x => x.FontSize >= 24))
-            TextOptions.SetTextFormattingMode(title, TextFormattingMode.Display);
+        // Ana sayfadaki tüm metinlerde aynı ekran odaklı metin rasterizasyonunu kullan.
+        // Böylece koyu kartlar ve açık özet kartları arasında keskinlik farkı oluşmaz.
+        foreach (var text in Descendants<TextBlock>(home))
+        {
+            TextOptions.SetTextFormattingMode(text, TextFormattingMode.Display);
+            TextOptions.SetTextRenderingMode(text, TextRenderingMode.ClearType);
+            text.SnapsToDevicePixels = true;
+        }
     }
 
     private static void PolishDatePickers(MainWindow window)
