@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: dogrufatura-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     name: build-and-test
@@ -70,7 +74,6 @@ jobs:
           $setup = Get-ChildItem $dist -Filter 'DogruFatura_Setup_*_x64.exe' | Select-Object -First 1
           if (-not $setup) { throw 'Setup EXE bulunamadı.' }
           "SETUP_PATH=$($setup.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "DIST_PATH=$dist" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Temiz kurulum testi
         shell: pwsh
@@ -122,6 +125,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dogrufatura-rc1-setup-smoke
-          path: '${{ env.DIST_PATH }}/*'
+          path: '${{ runner.temp }}/DogruFaturaDist/*'
           if-no-files-found: error
           retention-days: 14
