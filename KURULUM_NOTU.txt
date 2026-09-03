@@ -1,21 +1,33 @@
-﻿DOGRU FATURA 1.0.0 - KURULUM NOTU
+DOGRU FATURA 1.0.0 - KURULUM NOTU
 ================================
 
 DoğruFatura, Windows 10/11 64-bit bilgisayarlar için self-contained hazırlanmıştır.
 Hedef bilgisayarda .NET, SDK, Visual Studio veya Excel kurulması gerekmez.
 
-WINDOWS SMARTSCREEN / BİLİNMEYEN YAYINCI
-Bazı bilgisayarlarda kurulum dosyası ilk kez çalıştırılırken Windows SmartScreen veya
-"Bilinmeyen yayıncı" uyarısı görülebilir. Bu, kurulum dosyasının ticari kod imzalama
-sertifikasıyla imzalanmamış olmasından kaynaklanabilir.
+WINDOWS SMARTSCREEN GÖRÜRSENİZ
+DoğruFatura ücretsiz dağıtım modelinde dijital kod imzalama sertifikası kullanılmadığı için
+Windows bazı bilgisayarlarda ilk çalıştırmada SmartScreen / "Bilinmeyen yayıncı" uyarısı gösterebilir.
+Bu uyarı, tek başına kurulum dosyasının bozuk veya zararlı olduğu anlamına gelmez.
 
-Kurulum dosyasını kurumunuzdan veya güvenilir bir kaynaktan aldıysanız ve SmartScreen
-ekranında seçenek sunuluyorsa:
+Kurulum dosyasını yalnızca size verilen resmi DoğruFatura paketinden kullanın.
+Paketin yanında bulunan SHA-256 dosyasındaki değer ile kurulum EXE'sinin SHA-256 değerini
+karşılaştırarak dosyanın değiştirilmediğini doğrulayabilirsiniz.
+
+SmartScreen ekranında seçenek sunuluyorsa:
   1. "Daha fazla bilgi" seçeneğine tıklayın.
-  2. "Yine de çalıştır" seçeneğini kullanın.
+  2. Dosya adının DogruFatura_Setup_1.0.0_x64.exe olduğunu kontrol edin.
+  3. Dosyayı güvenilir kaynaktan aldıysanız "Yine de çalıştır" seçeneğini kullanın.
 
 "Yine de çalıştır" seçeneği yoksa bilgisayar kurum politikasıyla kısıtlanmış olabilir.
-Bu durumda ayarları değiştirmeye çalışmak yerine kurumun BT/yetkili personeline başvurun.
+Windows güvenlik ayarlarını veya SmartScreen'i kapatmaya çalışmayın; kurumun BT/yetkili
+personeline başvurun.
+
+SHA-256 NASIL KONTROL EDİLİR? (İSTEĞE BAĞLI)
+Kurulum dosyasının bulunduğu klasörde PowerShell açıp şu komutu çalıştırabilirsiniz:
+  Get-FileHash .\DogruFatura_Setup_1.0.0_x64.exe -Algorithm SHA256
+
+Çıkan değer, paketteki DogruFatura_Setup_1.0.0_x64_SHA256.txt dosyasındaki değerle aynı olmalıdır.
+Bu dağıtım paketi hazırlanırken kullanılan gerçek SHA-256 değeri ayrıca bu notun en altına otomatik eklenir.
 
 Kurulum yönetici izni isteyebilir; bu Program Files klasörüne kurulum için normaldir.
 

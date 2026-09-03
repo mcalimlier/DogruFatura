@@ -118,9 +118,18 @@ Move-Item $setupExe $finalExe -Force
 if (Test-Path 'KURULUM_NOTU.txt') { Copy-Item 'KURULUM_NOTU.txt' (Join-Path $dist 'KURULUM_NOTU.txt') -Force }
 if (Test-Path 'KULLANICI_KILAVUZU.md') { Copy-Item 'KULLANICI_KILAVUZU.md' (Join-Path $dist 'KULLANICI_KILAVUZU.md') -Force }
 if (Test-Path 'RELEASE_NOTES_1.0.0.md') { Copy-Item 'RELEASE_NOTES_1.0.0.md' (Join-Path $dist 'RELEASE_NOTES_1.0.0.md') -Force }
+
 $hash = (Get-FileHash $finalExe -Algorithm SHA256).Hash
+$hashFile = Join-Path $dist "DogruFatura_Setup_${packageVersion}_x64_SHA256.txt"
 @('DogruFatura Setup SHA-256','',"Dosya : $(Split-Path $finalExe -Leaf)","SHA256: $hash") |
-    Set-Content (Join-Path $dist "DogruFatura_Setup_${packageVersion}_x64_SHA256.txt") -Encoding UTF8
+    Set-Content $hashFile -Encoding UTF8
+
+$notePath = Join-Path $dist 'KURULUM_NOTU.txt'
+if (Test-Path $notePath) {
+    @('', 'BU DAGITIM PAKETINE OZEL SHA-256', '--------------------------------', "Dosya : $(Split-Path $finalExe -Leaf)", "SHA256: $hash") |
+        Add-Content $notePath -Encoding UTF8
+}
+
 Remove-Item $publish -Recurse -Force
 Write-Host "BAŞARILI: $finalExe" -ForegroundColor Green
 Write-Host "SHA-256: $hash"
