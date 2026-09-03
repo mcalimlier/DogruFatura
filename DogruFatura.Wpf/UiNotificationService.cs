@@ -21,6 +21,22 @@ internal static class UiNotificationService
             IsHitTestVisible = false
         };
 
+        var messageText = new TextBlock
+        {
+            Text = message,
+            Foreground = Brushes.White,
+            FontFamily = new FontFamily("Segoe UI"),
+            FontSize = 14.5,
+            FontWeight = FontWeights.SemiBold,
+            TextWrapping = TextWrapping.Wrap,
+            TextAlignment = TextAlignment.Center,
+            MaxWidth = 570,
+            SnapsToDevicePixels = true,
+            UseLayoutRounding = true
+        };
+        TextOptions.SetTextFormattingMode(messageText, TextFormattingMode.Display);
+        TextOptions.SetTextRenderingMode(messageText, TextRenderingMode.ClearType);
+
         var border = new Border
         {
             MaxWidth = 620,
@@ -29,23 +45,9 @@ internal static class UiNotificationService
             BorderThickness = new Thickness(1.2),
             CornerRadius = new CornerRadius(10),
             Padding = new Thickness(18, 13, 18, 13),
-            Effect = new System.Windows.Media.Effects.DropShadowEffect
-            {
-                BlurRadius = 18,
-                ShadowDepth = 3,
-                Opacity = 0.28
-            },
-            Child = new TextBlock
-            {
-                Text = message,
-                Foreground = Brushes.White,
-                FontFamily = new FontFamily("Segoe UI"),
-                FontSize = 14.5,
-                FontWeight = FontWeights.SemiBold,
-                TextWrapping = TextWrapping.Wrap,
-                TextAlignment = TextAlignment.Center,
-                MaxWidth = 570
-            }
+            SnapsToDevicePixels = true,
+            UseLayoutRounding = true,
+            Child = messageText
         };
         popup.Child = border;
         popup.IsOpen = true;
