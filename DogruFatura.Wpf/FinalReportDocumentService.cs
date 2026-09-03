@@ -13,15 +13,11 @@ public sealed class FinalReportDocumentService
     public const double PageWidth = 1122.24;
     public const double PageHeight = 793.92;
 
-    private const double MarginX = 38;
-    private const double TableTop = 78;
-    private const double HeaderHeight = 36;
-    private const double RowHeight = 27;
-    private const double TotalHeight = 31;
-    private static readonly double[] ColumnWeights =
-        { 4.43, 24.86, 22.57, 17.86, 13.29, 18.29, 16.57, 22.14, 14.86, 14.29 };
-    private static readonly string[] Headers =
-        { "No", "Okul Adı", "Hizmet Numarası", "Fatura No", "Fatura Tarihi", "Son Ödeme Tarihi", "Ödenecek Tutar", "KDV Tutarı", "Damga Vergisi", "Ödeme Tutarı" };
+    private static double MarginX => FinalReportLayout.SideMarginDips;
+    private static double TableTop => FinalReportLayout.TableTopDips;
+    private static double HeaderHeight => FinalReportLayout.HeaderHeightDips;
+    private static double RowHeight => FinalReportLayout.RowHeightDips;
+    private static double TotalHeight => FinalReportLayout.TotalHeightDips;
 
     private static readonly Brush Navy = BrushFrom("#031C38");
     private static readonly Brush Blue = BrushFrom("#0D6DA6");
@@ -79,11 +75,11 @@ public sealed class FinalReportDocumentService
             $"{FinalReportFormat.Date(data.ReportDate)}   •   Sayfa {pageNumber}/{pageCount}",
             PageWidth - MarginX - 315, 32, 295, 24, 9.4, FontWeights.SemiBold, Light, TextAlignment.Right);
 
-        var columnWidths = CalculateColumnWidths(tableWidth);
+        var columnWidths = FinalReportLayout.CalculateColumnWidths(tableWidth);
         var x = MarginX;
-        for (var column = 0; column < Headers.Length; column++)
+        for (var column = 0; column < FinalReportLayout.Headers.Length; column++)
         {
-            AddCell(canvas, Headers[column], x, TableTop, columnWidths[column], HeaderHeight,
+            AddCell(canvas, FinalReportLayout.Headers[column], x, TableTop, columnWidths[column], HeaderHeight,
                 HeaderBlue, Navy, 9.0, FontWeights.Bold, TextAlignment.Center, true);
             x += columnWidths[column];
         }
@@ -174,12 +170,6 @@ public sealed class FinalReportDocumentService
             FinalReportFormat.Money(invoice.StampDuty),
             FinalReportFormat.Money(invoice.PaymentAmount)
         };
-
-    private static double[] CalculateColumnWidths(double tableWidth)
-    {
-        var totalWeight = ColumnWeights.Sum();
-        return ColumnWeights.Select(weight => tableWidth * weight / totalWeight).ToArray();
-    }
 
     private static void AddCell(
         Canvas canvas,
