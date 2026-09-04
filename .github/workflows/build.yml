@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+      - 'release/**'
+      - 'feature/**'
+      - 'fix/**'
+      - 'chore/**'
+      - 'hardening/**'
   pull_request:
     branches:
       - main
@@ -13,13 +18,14 @@ permissions:
   contents: read
 
 concurrency:
-  group: dogrufatura-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: dogrufatura-ci-v2-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   build-and-test:
     name: build-and-test
     runs-on: windows-latest
+    timeout-minutes: 20
 
     steps:
       - name: Kaynak kodu al
@@ -33,18 +39,28 @@ jobs:
       - name: NuGet paketlerini yükle
         run: dotnet restore DogruFatura.sln
 
+      - name: Bağımlılık güvenlik taraması
+        shell: pwsh
+        run: |
+          $output = dotnet list DogruFatura.Tests/DogruFatura.Tests.csproj package --vulnerable --include-transitive 2>&1 | Out-String
+          Write-Host $output
+          if ($LASTEXITCODE -ne 0) { throw 'NuGet güvenlik taraması çalıştırılamadı.' }
+          if ($output -match 'has the following vulnerable packages') { throw 'Bilinen güvenlik açığı bulunan NuGet paketi tespit edildi.' }
+
       - name: Release derlemesi yap
         run: dotnet build DogruFatura.sln -c Release --no-restore
 
-      - name: Otomatik testleri çalıştır
-        run: dotnet test DogruFatura.Tests/DogruFatura.Tests.csproj -c Release --no-build --logger "trx;LogFileName=DogruFatura.Tests.trx"
+      - name: Otomatik testleri ve coverage ölçümünü çalıştır
+        run: dotnet test DogruFatura.Tests/DogruFatura.Tests.csproj -c Release --no-build --logger "trx;LogFileName=DogruFatura.Tests.trx" --collect:"XPlat Code Coverage"
 
-      - name: Test raporunu sakla
+      - name: Test ve coverage raporunu sakla
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dogrufatura-test-results
-          path: '**/DogruFatura.Tests.trx'
+          path: |
+            **/DogruFatura.Tests.trx
+            **/coverage.cobertura.xml
           if-no-files-found: warn
           retention-days: 14
 
@@ -52,6 +68,7 @@ jobs:
     name: setup-smoke
     needs: build-and-test
     runs-on: windows-latest
+    timeout-minutes: 20
 
     steps:
       - name: Kaynak kodu al
@@ -70,7 +87,7 @@ jobs:
         shell: pwsh
         run: |
           $dist = Join-Path $env:RUNNER_TEMP 'DogruFaturaDist'
-          .\SETUP_HAZIRLA.ps1 -AllowPrerelease -OutputRoot $dist
+          .\SETUP_HAZIRLA.ps1 -AllowPrerelease -AllowUnsignedFinal -OutputRoot $dist
           $setup = Get-ChildItem $dist -Filter 'DogruFatura_Setup_*_x64.exe' | Select-Object -First 1
           if (-not $setup) { throw 'Setup EXE bulunamadı.' }
           "SETUP_PATH=$($setup.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8

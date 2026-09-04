@@ -1,5 +1,6 @@
 param(
     [switch]$AllowPrerelease,
+    [switch]$AllowUnsignedFinal,
     [string]$OutputRoot = '',
     [string]$CertificateThumbprint = $env:DOGRUFATURA_SIGN_CERT_SHA1,
     [string]$TimestampUrl = 'http://timestamp.digicert.com'
@@ -41,14 +42,21 @@ $suffix = [string]$group.VersionSuffix
 $assemblyVersion = [string]$group.AssemblyVersion
 if ([string]::IsNullOrWhiteSpace($version)) { Fail 'VersionPrefix okunamadı.' }
 $packageVersion = if ([string]::IsNullOrWhiteSpace($suffix)) { $version } else { "$version-$suffix" }
+$isPrerelease = -not [string]::IsNullOrWhiteSpace($suffix)
 
-if (-not [string]::IsNullOrWhiteSpace($suffix) -and -not $AllowPrerelease) {
+if ($isPrerelease -and -not $AllowPrerelease) {
     Write-Host "DoğruFatura $packageVersion bir RC/test sürümüdür." -ForegroundColor Yellow
     Write-Host 'Final Setup güvenlik amacıyla üretilmedi. RC testleri bitince VersionSuffix boşaltılmalıdır.'
     exit 2
 }
-if (-not [string]::IsNullOrWhiteSpace($suffix)) {
+if ($isPrerelease) {
     Write-Host "UYARI: $packageVersion yalnız RC/CI kurulum testi için üretilecek." -ForegroundColor Yellow
+}
+if (-not $isPrerelease -and [string]::IsNullOrWhiteSpace($CertificateThumbprint) -and -not $AllowUnsignedFinal) {
+    Fail 'Final Setup için kod imzalama sertifikası zorunludur. DOGRUFATURA_SIGN_CERT_SHA1 tanımlayın. Yalnız CI/yerel smoke testi için -AllowUnsignedFinal kullanılabilir.'
+}
+if (-not $isPrerelease -and [string]::IsNullOrWhiteSpace($CertificateThumbprint) -and $AllowUnsignedFinal) {
+    Write-Host 'UYARI: Final sürüm CI/yerel smoke testi amacıyla imzasız üretilecek. Bu paket dağıtım için kullanılmamalıdır.' -ForegroundColor Yellow
 }
 
 $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
@@ -88,7 +96,7 @@ foreach ($file in 'DogruFatura.exe','coreclr.dll','hostfxr.dll','PresentationFra
 }
 
 if ([string]::IsNullOrWhiteSpace($CertificateThumbprint)) {
-    Write-Host 'Kod imzalama sertifikası tanımlı değil; paket imzasız üretilecek.' -ForegroundColor Yellow
+    Write-Host 'Kod imzalama sertifikası tanımlı değil; yalnız açıkça izin verilen smoke paketi imzasız üretilecek.' -ForegroundColor Yellow
 } else {
     Sign-File (Join-Path $appOut 'DogruFatura.exe')
 }

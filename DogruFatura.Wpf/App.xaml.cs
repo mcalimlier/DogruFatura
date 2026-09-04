@@ -134,7 +134,10 @@ public partial class App : Application
     private static void ShowFatalError(string title, Exception ex)
     {
         var path = ApplicationCrashLogger.Write(ex, "WPF.Dispatcher");
-        MessageBox.Show(title + "\n\n" + ex.Message + "\n\nHata ayrıntısı:\n" + path,
-            "DoğruFatura - Hata", MessageBoxButton.OK, MessageBoxImage.Error);
+        MessageBox.Show(
+            title + "\n\nTeknik ayrıntılar güvenlik amacıyla ekranda gösterilmez. Hata günlüğü:\n" + path,
+            "DoğruFatura - Hata",
+            MessageBoxButton.OK,
+            MessageBoxImage.Error);
     }
 }
