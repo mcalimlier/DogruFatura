@@ -52,9 +52,9 @@ public partial class SplashWindow : Window
         catch (Exception ex)
         {
             StageText.Text = "Program başlatılamadı.";
-            ApplicationCrashLogger.Write(ex, "Splash.Startup");
+            var path = ApplicationCrashLogger.Write(ex, "Splash.Startup");
             MessageBox.Show(
-                "DoğruFatura başlatılamadı:\n\n" + ex.Message,
+                "DoğruFatura başlatılamadı. Teknik ayrıntılar güvenlik amacıyla ekranda gösterilmez.\n\nHata günlüğü:\n" + path,
                 "DoğruFatura - Açılış Hatası",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
