@@ -7,7 +7,6 @@ namespace DogruFatura.Wpf;
 public partial class SplashWindow : Window
 {
     private const double ProgressTrackWidth = 395.0;
-    private const double PreloadPercent = 86.0;
     private int _reportedPercent;
 
     public SplashWindow()
@@ -25,17 +24,17 @@ public partial class SplashWindow : Window
 
         try
         {
-            ReportStage(8, "DoğruFatura başlatılıyor...");
+            ReportStage(StartupProgressProfile.InitialPercent, "DoğruFatura başlatılıyor...");
             await Dispatcher.Yield(DispatcherPriority.Render);
 
             // Ağır MainWindow kurulumu başlamadan önce barın görünür kısmını gerçekten
             // kesintisiz çalıştır. Böylece UI iş parçacığı meşgul olduğunda bar sıçramaz.
             await RunSmoothPreloadAsync();
 
-            ReportStage(86, "Veriler, belgeler ve hesaplama kuralları hazırlanıyor...");
+            ReportStage(StartupProgressProfile.PreloadPercent, "Veriler, belgeler ve hesaplama kuralları hazırlanıyor...");
             var main = new MainWindow();
 
-            ReportStage(94, "PDF belgeleri ve arayüz düzeni doğrulanıyor...");
+            ReportStage(StartupProgressProfile.ValidationPercent, "PDF belgeleri ve arayüz düzeni doğrulanıyor...");
             UiPolishService.Apply(main);
             await Dispatcher.Yield(DispatcherPriority.Render);
 
@@ -71,35 +70,40 @@ public partial class SplashWindow : Window
             new DoubleAnimation
             {
                 From = 0,
-                To = ProgressTrackWidth * (PreloadPercent / 100.0),
-                Duration = TimeSpan.FromMilliseconds(2200),
+                To = ProgressTrackWidth * (StartupProgressProfile.PreloadPercent / 100.0),
+                Duration = TimeSpan.FromMilliseconds(StartupProgressProfile.PreloadDurationMs),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut },
                 FillBehavior = FillBehavior.HoldEnd
             },
             HandoffBehavior.SnapshotAndReplace);
 
         var start = Environment.TickCount64;
-        while (Environment.TickCount64 - start < 2200)
+        while (Environment.TickCount64 - start < StartupProgressProfile.PreloadDurationMs)
         {
-            var elapsed = Math.Clamp((Environment.TickCount64 - start) / 2200.0, 0.0, 1.0);
-            var percent = 8 + (int)Math.Round((PreloadPercent - 8) * elapsed);
+            var elapsed = Math.Clamp(
+                (Environment.TickCount64 - start) / (double)StartupProgressProfile.PreloadDurationMs,
+                0.0,
+                1.0);
+            var percent = StartupProgressProfile.CalculatePreloadPercent(elapsed);
             if (percent > _reportedPercent)
             {
                 _reportedPercent = percent;
                 PercentText.Text = $"%{percent}";
             }
-            await Task.Delay(32);
+            await Task.Delay(StartupProgressProfile.FrameDelayMs);
         }
 
         ProgressFill.BeginAnimation(FrameworkElement.WidthProperty, null);
-        ProgressFill.Width = ProgressTrackWidth * (PreloadPercent / 100.0);
-        _reportedPercent = (int)PreloadPercent;
+        ProgressFill.Width = ProgressTrackWidth * (StartupProgressProfile.PreloadPercent / 100.0);
+        _reportedPercent = StartupProgressProfile.PreloadPercent;
         PercentText.Text = $"%{_reportedPercent}";
     }
 
     private void ReportStage(int percent, string stage)
     {
-        _reportedPercent = Math.Max(_reportedPercent, Math.Clamp(percent, 0, 96));
+        _reportedPercent = Math.Max(
+            _reportedPercent,
+            Math.Clamp(percent, 0, StartupProgressProfile.MaximumReportedBeforeComplete));
         PercentText.Text = $"%{_reportedPercent}";
         StageText.Text = stage;
         Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
@@ -111,7 +115,10 @@ public partial class SplashWindow : Window
         var currentWidth = ProgressFill.Width;
         ProgressFill.BeginAnimation(
             FrameworkElement.WidthProperty,
-            new DoubleAnimation(currentWidth, ProgressTrackWidth, TimeSpan.FromMilliseconds(340))
+            new DoubleAnimation(
+                currentWidth,
+                ProgressTrackWidth,
+                TimeSpan.FromMilliseconds(StartupProgressProfile.CompletionDurationMs))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
                 FillBehavior = FillBehavior.HoldEnd
