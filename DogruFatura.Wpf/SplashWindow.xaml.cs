@@ -7,6 +7,7 @@ namespace DogruFatura.Wpf;
 public partial class SplashWindow : Window
 {
     private const double ProgressTrackWidth = 395.0;
+    private int _reportedPercent;
 
     public SplashWindow()
     {
@@ -23,24 +24,26 @@ public partial class SplashWindow : Window
 
         try
         {
-            SetProgress(12, "Arayüz bileşenleri hazırlanıyor...");
+            StartContinuousProgress();
+
+            ReportStage(12, "Arayüz bileşenleri hazırlanıyor...");
             await Dispatcher.Yield(DispatcherPriority.Background);
             await Task.Delay(80);
 
-            SetProgress(35, "Veri güvenliği ve çalışma alanları denetleniyor...");
+            ReportStage(35, "Veri güvenliği ve çalışma alanları denetleniyor...");
             await Dispatcher.Yield(DispatcherPriority.Background);
             await Task.Delay(80);
 
-            SetProgress(72, "Kurum, fatura ve arşiv kayıtları yükleniyor...");
+            ReportStage(72, "Kurum, fatura ve arşiv kayıtları yükleniyor...");
             await Dispatcher.Yield(DispatcherPriority.Background);
 
             var main = new MainWindow();
 
-            SetProgress(92, "PDF belgeleri ve arayüz düzeni doğrulanıyor...");
+            ReportStage(92, "PDF belgeleri ve arayüz düzeni doğrulanıyor...");
             UiPolishService.Apply(main);
             await Dispatcher.Yield(DispatcherPriority.Background);
 
-            SetProgress(100, "Hazır. Program açılıyor...");
+            CompleteProgress("Hazır. Program açılıyor...");
             await Task.Delay(220);
 
             Application.Current.MainWindow = main;
@@ -62,20 +65,46 @@ public partial class SplashWindow : Window
         }
     }
 
-    private void SetProgress(int percent, string stage)
+    private void StartContinuousProgress()
     {
-        var safePercent = Math.Clamp(percent, 0, 100);
-        PercentText.Text = $"%{safePercent}";
-        StageText.Text = stage;
-
-        var targetWidth = ProgressTrackWidth * safePercent / 100.0;
+        ProgressFill.Width = 0;
         ProgressFill.BeginAnimation(
             FrameworkElement.WidthProperty,
             new DoubleAnimation
             {
-                To = targetWidth,
-                Duration = TimeSpan.FromMilliseconds(180),
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-            });
+                From = 0,
+                To = ProgressTrackWidth * 0.92,
+                Duration = TimeSpan.FromSeconds(3.2),
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
+                FillBehavior = FillBehavior.HoldEnd
+            },
+            HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private void ReportStage(int percent, string stage)
+    {
+        _reportedPercent = Math.Max(_reportedPercent, Math.Clamp(percent, 0, 92));
+        PercentText.Text = $"%{_reportedPercent}";
+        StageText.Text = stage;
+        Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+    }
+
+    private void CompleteProgress(string stage)
+    {
+        ProgressFill.BeginAnimation(FrameworkElement.WidthProperty, null);
+        var currentWidth = ProgressFill.ActualWidth;
+        ProgressFill.Width = currentWidth;
+        ProgressFill.BeginAnimation(
+            FrameworkElement.WidthProperty,
+            new DoubleAnimation(currentWidth, ProgressTrackWidth, TimeSpan.FromMilliseconds(260))
+            {
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
+                FillBehavior = FillBehavior.HoldEnd
+            },
+            HandoffBehavior.SnapshotAndReplace);
+
+        _reportedPercent = 100;
+        PercentText.Text = "%100";
+        StageText.Text = stage;
     }
 }
