@@ -1,0 +1,282 @@
+using DogruFatura.Core.Models;
+using DogruFatura.Core.Services;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
+using Microsoft.Win32;
+
+namespace DogruFatura.Wpf;
+
+public partial class MainWindow
+{    private void SynchronizeArchivePdfs_Click(object sender, RoutedEventArgs e) =>
+        SynchronizeArchivePdfs(true);
+
+    private ArchivePdfSynchronizationResult? SynchronizeArchivePdfs(bool userInitiated)
+    {
+        ArchivePdfSynchronizationResult result;
+        try
+        {
+            if (userInitiated)
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                ArchivePdfSyncButton.IsEnabled = false;
+                SetArchiveStatus("Arşiv kayıtları ile PDF klasörleri eşitleniyor...");
+            }
+
+            result = _archivePdfSynchronizationService.Synchronize(ArchivedLists.ToList());
+        }
+        catch (Exception ex)
+        {
+            SetArchiveStatus("Belge eşitleme başlatılamadı: " + ex.Message, true);
+            return null;
+        }
+        finally
+        {
+            if (userInitiated)
+            {
+                Mouse.OverrideCursor = null;
+                ArchivePdfSyncButton.IsEnabled = true;
+            }
+        }
+
+        var replacedArchives = new List<(int Index, ArchivedInvoiceList Original)>();
+        foreach (var updatedArchive in result.UpdatedArchives)
+        {
+            var original = ArchivedLists.FirstOrDefault(archive => archive.Id == updatedArchive.Id);
+            if (original is null) continue;
+            var index = ArchivedLists.IndexOf(original);
+            if (index < 0) continue;
+            replacedArchives.Add((index, original));
+            ArchivedLists[index] = updatedArchive;
+        }
+
+        if (replacedArchives.Count > 0)
+        {
+            try
+            {
+                _archiveDataStore.Save(ArchivedLists);
+            }
+            catch (Exception ex)
+            {
+                foreach (var replacement in replacedArchives)
+                    ArchivedLists[replacement.Index] = replacement.Original;
+                RefreshArchiveView();
+                SetArchiveStatus(
+                    "PDF'ler hazırlandı ancak arşiv bağlantıları kaydedilemedi: " + ex.Message,
+                    true);
+                return null;
+            }
+        }
+
+        if (result.HasChanges || result.CreatedCount > 0)
+            RefreshArchiveView();
+
+        var summary = $"{result.ScannedCount} arşiv tarandı; "
+                      + $"{result.CreatedCount} eksik PDF oluşturuldu, "
+                      + $"{result.ExistingCount} PDF hazır bulundu.";
+        if (result.Errors.Count > 0)
+        {
+            SetArchiveStatus(summary + $" {result.Errors.Count} kayıt eşitlenemedi: {result.Errors[0]}", true);
+        }
+        else if (userInitiated || result.CreatedCount > 0 || result.ReferenceUpdateCount > 0)
+        {
+            SetArchiveStatus(summary, false, true);
+        }
+
+        return result;
+    }
+
+    private void ImportHistoricalPdf_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Arşive eklenecek DoğruFatura PDF kayıtlarını seçin",
+            Filter = "PDF dosyaları (*.pdf)|*.pdf",
+            Multiselect = true,
+            CheckFileExists = true,
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)
+        };
+        if (dialog.ShowDialog(this) != true || dialog.FileNames.Length == 0) return;
+
+        IReadOnlyList<HistoricalPdfImportPreview> previews;
+        try
+        {
+            Mouse.OverrideCursor = Cursors.Wait;
+            SetArchiveStatus($"{dialog.FileNames.Length} PDF okunuyor ve doğrulanıyor...");
+            var knownHysNumbers = ArchivedLists
+                .Where(archive => !string.IsNullOrWhiteSpace(archive.HysPaymentOrderDocumentNumber))
+                .Select(archive => archive.HysPaymentOrderDocumentNumber)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var selectedHysNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var schools = AllSchools.ToList();
+            var buffer = new List<HistoricalPdfImportPreview>();
+            foreach (var fileName in dialog.FileNames)
+            {
+                var preview = _historicalPdfImportService.Read(fileName, schools, _authorityProfile);
+                if (preview.IsValid && knownHysNumbers.Contains(preview.HysNumber))
+                {
+                    preview = preview.WithError($"{preview.HysNumber} işlem arşivinde zaten kayıtlı.");
+                }
+                else if (preview.IsValid && !selectedHysNumbers.Add(preview.HysNumber))
+                {
+                    preview = preview.WithError($"{preview.HysNumber} seçilen dosyalar içinde birden fazla kez bulunuyor.");
+                }
+                else if (preview.IsValid)
+                {
+                    var destinationPath = _documentArchiveStorageService.GetArchivedOutputPath(preview.HysNumber);
+                    var isSameFile = string.Equals(
+                        Path.GetFullPath(fileName),
+                        Path.GetFullPath(destinationPath),
+                        StringComparison.OrdinalIgnoreCase);
+                    if (File.Exists(destinationPath) && !isSameFile)
+                        preview = preview.WithError($"{Path.GetFileName(destinationPath)} Arşivlenenler klasöründe zaten bulunuyor.");
+                }
+
+                buffer.Add(preview);
+            }
+            previews = buffer;
+        }
+        catch (Exception ex)
+        {
+            SetArchiveStatus("Arşive eklenecek PDF dosyaları okunamadı: " + ex.Message, true);
+            return;
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+
+        var importDialog = new HistoricalPdfImportDialog(previews) { Owner = this };
+        if (importDialog.ShowDialog() != true) return;
+
+        var validItems = importDialog.ValidItems;
+        if (validItems.Count == 0)
+        {
+            SetArchiveStatus("Aktarılabilecek geçerli PDF bulunamadı.", true);
+            return;
+        }
+
+        var addedArchives = new List<ArchivedInvoiceList>();
+        var createdFiles = new List<string>();
+        try
+        {
+            foreach (var item in validItems)
+            {
+                var archive = item.Archive!;
+                var destinationPath = _documentArchiveStorageService.GetArchivedOutputPath(item.HysNumber);
+                var sourceIsDestination = string.Equals(
+                    Path.GetFullPath(item.SourcePath),
+                    Path.GetFullPath(destinationPath),
+                    StringComparison.OrdinalIgnoreCase);
+                var destinationExisted = File.Exists(destinationPath);
+                var pdfFileName = _documentArchiveStorageService.CopyImportedPdf(item.SourcePath, item.HysNumber);
+                if (!sourceIsDestination && !destinationExisted)
+                    createdFiles.Add(destinationPath);
+
+                var storedArchive = archive with { PdfFileName = pdfFileName };
+                ArchivedLists.Add(storedArchive);
+                addedArchives.Add(storedArchive);
+            }
+
+            _archiveDataStore.Save(ArchivedLists);
+        }
+        catch (Exception ex)
+        {
+            foreach (var archive in addedArchives)
+                ArchivedLists.Remove(archive);
+            foreach (var createdFile in createdFiles)
+            {
+                try
+                {
+                    if (File.Exists(createdFile)) File.Delete(createdFile);
+                }
+                catch
+                {
+                    // Yalnız bu aktarımda oluşturulan dosyalar geri alınmaya çalışılır.
+                }
+            }
+
+            RefreshArchiveView();
+            SetArchiveStatus("Arşiv ekleme işlemi tamamlanamadı: " + ex.Message, true);
+            MessageBox.Show(this,
+                "PDF kayıtları arşive eklenirken işlem geri alındı:\n\n" + ex.Message,
+                "DoğruFatura - Arşiv Ekle",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        var firstArchive = addedArchives.First();
+        RefreshArchiveView(firstArchive.Id);
+        RefreshDashboard();
+        SetArchiveStatus(
+            $"{addedArchives.Count} PDF, HYS ile kapalı arşiv kaydı olarak eklendi.",
+            false,
+            true);
+    }
+
+    private void ArchiveFilter_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_suppressArchiveEvents) return;
+        ApplyArchiveFilters();
+    }
+
+    private void ArchiveFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressArchiveEvents) return;
+        ApplyArchiveFilters();
+    }
+
+    private void ApplyArchiveFilters()
+    {
+        var from = ArchiveDateFromPicker.SelectedDate?.Date;
+        var to = ArchiveDateToPicker.SelectedDate?.Date;
+        if (from.HasValue && to.HasValue && from.Value > to.Value)
+        {
+            _archiveView.Refresh();
+            ArchiveVisibleCountText.Text = $"0 / {ArchivedLists.Count} kayıt";
+            ArchiveListEmptyState.Visibility = Visibility.Visible;
+            ArchiveGrid.SelectedItem = null;
+            UpdateArchiveSelection();
+            SetArchiveStatus("Başlangıç tarihi, bitiş tarihinden sonra olamaz.", true);
+            return;
+        }
+
+        RefreshArchiveView();
+        SetArchiveStatus("Arşiv filtreleri uygulandı.", false, true);
+    }
+
+    private void ClearArchiveFilters_Click(object sender, RoutedEventArgs e)
+    {
+        _suppressArchiveEvents = true;
+        ArchiveSearchBox.Clear();
+        ArchiveTypeFilterBox.SelectedIndex = 0;
+        ArchiveStatusFilterBox.SelectedIndex = 0;
+        ArchiveDateFromPicker.SelectedDate = null;
+        ArchiveDateToPicker.SelectedDate = null;
+        _suppressArchiveEvents = false;
+        RefreshArchiveView();
+        SetArchiveStatus("Arşiv filtreleri temizlendi.", false, true);
+    }
+
+    private void ArchiveGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        UpdateArchiveSelection();
+
+    private void ArchiveGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (ArchiveGrid.SelectedItem is ArchivedInvoiceList)
+            OpenArchivedList_Click(sender, e);
+    }
+}
