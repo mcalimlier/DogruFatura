@@ -77,7 +77,7 @@ public sealed class ArchivedInvoiceListDataStore
         }
     }
 
-    private IReadOnlyList<ArchivedInvoiceList> TryRecoverValidArchives(out int rejectedCount)
+    private List<ArchivedInvoiceList> TryRecoverValidArchives(out int rejectedCount)
     {
         rejectedCount = 0;
         var recovered = new List<ArchivedInvoiceList>();
@@ -127,7 +127,7 @@ public sealed class ArchivedInvoiceListDataStore
         File.Move(temporaryPath, DataFilePath, true);
     }
 
-    private static void ValidateArchiveSet(IReadOnlyList<ArchivedInvoiceList> archives, bool saving = false)
+    private static void ValidateArchiveSet(List<ArchivedInvoiceList> archives, bool saving = false)
     {
         for (var index = 0; index < archives.Count; index++)
         {
