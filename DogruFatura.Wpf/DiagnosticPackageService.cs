@@ -10,7 +10,7 @@ public sealed class DiagnosticPackageService
     private const int MaximumLogFiles = 5;
     private const int MaximumLogCharacters = 250_000;
 
-    public string Create(ApplicationSafetyService safetyService)
+    public static string Create(ApplicationSafetyService safetyService)
     {
         ArgumentNullException.ThrowIfNull(safetyService);
         var integrity = safetyService.CheckIntegrity();
