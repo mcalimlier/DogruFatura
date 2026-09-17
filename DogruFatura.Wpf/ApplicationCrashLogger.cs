@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -56,13 +57,13 @@ internal static class ApplicationCrashLogger
         var builder = new StringBuilder();
         builder.AppendLine("DoğruFatura beklenmeyen hata kaydı");
         builder.AppendLine(new string('=', 54));
-        builder.AppendLine($"Tarih         : {DateTimeOffset.Now:dd.MM.yyyy HH:mm:ss zzz}");
-        builder.AppendLine($"Kaynak        : {source}");
-        builder.AppendLine($"Sürüm         : {informationalVersion}");
-        builder.AppendLine($".NET          : {Environment.Version}");
-        builder.AppendLine($"İşletim Sistemi: {RuntimeInformation.OSDescription}");
-        builder.AppendLine($"İşlem Mimarisi : {RuntimeInformation.ProcessArchitecture}");
-        builder.AppendLine($"Makine        : {Environment.MachineName}");
+        builder.AppendLine(CultureInfo.CurrentCulture, $"Tarih         : {DateTimeOffset.Now:dd.MM.yyyy HH:mm:ss zzz}");
+        builder.AppendLine(CultureInfo.CurrentCulture, $"Kaynak        : {source}");
+        builder.AppendLine(CultureInfo.CurrentCulture, $"Sürüm         : {informationalVersion}");
+        builder.AppendLine(CultureInfo.CurrentCulture, $".NET          : {Environment.Version}");
+        builder.AppendLine(CultureInfo.CurrentCulture, $"İşletim Sistemi: {RuntimeInformation.OSDescription}");
+        builder.AppendLine(CultureInfo.CurrentCulture, $"İşlem Mimarisi : {RuntimeInformation.ProcessArchitecture}");
+        builder.AppendLine(CultureInfo.CurrentCulture, $"Makine        : {Environment.MachineName}");
         builder.AppendLine();
         builder.AppendLine(exception.ToString());
         return builder.ToString();
