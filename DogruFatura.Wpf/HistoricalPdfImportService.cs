@@ -285,7 +285,7 @@ public sealed class HistoricalPdfImportService
             }
 
             var school = schools.FirstOrDefault(candidate =>
-                string.Equals(candidate.Name.Trim(), institutionName, StringComparison.CurrentCultureIgnoreCase));
+                TurkishTextComparison.EqualsIgnoreCase(candidate.Name.Trim(), institutionName));
             var institutionType = school?.InstitutionType ?? InferInstitutionType(institutionName);
             var invoice = new InvoiceRecord(
                 Guid.NewGuid(),
