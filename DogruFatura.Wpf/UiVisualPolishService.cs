@@ -208,7 +208,7 @@ internal static class UiVisualPolishService
             try
             {
                 var safety = new ApplicationSafetyService();
-                var path = new DiagnosticPackageService().Create(safety);
+                var path = DiagnosticPackageService.Create(safety);
                 UiNotificationService.Show(
                     window,
                     "Tanılama paketi oluşturuldu:\n" + path,
