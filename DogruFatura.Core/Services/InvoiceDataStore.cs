@@ -107,7 +107,7 @@ public sealed class InvoiceDataStore
         return new InvoiceLoadResult(invoices, warnings.Count == 0 ? null : string.Join(" ", warnings), DataFilePath);
     }
 
-    private IReadOnlyList<InvoiceRecord> TryRecoverValidInvoices(out int rejectedCount)
+    private List<InvoiceRecord> TryRecoverValidInvoices(out int rejectedCount)
     {
         rejectedCount = 0;
         var recovered = new List<InvoiceRecord>();
