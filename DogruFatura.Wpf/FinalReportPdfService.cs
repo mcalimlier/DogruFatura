@@ -3,6 +3,7 @@ using DogruFatura.Core.Services;
 using PdfSharp;
 using PdfSharp.Drawing;
 using PdfSharp.Pdf;
+using System.Globalization;
 using System.IO;
 
 namespace DogruFatura.Wpf;
@@ -161,7 +162,7 @@ public sealed class FinalReportPdfService
     private static string[] RowValues(InvoiceRecord invoice, int sequenceNumber) =>
         new[]
         {
-            sequenceNumber.ToString(),
+            sequenceNumber.ToString(CultureInfo.CurrentCulture),
             invoice.InstitutionName,
             invoice.ServiceNumber,
             invoice.InvoiceNumber,
