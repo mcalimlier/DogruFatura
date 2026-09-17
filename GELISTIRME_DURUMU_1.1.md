@@ -1,6 +1,6 @@
 # DoğruFatura 1.1 — Geliştirme Durumu
 
-Bu dosya DoğruFatura 1.1 sağlamlaştırma çalışmalarının kalıcı ilerleme kaydıdır. Her tamamlanan geliştirme parçasından sonra güncellenir.
+Bu dosya DoğruFatura 1.1 sağlamlaştırma çalışmalarının kalıcı ilerleme kaydıdır. Her tamamlanan geliştirme parçasından sonra güncellenir. Başka bir sohbete geçildiğinde bu dosyanın tamamı yeni sohbete yapıştırılarak kaldığımız yer milimetrik biçimde aktarılabilir.
 
 ## Çalışma dalı
 
@@ -17,6 +17,11 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 - [x] 1.1 geliştirme dalı oluşturuldu.
 - [x] Kalıcı ilerleme/durum dosyası oluşturuldu.
 - [ ] Aşama 1 — Veri Güvenliği
+  - [x] 1.1 Bozuk veri kurtarma davranışı
+  - [x] 1.2 Veri şema sürümleme
+  - [x] 1.3 Yedekten geri yükleme semantik doğrulaması
+  - [ ] 1.4 Yedek ve PDF bütünlük doğrulaması
+  - [ ] 1.5 Tek örnek / yazma güvenliği
 - [ ] Aşama 2 — Mimari Temizlik
 - [ ] Aşama 3 — Mali Denetim ve İzlenebilirlik
 - [ ] Aşama 4 — Kalite / CI
@@ -33,7 +38,7 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 - [x] Aktif fatura ve kurum verisinde mümkün olan sağlam kayıtlar kayıt bazında kurtarılıyor.
 - [x] Yetkili profili bozulduğunda varsayılan profil yalnız oturum içinde kullanılıyor; ana dosya otomatik ezilmiyor.
 - [x] Yeni kurtarma davranışı için otomatik testler eklendi (`RecoveryModeTests.cs`).
-- [ ] GitHub Actions ile derleme/test doğrulaması — **altyapı engeli nedeniyle beklemede**. Workflow job'ları runner atanamadan (`runner_id=0`) ve hiçbir step başlamadan birkaç saniyede failure oluyor; bu nedenle şu an kod/test sonucu üretilemiyor.
+- [ ] GitHub Actions ile derleme/test doğrulaması — **altyapı engeli nedeniyle beklemede**. Workflow job'ları hiçbir step başlamadan failure oluyor; gerçek derleme/test sonucu üretilemiyor.
 
 ### 1.2 Veri şema sürümleme
 
@@ -49,19 +54,37 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 - [x] Yanlış `DataType` içeren dosyalar güvenli biçimde reddediliyor.
 - [x] `InvoiceDataStore`, `SchoolDataStore`, `AuthorityProfileDataStore` ve `ArchivedInvoiceListDataStore` yeni şema sistemine geçirildi.
 - [x] Eski dosyaların yükseltilmesi, yeni format round-trip'i, gelecek şema reddi ve veri türü doğrulaması için otomatik testler eklendi (`DataSchemaMigrationTests.cs`).
-- [ ] GitHub Actions ile derleme/test doğrulaması — **runner altyapısı nedeniyle beklemede**. Son denemede de `windows-latest` job'u hiçbir step başlamadan `runner_id=0` ile kapandı.
+- [ ] GitHub Actions ile derleme/test doğrulaması — **runner/Actions altyapısı nedeniyle beklemede**.
 
 ### 1.3 Yedekten geri yükleme semantik doğrulaması
 
-- [ ] JSON parse kontrolüne ek olarak model/iş kuralı doğrulaması yap.
-- [ ] Kurum, aktif fatura, yetkili profili ve işlem arşivini geri yükleme öncesinde doğrula.
-- [ ] Geçersiz yedeğin mevcut veriyi değiştirmesini engelle.
+- [x] JSON parse kontrolünün ötesinde model ve iş kuralı doğrulaması eklendi.
+- [x] Merkezi `DataDirectoryValidationService.cs` oluşturuldu.
+- [x] `Okullar.json` içindeki kurum kayıtları `SchoolValidationService` kurallarıyla doğrulanıyor; eksik alan ve mükerrer kurumlar reddediliyor.
+- [x] `AktifFaturalar.json` kayıtları `InvoiceValidationService`, mükerrer fatura kontrolü ve tek fatura türü politikasıyla doğrulanıyor.
+- [x] Aktif faturalarda boş/mükerrer `Guid` kimlikleri reddediliyor.
+- [x] `YetkiliProfili.json` eksik veya boş yetkili alanlarında reddediliyor.
+- [x] `IslemArsivi.json` kayıtları `ArchivedInvoiceListValidationService` ile doğrulanıyor; mükerrer arşiv kimliği, arşiv numarası ve HYS numarası reddediliyor.
+- [x] Restore işlemi artık dört zorunlu veri dosyasının (`Okullar.json`, `AktifFaturalar.json`, `YetkiliProfili.json`, `IslemArsivi.json`) tamamını gerektiriyor.
+- [x] Geçersiz veya eksik yedek, geri yükleme öncesi güvenlik yedeği oluşturulmadan ve canlı veri klasörlerine dokunulmadan reddediliyor.
+- [x] `ApplicationSafetyService.CheckIntegrity()` aynı merkezi semantik doğrulayıcıya geçirildi.
+- [x] Şema-1 `IslemArsivi.json` dosyasının eski “kök mutlaka dizi olmalı” kontrolü nedeniyle yanlış bozuk sayılması engellendi.
+- [x] Başarılı restore round-trip testi geçerli semantik verilerle güncellendi.
+- [x] Semantik olarak bozuk yedeğin canlı veriyi değiştirmediği entegrasyon testi eklendi.
+- [x] Zorunlu veri dosyası eksik yedeğin reddedildiği entegrasyon testi eklendi.
+- [x] Şema-1 tam veri kümesinin `CheckIntegrity()` tarafından sağlıklı kabul edildiği test eklendi.
+- [x] Semantik olarak bozuk canlı verinin bütünlük kontrolünde raporlandığı test eklendi.
+- [ ] GitHub Actions ile derleme/test doğrulaması — **altyapı engeli nedeniyle beklemede**. Son denemede `build-and-test` job'ı `steps=null` ile failure oldu ve `setup-smoke` skipped oldu; gerçek kod çalıştırılmadı.
 
 ### 1.4 Yedek ve PDF bütünlük doğrulaması
 
-- [ ] Yedek manifestine dosya SHA-256 özetleri ve boyutlarını ekle.
-- [ ] Restore sırasında manifest hash doğrulaması yap.
-- [ ] Kapalı arşiv PDF'leri için SHA-256 parmak izi sakla ve doğrula.
+- [ ] Yedek manifestine her dosya için SHA-256 özeti ekle.
+- [ ] Yedek manifestine her dosyanın beklenen byte boyutunu ekle.
+- [ ] Restore sırasında manifestte kayıtlı hash ve boyutları açılan dosyalarla karşılaştır.
+- [ ] Manifestte olmayan/fazladan dosya veya hash uyuşmazlığında restore'u reddet.
+- [ ] `ArchivedInvoiceList` içine arşiv PDF'sinin SHA-256 bütünlük bilgisini ekle.
+- [ ] Kapalı arşiv PDF'si mevcutsa hash doğrulaması yap; dosya değiştirilmişse kullanıcıyı uyar ve otomatik olarak “sağlam” kabul etme.
+- [ ] PDF bütünlük senaryolarını otomatik testlerle koru.
 
 ### 1.5 Tek örnek / yazma güvenliği
 
@@ -99,22 +122,35 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 
 ## Tamamlanan son parça
 
-**Aşama 1.2 — Veri şema sürümleme:**
+**Aşama 1.3 — Yedekten geri yükleme semantik doğrulaması**
 
-- Yeni `DataFileSchemaService.cs` ile kalıcı JSON formatının sürümü tek merkezden yönetiliyor.
-- Yeni dosya biçimi `SchemaVersion`, `DataType` ve `Data` alanlarını kullanıyor.
-- Eski 1.0.x dosyaları Schema 0 olarak tanınıyor ve doğrulama başarılıysa Schema 1'e yükseltiliyor.
-- Her otomatik yükseltmeden önce eski dosyanın birebir geri dönüş kopyası saklanıyor.
-- Gelecek sürüm şemaları veya yanlış veri türleri otomatik dönüştürülmüyor ve kaynak dosya korunuyor.
-- `DataSchemaMigrationTests.cs` ile geriye uyumluluk ve güvenli yükseltme senaryoları eklendi.
+Son kod commit'i: `d82140b8fa31b5e10406d830010df2119cf129c4`
+
+Bu parçada:
+
+- `DogruFatura.Core/Services/DataDirectoryValidationService.cs` eklendi.
+- `DogruFatura.Wpf/ApplicationSafetyService.cs` restore ve bütünlük kontrolü merkezi semantik doğrulamaya bağlandı.
+- `DogruFatura.Tests/DataSafetyIntegrationTests.cs` geçerli restore senaryosu ve yeni güvenlik/red senaryolarıyla genişletildi.
+- Geçersiz yedek canlı veri üzerinde hiçbir swap/copy işlemi başlamadan reddediliyor.
+- Yeni şema-1 arşiv formatıyla eski bütünlük kontrolü arasındaki uyumsuzluk giderildi.
 
 ### Doğrulama notu
 
-17.09.2026 tarihindeki son branch workflow denemesinde `build-and-test` job'u yine runner atanmadan (`runner_id=0`) ve `steps=[]` durumunda birkaç saniye içinde failure oldu. Bu nedenle Aşama 1.2 kod/test kapsamı tamamlandı ancak GitHub Actions CI doğrulaması henüz tamamlanmış sayılmıyor.
+17.09.2026 tarihindeki son branch workflow denemesinde GitHub Actions `build-and-test` job'ı yine step oluşturmadan failure oldu (`steps=null`); `setup-smoke` skipped oldu. Bu nedenle 1.3 için kod ve otomatik test kapsamı hazırlanmış durumda ancak CI üzerinde gerçek derleme/test yürütülemedi. Bu sorun kod hatası olarak sınıflandırılmıyor; Actions/runner tarafındaki engel çözülene kadar “CI doğrulandı” denmeyecek.
 
 ## Sıradaki iş
 
-**Aşama 1.3 — Yedekten geri yükleme semantik doğrulaması.** `ApplicationSafetyService` yalnızca JSON sözdizimini kontrol etmek yerine yedekteki `Okullar`, `AktifFaturalar`, `YetkiliProfili` ve `IslemArsivi` verilerini model ve iş kurallarıyla doğrulayacak. Geçersiz yedek mevcut canlı verinin üzerine hiçbir şekilde geçirilmeden reddedilecek ve bu davranış entegrasyon testleriyle korunacak.
+**Aşama 1.4 — Yedek ve PDF bütünlük doğrulaması.**
+
+Uygulanacak sıra:
+
+1. `BackupManifest` yapısını sürümleyerek her yedek dosyası için göreli yol, byte boyutu ve SHA-256 özeti saklamak.
+2. Restore sırasında çıkarılan bütün dosyaların manifestle birebir eşleşmesini ve hash/byte boyutlarını doğrulamak.
+3. Eski `DogruFaturaBackup/1` yedekleri için güvenli geriye uyumluluk stratejisini belirlemek; yeni yedekleri daha güçlü manifest formatında üretmek.
+4. `ArchivedInvoiceList` modeline arşiv PDF bütünlük alanı eklemek.
+5. PDF üretimi/kapatma/senkronizasyon akışlarında SHA-256 kaydetmek ve mevcut PDF'yi doğrulamak.
+6. Hash uyuşmazlığı, eksik dosya ve değiştirilmiş PDF senaryolarını otomatik testlerle korumak.
+7. Bölüm tamamlanınca bu MD dosyasını yeniden güncellemek ve tamamını sohbet içinde kullanıcıya vermek.
 
 ## GitHub Desktop'ta çalışmaları görme
 
@@ -122,15 +158,35 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 2. Üst bölümde **Fetch origin** düğmesine basın.
 3. **Current branch** menüsünü açın.
 4. `hardening/1.1-data-safety` branch'ini seçin. İlk kez görünüyorsa **Other Branches / Remote Branches** bölümünden seçin.
-5. Branch açıldıktan sonra **History** sekmesinde yaptığım commit'leri görebilirsiniz.
-6. Dosyaları diskte görmek için **Repository > Show in Explorer** seçeneğini kullanın. Kök dizinde `GELISTIRME_DURUMU_1.1.md` görünecektir.
-7. Kodun mevcut `main` sürümünden farkını görmek için GitHub Desktop'ta **Branch > Compare to Branch... > main** yolunu kullanabilirsiniz.
-8. Bu branch'i şimdilik `main` ile birleştirmeyin; veri güvenliği aşamasının tamamını bitirip doğrulama yaptıktan sonra birlikte merge edeceğiz.
+5. Branch açıldıktan sonra **Pull origin** görünüyorsa basın.
+6. **History** sekmesinde yapılan commit'leri görebilirsiniz.
+7. Dosyaları diskte görmek için **Repository > Show in Explorer** seçeneğini kullanın. Kök dizinde `GELISTIRME_DURUMU_1.1.md` bulunur.
+8. Kodun mevcut `main` sürümünden farkını görmek için **Branch > Compare to Branch... > main** yolunu kullanın.
+9. Bu branch'i şimdilik `main` ile birleştirmeyin; Veri Güvenliği Aşaması 1.5 dahil tamamlanıp toplu kontrol yapıldıktan sonra merge edilecek.
+
+## Yeni sohbete aktarım özeti
+
+Yeni bir ChatGPT sohbetine geçilirse bu dosyanın tamamını yapıştırın ve şu talimatı ekleyin:
+
+> “Bu MD, DoğruFatura 1.1 geliştirmesinde önceki sohbetten kalan tek doğru durum kaydıdır. GitHub reposu `mcalimlier/DogruFatura`, çalışma branch'i `hardening/1.1-data-safety`. MD'deki tamamlanan işleri yeniden yapma. `Sıradaki iş` bölümünden devam et ve her tamamlanan parçadan sonra bu MD'yi hem repoda güncelle hem de sohbet içinde tam metin olarak ver.”
+
+Kritik bağlam:
+
+- Repo: `mcalimlier/DogruFatura`
+- Branch: `hardening/1.1-data-safety`
+- `main` başlangıç noktası: `72963ec0a829f2e4b487393160c7ca93290b470f`
+- Son tamamlanan kod parçası: **Aşama 1.3**
+- Son kod commit'i: `d82140b8fa31b5e10406d830010df2119cf129c4`
+- Sıradaki parça: **Aşama 1.4 — Yedek ve PDF bütünlük doğrulaması**
+- CI durumu: GitHub Actions job'ları runner/step başlamadan failure oluyor; gerçek derleme/test sonucu henüz alınamıyor.
+- `main` ile henüz merge yapılmayacak.
 
 ## Notlar
 
 - Mevcut kullanıcı verisini otomatik silen veya geri döndürülemez biçimde dönüştüren değişiklik yapılmayacak.
 - Otomatik şema yükseltmelerinde geri dönüş kopyası olmadan kaynak dosya dönüştürülmeyecek.
+- Restore işleminde semantik doğrulama tamamlanmadan canlı veri klasörlerine dokunulmayacak.
 - Her parça bağımsız ve geri alınabilir commit olarak tutulacak.
 - Her tamamlanan parçadan sonra bu dosya mutlaka güncellenecek.
-- CI runner sorunu çözülmeden hiçbir aşama için "CI doğrulandı" ifadesi kullanılmayacak.
+- Her tamamlanan parçadan sonra bu dosyanın **tam güncel içeriği sohbet içinde de kullanıcıya verilecek**.
+- CI runner sorunu çözülmeden hiçbir aşama için “CI doğrulandı” ifadesi kullanılmayacak.
