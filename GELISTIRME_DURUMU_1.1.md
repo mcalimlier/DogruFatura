@@ -71,39 +71,43 @@ Kalan ana işler:
 - `FinalReportDocumentService.Build` CA1822: **6 → 5** warning.
   - `f984e834d36827d7a03da2132a23318cdf0fbe50`
   - Rapor sayfa ölçüsü servis örneği durumuna bağlandı; çıktı ölçüsü değişmedi.
+- `FinalReportPdfService.Save` CA1822: **5 → 4** warning.
+  - `014df5f68752205ed0201e97015a620036ca1d0f`
+  - A4 yatay PDF ayarları servis örneği durumuna bağlandı; çıktı yapısı değişmedi.
 
 ### 17.09.2026 son başarılı yerel build
 
 - SDK: `.NET 10.0.400`
 - Core: **1 warning**
-- WPF: **4 warning**
-- Toplam: **5 warning / 0 error**
+- WPF: **3 warning**
+- Toplam: **4 warning / 0 error**
 - Program `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
-- `FinalReportDocumentService.Build` CA1822 uyarısı doğrulanarak kapandı.
+- `FinalReportPdfService.Save` CA1822 uyarısı doğrulanarak kapandı.
 
-## Kalan 5 warning
+## Kalan 4 warning
 
 ### Core — 1
 
 - `CA1309` — `ControlCenterService` dize karşılaştırması
 
-### WPF — 4
+### WPF — 3
 
-- `CA1822` — `FinalReportPdfService.Save`
 - `CA1822` — `HistoricalPdfImportService.Read`
 - `CA1822` — `ApplicationSafetyService.RuntimeDescription`
 - `CA1309` — `HistoricalPdfImportService` kurum adı karşılaştırması
 
 ## Kodlanan fakat yerel doğrulaması bekleyen parça
 
-`FinalReportPdfService.Save` servis örneği korunarak ele alındı:
+`HistoricalPdfImportService.Read` DI yönüne uygun biçimde ele alındı:
 
-- Commit: `014df5f68752205ed0201e97015a620036ca1d0f`
-- PDF sayfa boyutu `PageSize.A4` ve yönü `PageOrientation.Landscape` servis örneği durumuna bağlandı.
-- `Save` bu örnek ayarları kullanıyor.
-- A4 yatay çıktı, sayfa planlama, metin yerleşimi, PDF içeriği ve çağrı biçimi değişmedi.
+- Commit: `b04c2c1cc61cf382a31fc38088305390b1620f9c`
+- `HistoricalPdfImportService`, `TaxCalculationService` bağımlılığını constructor üzerinden kabul ediyor.
+- Parametre verilmezse önceki davranışı korumak için varsayılan `TaxCalculationService` oluşturuluyor.
+- PDF satır doğrulamasında her hesaplamada yeni servis oluşturmak yerine aynı servis örneği kullanılıyor.
+- Vergi matematiği, tazminat arama aralığı, PDF doğrulama kuralları, kullanıcı mesajları ve mevcut `new HistoricalPdfImportService()` çağrıları değişmedi.
+- `Read` artık gerçek servis örneği durumunu kullandığı için `CA1822` nedeninin kalkması bekleniyor.
 
-Beklenen sonraki yerel sonuç: **4 warning / 0 error**.
+Beklenen sonraki yerel sonuç: **3 warning / 0 error**.
 
 ## CA1822 yaklaşımı
 
@@ -112,14 +116,14 @@ Beklenen sonraki yerel sonuç: **4 warning / 0 error**.
 - Gerçekten durumsuz yardımcı davranışlar static yapılabilir.
 - DI veya servis sınırı olarak bilinçli biçimde örnek kullanılan sınıflar yalnız warning düşürmek için static yapılmayacak.
 - Güvenlik-kritik büyük dosyalarda sırf warning için geniş çağrı zinciri değişikliği yapılmayacak.
-- Rapor servisleri ileride DI kapsamına alınacağı için örnek servis yapısı korunuyor.
+- Rapor ve arşiv servisleri ileride DI kapsamına alınacağı için örnek servis yapısı korunuyor.
 
 ## Sıradaki iş
 
 1. GitHub Desktop → **Fetch origin → Pull origin**.
 2. `hardening/1.1-data-safety` branch'inde `DERLE_CALISTIR.bat` çalıştır.
-3. Beklenen: **4 warning / 0 error**.
-4. Doğrulanırsa kalan `CA1822` uyarıları kontrollü ele alınacak.
+3. Beklenen: **3 warning / 0 error**.
+4. Doğrulanırsa son `CA1822` (`ApplicationSafetyService.RuntimeDescription`) kontrollü ele alınacak.
 5. İki `CA1309` en sona bırakılacak; Türkçe kültür/string davranışı test edilmeden değiştirilmeyecek.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
