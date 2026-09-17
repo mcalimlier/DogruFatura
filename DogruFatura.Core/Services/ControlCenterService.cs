@@ -216,7 +216,7 @@ public static class ControlCenterService
     {
         var school = schools.FirstOrDefault(candidate =>
             string.Equals(candidate.InstitutionType, invoice.InstitutionType, StringComparison.Ordinal)
-            && string.Equals(candidate.Name, invoice.InstitutionName, StringComparison.CurrentCultureIgnoreCase));
+            && TurkishTextComparison.EqualsIgnoreCase(candidate.Name, invoice.InstitutionName));
         if (school is null)
         {
             issues.Add(InvoiceIssue(
