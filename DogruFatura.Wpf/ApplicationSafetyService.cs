@@ -156,15 +156,11 @@ public sealed class ApplicationSafetyService
             checkedJson++;
             try
             {
-                using var stream = File.OpenRead(file);
-                using var document = JsonDocument.Parse(stream);
-                if (string.Equals(Path.GetFileName(file), "IslemArsivi.json", StringComparison.OrdinalIgnoreCase)
-                    && document.RootElement.ValueKind != JsonValueKind.Array)
-                    throw new JsonException("Arşiv kökü liste biçiminde değil.");
+                DataDirectoryValidationService.ValidateFile(file);
             }
-            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+            catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
             {
-                problems.Add($"{Path.GetFileName(file)} okunamadı ({ex.Message})");
+                problems.Add($"{Path.GetFileName(file)} geçersiz ({ex.Message})");
             }
         }
 
@@ -524,17 +520,13 @@ public sealed class ApplicationSafetyService
         if (!Directory.Exists(dataRoot))
             throw new InvalidDataException("Yedekte Veri klasörü bulunamadı.");
 
-        var knownFiles = KnownDataFileNames
-            .Select(fileName => Path.Combine(dataRoot, fileName))
-            .Where(File.Exists)
-            .ToArray();
-        if (knownFiles.Length == 0)
-            throw new InvalidDataException("Yedekte tanınan DoğruFatura veri dosyası bulunamadı.");
-
-        foreach (var file in knownFiles)
+        try
         {
-            using var stream = File.OpenRead(file);
-            using var _ = JsonDocument.Parse(stream);
+            DataDirectoryValidationService.ValidateCompleteDirectory(dataRoot);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
+        {
+            throw new InvalidDataException("Yedek veri kümesi doğrulanamadı: " + ex.Message, ex);
         }
 
         var documentRoot = Path.Combine(extractedRoot, "Belgeler");
