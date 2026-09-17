@@ -54,8 +54,9 @@ public sealed class AuthorityProfileDataStore
             {
                 try
                 {
+                    var backupPath = DataFileSchemaService.CreatePreUpgradeBackup(DataFilePath, schema.SourceSchemaVersion);
                     Save(normalized);
-                    warning = $"Yetkili profili veri dosyası şema {DataFileSchemaService.CurrentSchemaVersion} biçimine güvenle yükseltildi.";
+                    warning = $"Yetkili profili veri dosyası şema {DataFileSchemaService.CurrentSchemaVersion} biçimine güvenle yükseltildi. Önceki biçim korundu: {backupPath}";
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
