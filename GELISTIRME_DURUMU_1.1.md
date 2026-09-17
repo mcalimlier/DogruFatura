@@ -31,13 +31,21 @@ Tamamlananlar:
 - `InvoiceValidationService` ve Kontrol Merkezi ortak kural motoru.
 - Dependency Injection ilk dilimi.
 - `HistoricalPdfImportService` içinde `TaxCalculationService` bağımlılığı örnek servise taşındı.
+- Rapor/arşiv DI genişletme paketinin ilk dilimi kodlandı:
+  - `MainWindow` artık `FinalReportDocumentService`, `FinalReportPdfService`, `DocumentArchiveStorageService` ve `HistoricalPdfImportService` nesnelerini kendi içinde oluşturmuyor.
+  - Bu servisler `App` composition root'unda oluşturulup `MainWindow` constructor'ına veriliyor.
+  - `HistoricalPdfImportService`, uygulamanın aynı `TaxCalculationService` örneğini kullanıyor.
+  - `ArchivePdfSynchronizationService` mevcut davranışını koruyarak enjekte edilen storage/PDF servisleriyle kuruluyor.
+  - `MainWindow` DI commit'i: `2c106f6d367574016b3fdc3b8457173628aae1b0`
+  - Composition root commit'i: `33804ae702114e8c0b5b2cf8802826f07853b010`
+  - Bu paket için yerel build doğrulaması henüz bekliyor.
 
 Kalan ana işler:
 
-- DI kapsamını rapor/arşiv servislerine daha fazla genişletmek.
-- `MainWindow` sorumluluklarını daha fazla ayırmak.
+- DI kapsamını kalan uygulama/rapor/arşiv servislerine kontrollü genişletmek.
+- `MainWindow` sorumluluklarını ViewModel/application-service katmanlarına ayırmak.
 - Tür/status alanlarını enum/value object yapısına taşımak.
-- `SchoolRecord` için değişmez `SchoolId` eklemek.
+- `SchoolRecord` için değişmez `SchoolId` eklemek ve fatura-kurum bağını ID üzerinden güçlendirmek.
 
 ## Aşama 4 — Warning temizliği
 
@@ -75,56 +83,55 @@ Kalan ana işler:
   - `b04c2c1cc61cf382a31fc38088305390b1620f9c`
 - `ApplicationSafetyService.RuntimeDescription` CA1822: **3 → 2** warning.
   - `71d952b84aac1a5f4599978f135b7d2a77eab815`
-  - Runtime açıklaması servis örneği durumuna bağlandı; güvenlik/restore/hash davranışı değişmedi.
+- Son `CA1309` paketi: **2 → 0** warning.
+  - Türkçe karşılaştırıcı: `6d3b00fc3d8db55b3b51138de041109dbff9111e`
+  - Türkçe regresyon testleri: `2f9f99a989ade01488cdd265b4ccdd3b638c6d00`
+  - `ControlCenterService`: `ff239b3a7f9a64b8de1b6315a750452f21c882a5`
+  - `HistoricalPdfImportService`: `601d409a56db4d7c73ec17936ee5a8b816bb763d`
+  - `tr-TR` `CompareInfo` + `CompareOptions.IgnoreCase` kullanılarak `I/İ/ı/i` davranışı korundu.
 
-### 17.09.2026 son başarılı yerel build
+### 17.09.2026 warning temizliği doğrulaması
+
+Kullanıcının yerel `DERLE_CALISTIR.bat` doğrulamasına göre:
 
 - SDK: `.NET 10.0.400`
-- Core: **1 warning**
-- WPF: **1 warning**
-- Toplam: **2 warning / 0 error**
+- Core: **0 warning**
+- WPF: **0 warning**
+- Toplam: **0 warning / 0 error**
 - Program `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
-- Tüm `CA1822` warning'leri yerel build ile doğrulanarak kapandı.
 
-## Kalan 2 warning
+**Aşama 4 warning temizliği yerel build açısından tamamlandı.**
 
-- Core `CA1309` — `ControlCenterService` kurum adı karşılaştırması.
-- WPF `CA1309` — `HistoricalPdfImportService` kurum adı karşılaştırması.
+Not: Türkçe regresyon testleri repoya eklendi ancak `DERLE_CALISTIR.bat` test yürütme sonucu değildir; test paketi ayrıca çalıştırılarak doğrulanmalıdır.
 
-## Kodlanan fakat yerel doğrulaması bekleyen son warning paketi
+## Şu an kodlanan ve yerel doğrulaması bekleyen paket
 
-İki `CA1309` warning'i Türkçe davranış korunarak merkezi hale getirildi:
+### Aşama 2 — Rapor/Arşiv DI genişletme 1
 
-- `6d3b00fc3d8db55b3b51138de041109dbff9111e` — `TurkishTextComparison` eklendi.
-  - Açık `tr-TR` `CompareInfo` kullanıyor.
-  - `CompareOptions.IgnoreCase` ile Türkçe büyük/küçük harf eşleştirmesi deterministik.
-- `2f9f99a989ade01488cdd265b4ccdd3b638c6d00` — Türkçe karşılaştırma regresyon testleri eklendi.
-  - `İSTANBUL ↔ istanbul` eşleşir.
-  - `ISPARTA ↔ ısparta` eşleşir.
-  - `ISPARTA ↔ isparta` eşleşmez.
-  - `İSTANBUL ↔ ıstanbul` eşleşmez.
-  - null davranışı sabitlendi.
-- `ff239b3a7f9a64b8de1b6315a750452f21c882a5` — `ControlCenterService` merkezi Türkçe karşılaştırıcıya geçirildi.
-- `601d409a56db4d7c73ec17936ee5a8b816bb763d` — `HistoricalPdfImportService` merkezi Türkçe karşılaştırıcıya geçirildi.
+- `MainWindow` doğrudan servis oluşturma sorumluluğundan arındırıldı.
+- Enjekte edilen servisler:
+  - `FinalReportDocumentService`
+  - `FinalReportPdfService`
+  - `DocumentArchiveStorageService`
+  - `HistoricalPdfImportService`
+- Composition root `App.Application_Startup` içinde açık biçimde kuruluyor.
+- `TaxCalculationService` tek örnek olarak hem `MainWindow` hem `HistoricalPdfImportService` tarafından paylaşılıyor.
+- PDF oluşturma, arşiv klasörü ve historical PDF import kullanıcı akışında işlevsel değişiklik amaçlanmadı.
 
-Warning suppress edilmedi ve `OrdinalIgnoreCase` ile Türkçe `I/İ/ı/i` davranışı kaybedilmedi.
-
-Beklenen sonraki yerel build sonucu: **0 warning / 0 error**.
-
-Not: Yeni regresyon testleri repoya eklendi; kullanıcının son paylaştığı `DERLE_CALISTIR.bat` çıktısı test yürütme sonucu değildir. Test çalıştırması ayrıca doğrulanmalıdır.
+Beklenen yerel sonuç: **0 warning / 0 error** ve uygulamanın normal başlaması.
 
 ## Sıradaki iş
 
 1. GitHub Desktop → **Fetch origin → Pull origin**.
 2. `hardening/1.1-data-safety` branch'inde `DERLE_CALISTIR.bat` çalıştır.
 3. Beklenen: **0 warning / 0 error** ve uygulamanın başlaması.
-4. Build temizse warning temizliği tamamlandı olarak işaretlenecek.
-5. Ardından test paketi ayrıca çalıştırılıp Türkçe regresyon testleri doğrulanacak.
-6. Sonrasında Aşama 2 kalan mimari işlere veya Aşama 3 mali izlenebilirlik çalışmalarına geçilebilir.
+4. Başarılıysa DI genişletme 1 doğrulanmış olarak kapatılacak.
+5. Ardından `ArchivePdfSynchronizationService` dahil kalan servis oluşturma sorumlulukları taranacak ve bir sonraki küçük DI paketi seçilecek.
+6. Türkçe regresyon testleri ayrıca çalıştırılacak.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
-Warning temizliği sonrasında:
+Aşama 2 mimari dilimleri ilerledikten sonra:
 
 - Vergi kural sürümü/yürürlük tarihi modeli.
 - Append-only audit trail.
@@ -160,4 +167,4 @@ BAT `--no-incremental` tam analiz yapar.
 - Restore/hash/manifest güvenliği zayıflatılmayacak.
 - Yerel build ve GitHub Actions CI statüleri ayrı tutulacak.
 - CI runner sorunu çözülmeden “CI doğrulandı” denmeyecek.
-- Her tamamlanan paketten sonra bu MD güncellenecek.
+- Her tamamlanan veya doğrulama bekleyen paketten sonra bu MD güncellenecek.
