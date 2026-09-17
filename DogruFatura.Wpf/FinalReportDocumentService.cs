@@ -1,5 +1,6 @@
 using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -159,7 +160,7 @@ public sealed class FinalReportDocumentService
     private static string[] RowValues(InvoiceRecord invoice, int sequenceNumber) =>
         new[]
         {
-            sequenceNumber.ToString(),
+            sequenceNumber.ToString(CultureInfo.CurrentCulture),
             invoice.InstitutionName,
             invoice.ServiceNumber,
             invoice.InvoiceNumber,
@@ -264,6 +265,6 @@ public sealed class FinalReportDocumentService
         canvas.Children.Add(border);
     }
 
-    private static Brush BrushFrom(string color) =>
-        new SolidColorBrush((Color)ColorConverter.ConvertFromString(color));
+    private static SolidColorBrush BrushFrom(string color) =>
+        new((Color)ColorConverter.ConvertFromString(color));
 }
