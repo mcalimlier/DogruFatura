@@ -41,7 +41,7 @@ public sealed class InvoiceDataStore
             var schema = DataFileSchemaService.Read(json, DataFileKinds.ActiveInvoices);
             var invoices = schema.Data.Deserialize<List<InvoiceRecord>>(_jsonOptions)
                            ?? new List<InvoiceRecord>();
-            return FinalizeLoadedInvoices(invoices, schema.RequiresUpgrade);
+            return FinalizeLoadedInvoices(invoices, schema.SourceSchemaVersion);
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
@@ -56,8 +56,9 @@ public sealed class InvoiceDataStore
         }
     }
 
-    private InvoiceLoadResult FinalizeLoadedInvoices(List<InvoiceRecord> invoices, bool requiresSchemaUpgrade)
+    private InvoiceLoadResult FinalizeLoadedInvoices(List<InvoiceRecord> invoices, int sourceSchemaVersion)
     {
+        var requiresSchemaUpgrade = sourceSchemaVersion != DataFileSchemaService.CurrentSchemaVersion;
         var migratedWaterInvoices = 0;
         var taxService = new TaxCalculationService();
         for (var index = 0; index < invoices.Count; index++)
@@ -82,16 +83,20 @@ public sealed class InvoiceDataStore
         {
             try
             {
+                string? schemaBackupPath = null;
+                if (requiresSchemaUpgrade)
+                    schemaBackupPath = DataFileSchemaService.CreatePreUpgradeBackup(DataFilePath, sourceSchemaVersion);
+
                 Save(invoices);
                 if (requiresSchemaUpgrade)
-                    warnings.Add($"Aktif fatura veri dosyası şema {DataFileSchemaService.CurrentSchemaVersion} biçimine güvenle yükseltildi.");
+                    warnings.Add($"Aktif fatura veri dosyası şema {DataFileSchemaService.CurrentSchemaVersion} biçimine güvenle yükseltildi. Önceki biçim korundu: {schemaBackupPath}");
                 if (migratedWaterInvoices > 0)
                     warnings.Add($"{migratedWaterInvoices} su faturası yeni damga vergisi kuralına göre güncellendi.");
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 if (requiresSchemaUpgrade)
-                    warnings.Add($"Aktif fatura veri dosyasının şema yükseltmesi bu oturumda uygulanamadı; mevcut dosya korunuyor: {ex.Message}");
+                    warnings.Add($"Aktif fatura veri dosyasının şema yükseltmesi uygulanamadı; mevcut dosya korunuyor: {ex.Message}");
                 if (migratedWaterInvoices > 0)
                     warnings.Add($"Su faturası geçişi bu oturumda uygulandı ancak kalıcı dosya yazılamadı: {ex.Message}");
             }
