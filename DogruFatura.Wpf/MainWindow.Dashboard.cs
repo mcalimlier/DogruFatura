@@ -85,7 +85,7 @@ public partial class MainWindow
         return Math.Max(8d, (double)(value / maximum) * availableWidth);
     }
 
-    private static Brush DashboardInvoiceTypeBrush(string invoiceType) => invoiceType switch
+    private static SolidColorBrush DashboardInvoiceTypeBrush(string invoiceType) => invoiceType switch
     {
         "Elektrik" => new SolidColorBrush(Color.FromRgb(255, 180, 31)),
         "Telefon" => new SolidColorBrush(Color.FromRgb(36, 104, 216)),
