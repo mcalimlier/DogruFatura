@@ -1,7 +1,9 @@
+using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -22,9 +24,11 @@ public sealed record SafetyRestoreResult(
 
 public sealed class ApplicationSafetyService
 {
-    private const string BackupFormat = "DogruFaturaBackup/1";
+    private const string LegacyBackupFormat = "DogruFaturaBackup/1";
+    private const string BackupFormat = "DogruFaturaBackup/2";
     private const int MaximumArchiveEntryCount = 10_000;
     private const long MaximumUncompressedBytes = 2L * 1024 * 1024 * 1024;
+    private const string ManifestEntryName = "DogruFatura_Yedegi.json";
 
     private static readonly string[] KnownDataFileNames =
     {
@@ -32,6 +36,12 @@ public sealed class ApplicationSafetyService
         "AktifFaturalar.json",
         "YetkiliProfili.json",
         "IslemArsivi.json"
+    };
+
+    private static readonly JsonSerializerOptions BackupJsonOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNameCaseInsensitive = true
     };
 
     private readonly Func<string> _informationalVersionProvider;
@@ -89,13 +99,9 @@ public sealed class ApplicationSafetyService
         }
         catch (Exception ex)
         {
-            return new SafetyCheckResult(
-                false,
+            return new SafetyCheckResult(false,
                 "Veri ve belge klasörlerine yazma erişimi doğrulanamadı: " + ex.Message,
-                null,
-                1,
-                0,
-                0);
+                null, 1, 0, 0);
         }
 
         try
@@ -129,39 +135,24 @@ public sealed class ApplicationSafetyService
         var checkedJson = 0;
         var checkedPdf = 0;
 
-        try
-        {
-            EnsureFoldersWritable();
-        }
-        catch (Exception ex)
-        {
-            problems.Add("Klasör erişimi: " + ex.Message);
-        }
+        try { EnsureFoldersWritable(); }
+        catch (Exception ex) { problems.Add("Klasör erişimi: " + ex.Message); }
 
-        var knownFiles = KnownDataFileNames
-            .Select(fileName => Path.Combine(DataFolder, fileName))
-            .ToArray();
+        var knownFiles = KnownDataFileNames.Select(fileName => Path.Combine(DataFolder, fileName)).ToArray();
         var existingKnownFiles = knownFiles.Where(File.Exists).ToArray();
 
         if (existingKnownFiles.Length > 0 && existingKnownFiles.Length != knownFiles.Length)
         {
-            var missing = knownFiles
-                .Where(path => !File.Exists(path))
-                .Select(Path.GetFileName);
+            var missing = knownFiles.Where(path => !File.Exists(path)).Select(Path.GetFileName);
             problems.Add("Eksik veri dosyaları: " + string.Join(", ", missing));
         }
 
         foreach (var file in existingKnownFiles)
         {
             checkedJson++;
-            try
-            {
-                DataDirectoryValidationService.ValidateFile(file);
-            }
+            try { DataDirectoryValidationService.ValidateFile(file); }
             catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
-            {
-                problems.Add($"{Path.GetFileName(file)} geçersiz ({ex.Message})");
-            }
+            { problems.Add($"{Path.GetFileName(file)} geçersiz ({ex.Message})"); }
         }
 
         foreach (var folder in new[] { ActivePdfFolder, ArchivedPdfFolder })
@@ -170,35 +161,24 @@ public sealed class ApplicationSafetyService
             foreach (var file in Directory.EnumerateFiles(folder, "*.pdf", SearchOption.TopDirectoryOnly))
             {
                 checkedPdf++;
-                try
-                {
-                    ValidatePdfHeader(file);
-                }
+                try { ValidatePdfHeader(file); }
                 catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
-                {
-                    problems.Add($"{Path.GetFileName(file)} geçerli PDF değil ({ex.Message})");
-                }
+                { problems.Add($"{Path.GetFileName(file)} geçerli PDF değil ({ex.Message})"); }
             }
         }
 
-        if (problems.Count == 0)
-        {
-            return new SafetyCheckResult(
-                true,
-                $"Veri bütünlüğü sağlıklı. {checkedJson} JSON dosyası ve {checkedPdf} PDF kontrol edildi.",
-                null,
-                0,
-                checkedJson,
-                checkedPdf);
-        }
+        try { ValidateClosedArchivePdfHashes(DataFolder, ArchivedPdfFolder); }
+        catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
+        { problems.Add("Arşiv PDF bütünlüğü: " + ex.Message); }
 
-        return new SafetyCheckResult(
-            false,
+        if (problems.Count == 0)
+            return new SafetyCheckResult(true,
+                $"Veri bütünlüğü sağlıklı. {checkedJson} JSON dosyası ve {checkedPdf} PDF kontrol edildi.",
+                null, 0, checkedJson, checkedPdf);
+
+        return new SafetyCheckResult(false,
             $"{problems.Count} güvenlik sorunu bulundu: {string.Join(" | ", problems.Take(3))}",
-            null,
-            problems.Count,
-            checkedJson,
-            checkedPdf);
+            null, problems.Count, checkedJson, checkedPdf);
     }
 
     public string CreateManualSafetyBackup(string reason = "Manuel")
@@ -207,11 +187,8 @@ public sealed class ApplicationSafetyService
         Directory.CreateDirectory(safetyFolder);
         var safeReason = SafeFileToken(reason);
         if (string.IsNullOrWhiteSpace(safeReason)) safeReason = "Manuel";
-
-        var path = BuildUniquePath(
-            safetyFolder,
-            $"DogruFatura_{safeReason}_{DateTime.Now:yyyyMMdd_HHmmss}",
-            ".zip");
+        var path = BuildUniquePath(safetyFolder,
+            $"DogruFatura_{safeReason}_{DateTime.Now:yyyyMMdd_HHmmss}", ".zip");
         CreateCompleteBackup(path);
         PruneZipBackups(safetyFolder, 25);
         return path;
@@ -229,43 +206,35 @@ public sealed class ApplicationSafetyService
         string? beforeRestore = null;
         try
         {
-            ValidateAndExtractBackup(zipPath, extractedRoot);
+            var cryptographicIntegrityVerified = ValidateAndExtractBackup(zipPath, extractedRoot);
             ValidateExtractedBackup(extractedRoot);
 
             var beforeRestoreFolder = Path.Combine(BackupFolder, "Geri_Yukleme_Oncesi");
             Directory.CreateDirectory(beforeRestoreFolder);
-            beforeRestore = BuildUniquePath(
-                beforeRestoreFolder,
-                $"DogruFatura_GeriYuklemeOncesi_{DateTime.Now:yyyyMMdd_HHmmss}",
-                ".zip");
+            beforeRestore = BuildUniquePath(beforeRestoreFolder,
+                $"DogruFatura_GeriYuklemeOncesi_{DateTime.Now:yyyyMMdd_HHmmss}", ".zip");
             CreateCompleteBackup(beforeRestore);
             PruneZipBackups(beforeRestoreFolder, 20);
 
             RestoreExtractedDirectories(extractedRoot);
-            return new SafetyRestoreResult(
-                true,
-                "Veriler ve kayıtlı PDF belgeleri yedekten başarıyla geri yüklendi.",
-                beforeRestore);
+            var message = "Veriler ve kayıtlı PDF belgeleri yedekten başarıyla geri yüklendi.";
+            if (!cryptographicIntegrityVerified)
+                message += " Yedek eski v1 biçimindeydi; SHA-256 manifesti bulunmadığından semantik ve PDF imza kontrolleriyle doğrulandı.";
+            return new SafetyRestoreResult(true, message, beforeRestore);
         }
         catch (Exception ex)
         {
             return new SafetyRestoreResult(false, "Yedek geri yüklenemedi: " + ex.Message, beforeRestore);
         }
-        finally
-        {
-            TryDeleteDirectory(tempRoot);
-        }
+        finally { TryDeleteDirectory(tempRoot); }
     }
 
     private string? EnsureVersionBackup()
     {
         Directory.CreateDirectory(DataFolder);
         var markerPath = Path.Combine(DataFolder, "uygulama_surumu.txt");
-        var previousVersion = File.Exists(markerPath)
-            ? File.ReadAllText(markerPath, Encoding.UTF8).Trim()
-            : string.Empty;
+        var previousVersion = File.Exists(markerPath) ? File.ReadAllText(markerPath, Encoding.UTF8).Trim() : string.Empty;
         var currentVersion = InformationalVersion;
-
         var hasExistingData = Directory.EnumerateFiles(DataFolder, "*", SearchOption.AllDirectories)
             .Any(path => !path.Equals(markerPath, StringComparison.OrdinalIgnoreCase));
         var hasExistingPdf = Directory.EnumerateFiles(ActivePdfFolder, "*.pdf", SearchOption.TopDirectoryOnly).Any()
@@ -278,10 +247,8 @@ public sealed class ApplicationSafetyService
             var updateFolder = Path.Combine(BackupFolder, "Güncelleme_Öncesi");
             Directory.CreateDirectory(updateFolder);
             var from = string.IsNullOrWhiteSpace(previousVersion) ? "EskiSurum" : SafeFileToken(previousVersion);
-            backup = BuildUniquePath(
-                updateFolder,
-                $"DogruFatura_{from}_to_{SafeFileToken(currentVersion)}_{DateTime.Now:yyyyMMdd_HHmmss}",
-                ".zip");
+            backup = BuildUniquePath(updateFolder,
+                $"DogruFatura_{from}_to_{SafeFileToken(currentVersion)}_{DateTime.Now:yyyyMMdd_HHmmss}", ".zip");
             CreateCompleteBackup(backup);
             PruneZipBackups(updateFolder, 15);
         }
@@ -292,12 +259,9 @@ public sealed class ApplicationSafetyService
 
     private string? MigrateLegacyStorageIfNeeded()
     {
-        if (string.Equals(
-                Path.GetFullPath(_legacyRootFolder).TrimEnd(Path.DirectorySeparatorChar),
-                Path.GetFullPath(RootFolder).TrimEnd(Path.DirectorySeparatorChar),
-                StringComparison.OrdinalIgnoreCase)
-            || !Directory.Exists(_legacyRootFolder))
-            return null;
+        if (string.Equals(Path.GetFullPath(_legacyRootFolder).TrimEnd(Path.DirectorySeparatorChar),
+                Path.GetFullPath(RootFolder).TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase)
+            || !Directory.Exists(_legacyRootFolder)) return null;
 
         var movedFiles = 0;
         var conflictFiles = 0;
@@ -306,61 +270,40 @@ public sealed class ApplicationSafetyService
             var source = Path.Combine(_legacyRootFolder, folderName);
             if (!Directory.Exists(source)) continue;
             var destination = Path.Combine(RootFolder, folderName);
-
             MoveDirectoryContentsWithoutOverwrite(source, destination, ref movedFiles, ref conflictFiles);
             try
             {
                 if (Directory.Exists(source) && !Directory.EnumerateFileSystemEntries(source).Any())
                     Directory.Delete(source, false);
             }
-            catch
-            {
-                // Kaynak klasör silinemezse içerik güvenli hedefte kullanılmaya devam eder.
-            }
+            catch { }
         }
 
         try
         {
-            if (Directory.Exists(_legacyRootFolder)
-                && !Directory.EnumerateFileSystemEntries(_legacyRootFolder).Any())
+            if (Directory.Exists(_legacyRootFolder) && !Directory.EnumerateFileSystemEntries(_legacyRootFolder).Any())
                 Directory.Delete(_legacyRootFolder, false);
         }
-        catch
-        {
-            // Eski kök boş olsa bile silinememesi veri kullanımını etkilemez.
-        }
+        catch { }
 
         if (movedFiles == 0 && conflictFiles == 0) return null;
         var message = $"Belgeler\\DoğruFatura içindeki {movedFiles} kullanıcı dosyası Masaüstü\\DoğruFatura altına taşındı.";
-        if (conflictFiles > 0)
-            message += $" {conflictFiles} aynı adlı dosya güvenlik amacıyla eski konumunda bırakıldı.";
+        if (conflictFiles > 0) message += $" {conflictFiles} aynı adlı dosya güvenlik amacıyla eski konumunda bırakıldı.";
         return message;
     }
 
-    private static void MoveDirectoryContentsWithoutOverwrite(
-        string source,
-        string destination,
-        ref int movedFiles,
-        ref int conflictFiles)
+    private static void MoveDirectoryContentsWithoutOverwrite(string source, string destination,
+        ref int movedFiles, ref int conflictFiles)
     {
         Directory.CreateDirectory(destination);
         foreach (var directory in Directory.EnumerateDirectories(source, "*", SearchOption.AllDirectories))
-        {
-            var relative = Path.GetRelativePath(source, directory);
-            Directory.CreateDirectory(Path.Combine(destination, relative));
-        }
+            Directory.CreateDirectory(Path.Combine(destination, Path.GetRelativePath(source, directory)));
 
         foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories).ToArray())
         {
-            var relative = Path.GetRelativePath(source, file);
-            var target = Path.Combine(destination, relative);
+            var target = Path.Combine(destination, Path.GetRelativePath(source, file));
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            if (File.Exists(target))
-            {
-                conflictFiles++;
-                continue;
-            }
-
+            if (File.Exists(target)) { conflictFiles++; continue; }
             File.Copy(file, target, false);
             File.Delete(file);
             movedFiles++;
@@ -369,41 +312,20 @@ public sealed class ApplicationSafetyService
         foreach (var directory in Directory.EnumerateDirectories(source, "*", SearchOption.AllDirectories)
                      .OrderByDescending(path => path.Length))
         {
-            try
-            {
-                if (!Directory.EnumerateFileSystemEntries(directory).Any())
-                    Directory.Delete(directory, false);
-            }
-            catch
-            {
-                // Çakışan veya kilitli içerikler eski klasörde korunur.
-            }
+            try { if (!Directory.EnumerateFileSystemEntries(directory).Any()) Directory.Delete(directory, false); }
+            catch { }
         }
     }
 
     private void EnsureFoldersWritable()
     {
-        foreach (var folder in new[]
-                 {
-                     RootFolder,
-                     DataFolder,
-                     BackupFolder,
-                     LogFolder,
-                     DocumentRootFolder,
-                     ActivePdfFolder,
-                     ArchivedPdfFolder
-                 })
+        foreach (var folder in new[] { RootFolder, DataFolder, BackupFolder, LogFolder,
+                     DocumentRootFolder, ActivePdfFolder, ArchivedPdfFolder })
         {
             Directory.CreateDirectory(folder);
             var probe = Path.Combine(folder, $".dogrufatura_write_test_{Guid.NewGuid():N}.tmp");
-            try
-            {
-                File.WriteAllText(probe, "ok", new UTF8Encoding(false));
-            }
-            finally
-            {
-                try { if (File.Exists(probe)) File.Delete(probe); } catch { }
-            }
+            try { File.WriteAllText(probe, "ok", new UTF8Encoding(false)); }
+            finally { try { if (File.Exists(probe)) File.Delete(probe); } catch { } }
         }
     }
 
@@ -413,28 +335,32 @@ public sealed class ApplicationSafetyService
         var destinationFolder = Path.GetDirectoryName(destinationZip)
                                 ?? throw new InvalidOperationException("Yedek klasörü belirlenemedi.");
         Directory.CreateDirectory(destinationFolder);
-        if (File.Exists(destinationZip))
-            throw new IOException($"{Path.GetFileName(destinationZip)} zaten var.");
+        if (File.Exists(destinationZip)) throw new IOException($"{Path.GetFileName(destinationZip)} zaten var.");
+
+        var files = CollectBackupFiles();
+        var manifestFiles = files.Select(file => new BackupFileManifest(
+                file.RelativePath,
+                new FileInfo(file.SourcePath).Length,
+                FileIntegrityService.ComputeSha256(file.SourcePath)))
+            .ToArray();
+        var manifest = new BackupManifest(
+            BackupFormat,
+            DateTimeOffset.Now,
+            InformationalVersion,
+            Environment.MachineName,
+            manifestFiles);
 
         var temporaryPath = destinationZip + ".tmp_" + Guid.NewGuid().ToString("N");
         try
         {
             using (var archive = ZipFile.Open(temporaryPath, ZipArchiveMode.Create, Encoding.UTF8))
             {
-                var manifestEntry = archive.CreateEntry("DogruFatura_Yedegi.json", CompressionLevel.Optimal);
-                using (var writer = new StreamWriter(manifestEntry.Open(), new UTF8Encoding(false)))
-                {
-                    var manifest = new BackupManifest(
-                        BackupFormat,
-                        DateTimeOffset.Now,
-                        InformationalVersion,
-                        Environment.MachineName);
-                    writer.Write(JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
-                }
+                foreach (var file in files)
+                    archive.CreateEntryFromFile(file.SourcePath, file.RelativePath, CompressionLevel.Optimal);
 
-                AddDirectoryToArchive(archive, DataFolder, "Veri", _ => true);
-                AddDirectoryToArchive(archive, ActivePdfFolder, "Belgeler/Aktif Çıktılar", IsPdfFile);
-                AddDirectoryToArchive(archive, ArchivedPdfFolder, "Belgeler/Arşivlenenler", IsPdfFile);
+                var manifestEntry = archive.CreateEntry(ManifestEntryName, CompressionLevel.Optimal);
+                using var writer = new StreamWriter(manifestEntry.Open(), new UTF8Encoding(false));
+                writer.Write(JsonSerializer.Serialize(manifest, BackupJsonOptions));
             }
             File.Move(temporaryPath, destinationZip, false);
         }
@@ -445,94 +371,160 @@ public sealed class ApplicationSafetyService
         }
     }
 
-    private static void AddDirectoryToArchive(
-        ZipArchive archive,
-        string sourceFolder,
-        string entryRoot,
-        Func<string, bool> includeFile)
+    private IReadOnlyList<BackupSourceFile> CollectBackupFiles()
     {
-        var normalizedRoot = entryRoot.Trim('/');
-        archive.CreateEntry(normalizedRoot + "/");
-        if (!Directory.Exists(sourceFolder)) return;
+        var files = new List<BackupSourceFile>();
+        AddBackupFiles(files, DataFolder, "Veri", _ => true);
+        AddBackupFiles(files, ActivePdfFolder, "Belgeler/Aktif Çıktılar", IsPdfFile);
+        AddBackupFiles(files, ArchivedPdfFolder, "Belgeler/Arşivlenenler", IsPdfFile);
+        return files.OrderBy(file => file.RelativePath, StringComparer.Ordinal).ToArray();
+    }
 
+    private static void AddBackupFiles(List<BackupSourceFile> target, string sourceFolder,
+        string entryRoot, Func<string, bool> includeFile)
+    {
+        if (!Directory.Exists(sourceFolder)) return;
         foreach (var file in Directory.EnumerateFiles(sourceFolder, "*", SearchOption.AllDirectories))
         {
             if (!includeFile(file)) continue;
             var relative = Path.GetRelativePath(sourceFolder, file).Replace('\\', '/');
-            archive.CreateEntryFromFile(file, normalizedRoot + "/" + relative, CompressionLevel.Optimal);
+            target.Add(new BackupSourceFile(file, entryRoot.Trim('/') + "/" + relative));
         }
     }
 
     private static bool IsPdfFile(string path) =>
         string.Equals(Path.GetExtension(path), ".pdf", StringComparison.OrdinalIgnoreCase);
 
-    private static void ValidateAndExtractBackup(string zipPath, string destination)
+    private static bool ValidateAndExtractBackup(string zipPath, string destination)
     {
         using var archive = ZipFile.OpenRead(zipPath);
-        if (archive.Entries.Count == 0)
-            throw new InvalidDataException("ZIP yedeği boş.");
+        if (archive.Entries.Count == 0) throw new InvalidDataException("ZIP yedeği boş.");
         if (archive.Entries.Count > MaximumArchiveEntryCount)
             throw new InvalidDataException("ZIP yedeğinde güvenli sınırdan fazla dosya var.");
-
-        var totalLength = archive.Entries.Sum(entry => entry.Length);
-        if (totalLength > MaximumUncompressedBytes)
+        if (archive.Entries.Sum(entry => entry.Length) > MaximumUncompressedBytes)
             throw new InvalidDataException("ZIP yedeği açıldığında güvenli boyut sınırını aşıyor.");
 
-        var manifestEntry = archive.GetEntry("DogruFatura_Yedegi.json")
+        var manifestEntry = archive.GetEntry(ManifestEntryName)
                             ?? throw new InvalidDataException("Bu ZIP, DoğruFatura güvenlik yedeği değil.");
+        BackupManifest manifest;
         using (var stream = manifestEntry.Open())
+            manifest = JsonSerializer.Deserialize<BackupManifest>(stream, BackupJsonOptions)
+                       ?? throw new InvalidDataException("Yedek kimlik bilgisi okunamadı.");
+
+        var cryptographicIntegrityVerified = false;
+        if (string.Equals(manifest.Format, BackupFormat, StringComparison.Ordinal))
         {
-            var manifest = JsonSerializer.Deserialize<BackupManifest>(stream)
-                           ?? throw new InvalidDataException("Yedek kimlik bilgisi okunamadı.");
-            if (!string.Equals(manifest.Format, BackupFormat, StringComparison.Ordinal))
-                throw new InvalidDataException("Yedek biçimi bu DoğruFatura sürümüyle uyumlu değil.");
+            ValidateManifestEntries(archive, manifest);
+            cryptographicIntegrityVerified = true;
+        }
+        else if (!string.Equals(manifest.Format, LegacyBackupFormat, StringComparison.Ordinal))
+        {
+            throw new InvalidDataException("Yedek biçimi bu DoğruFatura sürümüyle uyumlu değil.");
         }
 
-        var basePath = Path.GetFullPath(destination).TrimEnd(Path.DirectorySeparatorChar)
-                       + Path.DirectorySeparatorChar;
+        ValidateArchiveEntryPaths(archive, destination);
+        archive.ExtractToDirectory(destination, false);
+        return cryptographicIntegrityVerified;
+    }
+
+    private static void ValidateManifestEntries(ZipArchive archive, BackupManifest manifest)
+    {
+        if (manifest.Files is null)
+            throw new InvalidDataException("Yedek v2 manifestinde dosya bütünlük listesi bulunamadı.");
+
+        var expected = new Dictionary<string, BackupFileManifest>(StringComparer.Ordinal);
+        foreach (var item in manifest.Files)
+        {
+            if (string.IsNullOrWhiteSpace(item.RelativePath)
+                || item.ByteLength < 0
+                || !FileIntegrityService.IsValidSha256(item.Sha256)
+                || !expected.TryAdd(item.RelativePath.Replace('\\', '/'), item))
+                throw new InvalidDataException("Yedek manifestinde geçersiz veya mükerrer dosya kaydı var.");
+        }
+
+        var actualEntries = archive.Entries
+            .Where(entry => !entry.FullName.EndsWith('/')
+                            && !string.Equals(entry.FullName, ManifestEntryName, StringComparison.Ordinal))
+            .ToArray();
+        if (actualEntries.Select(entry => entry.FullName).Distinct(StringComparer.Ordinal).Count() != actualEntries.Length)
+            throw new InvalidDataException("Yedek ZIP içinde mükerrer dosya yolu bulundu.");
+        if (actualEntries.Length != expected.Count)
+            throw new InvalidDataException("Yedek içeriği manifestteki dosya listesiyle eşleşmiyor.");
+
+        foreach (var entry in actualEntries)
+        {
+            if (!expected.TryGetValue(entry.FullName, out var expectedFile))
+                throw new InvalidDataException($"Manifestte kayıtlı olmayan dosya bulundu: {entry.FullName}");
+            if (entry.Length != expectedFile.ByteLength)
+                throw new InvalidDataException($"{entry.FullName} dosya boyutu manifestle eşleşmiyor.");
+            using var stream = entry.Open();
+            var hash = Convert.ToHexString(SHA256.HashData(stream));
+            if (!string.Equals(hash, expectedFile.Sha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException($"{entry.FullName} SHA-256 özeti manifestle eşleşmiyor.");
+        }
+    }
+
+    private static void ValidateArchiveEntryPaths(ZipArchive archive, string destination)
+    {
+        var basePath = Path.GetFullPath(destination).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         foreach (var entry in archive.Entries)
         {
             var normalizedName = entry.FullName.Replace('\\', '/');
-            if (normalizedName.StartsWith('/')
-                || normalizedName.Contains(':')
-                || normalizedName.Split('/', StringSplitOptions.RemoveEmptyEntries)
-                    .Any(part => part is "." or ".."))
+            if (normalizedName.StartsWith('/') || normalizedName.Contains(':')
+                || normalizedName.Split('/', StringSplitOptions.RemoveEmptyEntries).Any(part => part is "." or ".."))
                 throw new InvalidDataException("Yedek içinde geçersiz dosya yolu bulundu.");
 
-            var allowed = normalizedName.Equals("DogruFatura_Yedegi.json", StringComparison.Ordinal)
+            var allowed = normalizedName.Equals(ManifestEntryName, StringComparison.Ordinal)
                           || normalizedName.StartsWith("Veri/", StringComparison.Ordinal)
                           || normalizedName.StartsWith("Belgeler/Aktif Çıktılar/", StringComparison.Ordinal)
                           || normalizedName.StartsWith("Belgeler/Arşivlenenler/", StringComparison.Ordinal);
-            if (!allowed)
-                throw new InvalidDataException("Yedek içinde tanınmayan içerik bulundu.");
+            if (!allowed) throw new InvalidDataException("Yedek içinde tanınmayan içerik bulundu.");
 
             var targetPath = Path.GetFullPath(Path.Combine(destination, normalizedName));
             if (!targetPath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("Yedek içinde güvenli olmayan dosya yolu bulundu.");
         }
-
-        archive.ExtractToDirectory(destination, false);
     }
 
     private static void ValidateExtractedBackup(string extractedRoot)
     {
         var dataRoot = Path.Combine(extractedRoot, "Veri");
-        if (!Directory.Exists(dataRoot))
-            throw new InvalidDataException("Yedekte Veri klasörü bulunamadı.");
-
-        try
-        {
-            DataDirectoryValidationService.ValidateCompleteDirectory(dataRoot);
-        }
+        if (!Directory.Exists(dataRoot)) throw new InvalidDataException("Yedekte Veri klasörü bulunamadı.");
+        try { DataDirectoryValidationService.ValidateCompleteDirectory(dataRoot); }
         catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
-        {
-            throw new InvalidDataException("Yedek veri kümesi doğrulanamadı: " + ex.Message, ex);
-        }
+        { throw new InvalidDataException("Yedek veri kümesi doğrulanamadı: " + ex.Message, ex); }
 
         var documentRoot = Path.Combine(extractedRoot, "Belgeler");
-        if (!Directory.Exists(documentRoot)) return;
-        foreach (var file in Directory.EnumerateFiles(documentRoot, "*.pdf", SearchOption.AllDirectories))
-            ValidatePdfHeader(file);
+        if (Directory.Exists(documentRoot))
+            foreach (var file in Directory.EnumerateFiles(documentRoot, "*.pdf", SearchOption.AllDirectories))
+                ValidatePdfHeader(file);
+
+        ValidateClosedArchivePdfHashes(dataRoot,
+            Path.Combine(extractedRoot, "Belgeler", "Arşivlenenler"));
+    }
+
+    private static void ValidateClosedArchivePdfHashes(string dataRoot, string archivedPdfRoot)
+    {
+        var archiveDataPath = Path.Combine(dataRoot, "IslemArsivi.json");
+        if (!File.Exists(archiveDataPath)) return;
+        var json = File.ReadAllText(archiveDataPath, Encoding.UTF8);
+        var read = DataFileSchemaService.Read(json, DataFileKinds.InvoiceArchive);
+        var archives = read.Data.Deserialize<List<ArchivedInvoiceList>>(BackupJsonOptions)
+                       ?? throw new InvalidDataException("İşlem arşivi PDF bütünlük kontrolü için okunamadı.");
+
+        foreach (var rawArchive in archives)
+        {
+            var archive = rawArchive?.Normalize();
+            if (archive is null || !archive.IsClosed || string.IsNullOrWhiteSpace(archive.PdfSha256)) continue;
+            var fileName = !string.IsNullOrWhiteSpace(archive.PdfFileName)
+                ? archive.PdfFileName
+                : archive.HysPaymentOrderDocumentNumber + ".pdf";
+            var pdfPath = Path.Combine(archivedPdfRoot, fileName);
+            if (!File.Exists(pdfPath))
+                throw new InvalidDataException($"{archive.ArchiveNumber} için hash kayıtlı arşiv PDF'si bulunamadı: {fileName}");
+            if (!FileIntegrityService.MatchesSha256(pdfPath, archive.PdfSha256))
+                throw new InvalidDataException($"{archive.ArchiveNumber} arşiv PDF'sinin SHA-256 özeti kayıtla eşleşmiyor.");
+        }
     }
 
     private void RestoreExtractedDirectories(string extractedRoot)
@@ -548,24 +540,17 @@ public sealed class ApplicationSafetyService
         CopyDirectory(Path.Combine(extractedRoot, "Veri"), stagedData);
         Directory.CreateDirectory(stagedActive);
         Directory.CreateDirectory(stagedArchived);
-        CopyDirectoryIfExists(
-            Path.Combine(extractedRoot, "Belgeler", "Aktif Çıktılar"),
-            stagedActive);
-        CopyDirectoryIfExists(
-            Path.Combine(extractedRoot, "Belgeler", "Arşivlenenler"),
-            stagedArchived);
+        CopyDirectoryIfExists(Path.Combine(extractedRoot, "Belgeler", "Aktif Çıktılar"), stagedActive);
+        CopyDirectoryIfExists(Path.Combine(extractedRoot, "Belgeler", "Arşivlenenler"), stagedArchived);
 
         var dataSwapped = false;
         var activeSwapped = false;
         var archivedSwapped = false;
         try
         {
-            SwapDirectory(stagedData, DataFolder, oldData);
-            dataSwapped = true;
-            SwapDirectory(stagedActive, ActivePdfFolder, oldActive);
-            activeSwapped = true;
-            SwapDirectory(stagedArchived, ArchivedPdfFolder, oldArchived);
-            archivedSwapped = true;
+            SwapDirectory(stagedData, DataFolder, oldData); dataSwapped = true;
+            SwapDirectory(stagedActive, ActivePdfFolder, oldActive); activeSwapped = true;
+            SwapDirectory(stagedArchived, ArchivedPdfFolder, oldArchived); archivedSwapped = true;
         }
         catch
         {
@@ -588,20 +573,13 @@ public sealed class ApplicationSafetyService
 
     private static void SwapDirectory(string staging, string target, string old)
     {
-        if (!Directory.Exists(staging))
-            throw new DirectoryNotFoundException("Geri yükleme hazırlık klasörü bulunamadı.");
-        if (Directory.Exists(old))
-            throw new IOException("Geri yükleme güvenlik klasörü zaten var.");
-
+        if (!Directory.Exists(staging)) throw new DirectoryNotFoundException("Geri yükleme hazırlık klasörü bulunamadı.");
+        if (Directory.Exists(old)) throw new IOException("Geri yükleme güvenlik klasörü zaten var.");
         if (Directory.Exists(target)) Directory.Move(target, old);
-        try
-        {
-            Directory.Move(staging, target);
-        }
+        try { Directory.Move(staging, target); }
         catch
         {
-            if (!Directory.Exists(target) && Directory.Exists(old))
-                Directory.Move(old, target);
+            if (!Directory.Exists(target) && Directory.Exists(old)) Directory.Move(old, target);
             throw;
         }
     }
@@ -613,18 +591,13 @@ public sealed class ApplicationSafetyService
             TryDeleteDirectory(target);
             if (Directory.Exists(old)) Directory.Move(old, target);
         }
-        catch
-        {
-            // Geri yükleme öncesi ZIP yedeği ayrıca korunduğu için ikincil hata bastırılır.
-        }
+        catch { }
     }
 
     private static void CopyDirectoryIfExists(string source, string destination)
     {
-        if (Directory.Exists(source))
-            CopyDirectory(source, destination);
-        else
-            Directory.CreateDirectory(destination);
+        if (Directory.Exists(source)) CopyDirectory(source, destination);
+        else Directory.CreateDirectory(destination);
     }
 
     private static void CopyDirectory(string source, string destination)
@@ -640,29 +613,23 @@ public sealed class ApplicationSafetyService
     {
         using var stream = File.OpenRead(path);
         Span<byte> header = stackalloc byte[5];
-        if (stream.Read(header) != header.Length
-            || !header.SequenceEqual("%PDF-"u8))
+        if (stream.Read(header) != header.Length || !header.SequenceEqual("%PDF-"u8))
             throw new InvalidDataException("PDF imzası bulunamadı.");
     }
 
     private static void PruneZipBackups(string folder, int keep)
     {
         if (!Directory.Exists(folder)) return;
-        foreach (var file in new DirectoryInfo(folder)
-                     .GetFiles("*.zip")
-                     .OrderByDescending(file => file.LastWriteTimeUtc)
-                     .Skip(keep))
-        {
+        foreach (var file in new DirectoryInfo(folder).GetFiles("*.zip")
+                     .OrderByDescending(file => file.LastWriteTimeUtc).Skip(keep))
             try { file.Delete(); } catch { }
-        }
     }
 
     private static string BuildUniquePath(string folder, string baseName, string extension)
     {
         var candidate = Path.Combine(folder, baseName + extension);
         var suffix = 2;
-        while (File.Exists(candidate))
-            candidate = Path.Combine(folder, $"{baseName}_{suffix++}{extension}");
+        while (File.Exists(candidate)) candidate = Path.Combine(folder, $"{baseName}_{suffix++}{extension}");
         return candidate;
     }
 
@@ -687,9 +654,12 @@ public sealed class ApplicationSafetyService
                ?? "1.0.0";
     }
 
+    private sealed record BackupSourceFile(string SourcePath, string RelativePath);
+    private sealed record BackupFileManifest(string RelativePath, long ByteLength, string Sha256);
     private sealed record BackupManifest(
         string Format,
         DateTimeOffset CreatedAt,
         string ApplicationVersion,
-        string MachineName);
+        string MachineName,
+        IReadOnlyList<BackupFileManifest>? Files = null);
 }
