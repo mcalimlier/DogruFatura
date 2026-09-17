@@ -47,67 +47,74 @@ Kalan ana işler:
 - WPF: 41 warning
 - Toplam: **57 warning / 0 error**
 
-### Paket 1 — CA1512
+### Tamamlanan warning paketleri
 
-- Commit'ler: `4b8979930b29fe08e2d76f8c440f407d2520cb02`, `1709dea16c4824eff1233bf5aaf44e3f9d2fe04a`
-- Yerel sonuç: **57 → 53 warning / 0 error**.
+- `CA1512`: **57 → 53** warning.
+  - `4b8979930b29fe08e2d76f8c440f407d2520cb02`
+  - `1709dea16c4824eff1233bf5aaf44e3f9d2fe04a`
+- Kontrollü tip/kültür paketi: **53 → 12** warning.
+  - `a4e60d5aa30151184e0f38dd5bd58ccb6768f7fa` → `a6461692baa761c3a9d901f537a8ca653515f77a`
+- `CA1861`: **12 → 10** warning.
+  - `2f3216a2b1f42c663f3e8e9a8ddd49df8cd14688`
+  - `4d7eb4a097867c019bed7aeca0d714118d683226`
+- İlk `CA1859`: **10 → 9** warning.
+  - `7410e73bee7a35ea597f0fca823cb1964fe5ff2d`
+- Son `CA1859`: **9 → 8** warning.
+  - `bc6b93c0c11d8d09a75ceb9e756ebdc61c5c3e64`
 
-### Paket 2 — kontrollü warning temizliği
+### 17.09.2026 son doğrulanan yerel build
 
-- Kod aralığı: `a4e60d5aa30151184e0f38dd5bd58ccb6768f7fa` → `a6461692baa761c3a9d901f537a8ca653515f77a`
-- Yerel sonuç: **53 → 12 warning / 0 error**.
+- SDK: `.NET 10.0.400`
+- Core: **2 warning**
+- WPF: **6 warning**
+- Toplam: **8 warning / 0 error**
+- Program `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
+- `CA1859` warning grubu tamamen temizlendi.
 
-### Paket 3 — CA1861
-
-- Commit'ler: `2f3216a2b1f42c663f3e8e9a8ddd49df8cd14688`, `4d7eb4a097867c019bed7aeca0d714118d683226`
-- Yerel sonuç: **12 → 10 warning / 0 error**.
-
-### Paket 4A — ilk CA1859
-
-- Commit: `7410e73bee7a35ea597f0fca823cb1964fe5ff2d`
-- `HistoricalPdfImportService.BuildLines` dönüş tipi `PdfLineData[]` yapıldı.
-- 17.09.2026 yerel tam analiz sonucu:
-  - Core: **2 warning**
-  - WPF: **7 warning**
-  - Toplam: **9 warning / 0 error**
-  - Program `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
-
-## Kalan 9 warning
+## Kalan 8 warning
 
 ### Core — 2
 
 - `CA1822` — `TaxCalculationService.Calculate`
 - `CA1309` — `ControlCenterService` dize karşılaştırması
 
-### WPF — 7
+### WPF — 6
 
 - `CA1822` — `DiagnosticPackageService.Create`
 - `CA1822` — `FinalReportDocumentService.Build`
 - `CA1822` — `FinalReportPdfService.Save`
 - `CA1822` — `HistoricalPdfImportService.Read`
 - `CA1822` — `ApplicationSafetyService.RuntimeDescription`
-- `CA1859` — `ApplicationSafetyService.CollectBackupFiles`
 - `CA1309` — `HistoricalPdfImportService` kurum adı karşılaştırması
 
 ## Kodlanan fakat yerel doğrulaması bekleyen parça
 
-Son `CA1859` tek başına ele alındı:
+İlk `CA1822` paketi yalnız `DiagnosticPackageService.Create` için hazırlandı:
 
-- Commit: `bc6b93c0c11d8d09a75ceb9e756ebdc61c5c3e64`
-- Dosya: `ApplicationSafetyService.cs`
-- `CollectBackupFiles` zaten dizi döndürdüğü için private dönüş tipi `IReadOnlyList<BackupSourceFile>` yerine `BackupSourceFile[]` yapıldı.
-- Yedek içeriği, sırası, manifest ve restore davranışı değişmedi.
+- `13eb6f0feddae591ea7d0532fd11977af46159a1`
+  - `DiagnosticPackageService.Create` statik metoda dönüştürüldü.
+- `798126f7ede47ed16cf03a5081a8fdceedc1d25b`
+  - Mevcut tanılama paketi testi statik çağrı biçimine geçirildi.
 
-Beklenen sonraki sonuç: **8 warning / 0 error**.
+Bu servis kendi örnek durumunu kullanmıyordu; dosya oluşturma, içerik temizleme ve güvenlik kontrolü davranışı değişmedi.
+
+Beklenen sonraki yerel sonuç: **7 warning / 0 error**.
+
+## CA1822 yaklaşımı
+
+`CA1822` uyarıları topluca static yapılmayacak.
+
+- Gerçekten durumsuz yardımcı davranışlar static yapılabilir.
+- DI veya servis sınırı olarak bilinçli biçimde örnek kullanılan sınıflar yalnız warning düşürmek için static yapılmayacak.
+- Özellikle `TaxCalculationService` mevcut DI mimarisinin parçasıdır; bu warning ayrı mimari değerlendirmeyle ele alınacak.
 
 ## Sıradaki iş
 
 1. GitHub Desktop → **Fetch origin → Pull origin**.
 2. `hardening/1.1-data-safety` branch'inde `DERLE_CALISTIR.bat` çalıştır.
-3. Beklenen: **8 warning / 0 error**.
-4. Doğrulanırsa kalan warning'ler yalnız **6 adet CA1822 + 2 adet CA1309** olacak.
-5. `CA1822` grubu kontrollü küçük paketlerle ele alınacak.
-6. İki `CA1309` en sona bırakılacak; Türkçe kültür/string davranışı test edilmeden değiştirilmemeli.
+3. Beklenen: **7 warning / 0 error**.
+4. Doğrulanırsa sıradaki en izole `CA1822` tek başına ele alınacak.
+5. İki `CA1309` en sona bırakılacak; Türkçe kültür/string davranışı test edilmeden değiştirilmeyecek.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
