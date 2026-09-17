@@ -26,11 +26,13 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
   - [x] Sağ üst küçült / büyüt-geri yükle / kapat simgeleri aynı optik ölçüye getirildi
   - [x] Karşılama ekranı yaklaşık 5,5 saniye görünür kalacak şekilde ayarlandı
   - [x] Karşılama ilerleme çubuğu ana pencere yükünden bağımsız akıcı hale getirildi
-- [ ] Yerel build tekrar doğrulaması
-  - [x] İlk `DERLE_CALISTIR.bat` denemesi gerçek derleyici çıktısı verdi
-  - [x] `SingleInstanceGuard.cs` içindeki `IOException` derleme hatası düzeltildi
-  - [x] `StartupSplashHost.cs` içindeki `CS4014` async uyarısı temizleyecek şekilde düzenlendi
-  - [ ] Kullanıcı son commitleri çekip `DERLE_CALISTIR.bat` dosyasını yeniden çalıştıracak
+- [x] Yerel build doğrulaması
+  - [x] İlk build'deki `SingleInstanceGuard.cs` / `IOException` derleme hatası düzeltildi
+  - [x] `StartupSplashHost.cs` içindeki `CS4014` async uyarısı temizlendi
+  - [x] `DogruFatura.Core` yerel Windows/.NET 8 ortamında başarıyla derlendi
+  - [x] `DogruFatura.Wpf` yerel Windows/.NET 8 ortamında başarıyla derlendi
+  - [x] `DERLE_CALISTIR.bat` programı başlatma adımına ulaştı
+  - [ ] Görsel/işlevsel manuel smoke kontrolü: splash, sağ üst simgeler, ikinci örnek engeli
 - [ ] Aşama 2 — Mimari Temizlik
 - [ ] Aşama 3 — Mali Denetim ve İzlenebilirlik
 - [ ] Aşama 4 — Kalite / CI
@@ -105,6 +107,7 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 - [x] `SingleInstanceGuardTests.cs` ile edinim, zaten açık örnek ve mutex altyapı hatası testleri eklendi.
 - [x] Fail-open yerine fail-closed güvenlik ilkesi uygulanıyor.
 - [x] Yerel ilk build'de görülen `IOException` / `CS0103` hatası `using System.IO;` eklenerek düzeltildi.
+- [x] Düzeltme sonrası WPF projesi yerel Windows/.NET 8 ortamında başarıyla derlendi.
 - [ ] GitHub Actions doğrulaması — Actions job'ları gerçek build başlamadan `steps=null` ile failure oluyor.
 
 ## Ek kullanıcı arayüzü düzeltmeleri — tamamlandı
@@ -117,6 +120,7 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 - [x] Küçült için `E921`, büyüt için mevcut `E922/E923`, kapat için `E8BB` Windows simgeleri kullanılıyor.
 - [x] Üç kontrolün optik simge boyutu 16.5, buton ölçüsü 44×42 ve içerik hizası merkez olarak standardize edildi.
 - [x] Servis `UiPolishService` üzerinden MainWindow yüklendiğinde uygulanıyor.
+- [ ] Görsel eşitlik kullanıcı tarafından çalışan EXE üzerinde manuel olarak teyit edilecek.
 
 ### Karşılama ekranı ve akıcı ilerleme
 
@@ -134,6 +138,7 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 - [x] `StartupProgressProfileTests.cs` yeni 5–6 saniye ve monoton progress davranışına göre güncellendi.
 - [x] Bilinçli 5,5 saniyelik splash süresi `StartupPerformanceService` performans metriğine dahil edilmiyor; performans ölçümü MainWindow gerçek hazırlığı bittiğinde tamamlanıyor.
 - [x] Yerel ilk build'deki `StartupSplashHost.cs` CS4014 uyarısı Dispatcher çağrısını gerçek await zincirine çevirerek temizlendi.
+- [ ] Splash süresi ve akıcılığı kullanıcı tarafından çalışan EXE üzerinde manuel olarak teyit edilecek.
 - [ ] GitHub Actions doğrulaması — `build-and-test` job'ı gerçek step başlatmadan failure oluyor.
 
 ## Yerel build doğrulama kaydı
@@ -142,20 +147,28 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 
 Kullanıcı `GitHub Desktop → Show in Explorer → DERLE_CALISTIR.bat` yoluyla gerçek Windows/.NET 8 derlemesi çalıştırdı.
 
-Sonuç:
+İlk deneme:
 
 - [x] `DogruFatura.Core` başarıyla derlendi.
 - [x] Core tarafındaki 16 kayıt yalnız analyzer uyarısıydı; derlemeyi durdurmadı.
-- [ ] `DogruFatura.Wpf` ilk denemede 1 hata ve 42 uyarıyla durdu.
+- [x] `DogruFatura.Wpf` ilk denemede 1 hata ve 42 uyarıyla durdu.
 - [x] Tek gerçek hata: `SingleInstanceGuard.cs` içinde `IOException` adının çözülememesi (`CS0103`).
 - [x] Hatanın nedeni: `System.IO` namespace'inin eksik olması.
 - [x] Düzeltme commit'i: `26f3aa160d61a87ea8e6f4c7071e53ed9f8356f8`.
 - [x] Aynı build çıktısındaki `StartupSplashHost.cs` `CS4014` uyarısı da ayrıca temizlendi.
 - [x] Async uyarı düzeltme commit'i: `abff2d44ac6160c9a21e961df610d1c41388d00d`.
-- [ ] Kullanıcı son commitleri çekip `DERLE_CALISTIR.bat` dosyasını yeniden çalıştıracak.
-- [ ] Yeni build sonucu başarılı olmadan yerel doğrulama tamamlandı sayılmayacak.
 
-Not: İlk build çıktısındaki CA1014/CA1822/CA1859/CA1305/CA1309/CA1512/CA1861 gibi kayıtlar analyzer uyarılarıdır; tek başlarına bu build'i durduran hata değildir. Bunlar Aşama 4 kalite/uyarı temizliğinde sistematik olarak ele alınacaktır.
+İkinci deneme — düzeltmeler sonrası:
+
+- [x] Genel restore/build adımı başarıyla tamamlandı.
+- [x] `DogruFatura.Core` 16 analyzer uyarısıyla başarıyla derlendi.
+- [x] `DogruFatura.Wpf` 41 analyzer uyarısıyla başarıyla derlendi.
+- [x] Toplam sonuç: 57 uyarı, **0 derleme hatası**, başarılı build.
+- [x] `DERLE_CALISTIR.bat` `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
+- [x] Yerel derleme doğrulaması tamamlandı.
+- [ ] Çalışan uygulamanın görsel/işlevsel smoke kontrolü kullanıcı teyidi bekliyor.
+
+Not: CA1014/CA1822/CA1859/CA1305/CA1309/CA1512/CA1861/CA1806 gibi kayıtlar analyzer uyarılarıdır; bu build'i durdurmadılar. Bunlar Aşama 4 kalite/uyarı temizliğinde sistematik olarak ele alınacaktır.
 
 ## Aşama 2 — Mimari Temizlik
 
@@ -176,6 +189,7 @@ Not: İlk build çıktısındaki CA1014/CA1822/CA1859/CA1305/CA1309/CA1512/CA186
 
 - [ ] WPF katmanında warning-as-error kapısını yeniden etkinleştir.
 - [ ] Mevcut analyzer uyarılarını sınıflandır ve güvenli olanları temizle.
+- [ ] Yerel build'de görülen 57 analyzer uyarısını kontrollü biçimde azalt.
 - [ ] Coverage için minimum kalite eşiği ekle.
 - [ ] Güvenlik/bağımlılık otomasyonunu güçlendir.
 - [ ] Sürüm/release belgelerini `VersionPrefix` üzerinden otomatikleştir.
@@ -189,35 +203,33 @@ Not: İlk build çıktısındaki CA1014/CA1822/CA1859/CA1305/CA1309/CA1512/CA186
 
 ## Tamamlanan son parça
 
-**Aşama 1.5 + pencere/splash arayüz düzeltmeleri + ilk yerel build düzeltmesi**
+**Yerel Windows/.NET 8 build doğrulaması — başarılı**
 
 Son kod commit'i: `abff2d44ac6160c9a21e961df610d1c41388d00d`
 
-Bu son düzeltmede:
+Doğrulama sonucu:
 
-- `DogruFatura.Wpf/SingleInstanceGuard.cs` içine eksik `System.IO` namespace'i eklendi.
-- Böylece `IOException` kaynaklı `CS0103` derleme hatası giderildi.
-- `DogruFatura.Wpf/StartupSplashHost.cs` içindeki beklenmeyen Dispatcher async çağrısı doğrudan await edilen zincire dönüştürüldü.
-- Kullanıcının gerçek Windows derleme çıktısı ilk kez takip dosyasına kaydedildi.
+- `SingleInstanceGuard.cs` derleme düzeltmesi sonrasında Core ve WPF projeleri yerel kullanıcı bilgisayarında başarıyla derlendi.
+- WPF tarafındaki önceki `CS0103` hatası artık yok.
+- `StartupSplashHost.cs` içindeki önceki `CS4014` uyarısı da yeni çıktıda görünmüyor.
+- Derleme toplam 57 analyzer uyarısıyla tamamlandı; hata yok.
+- BAT dosyası programı başlatma aşamasına ulaştı.
 
 ### Doğrulama notu
 
-GitHub Actions run #168, commit `abff2d44...` için yine altyapı nedeniyle gerçek build step'i başlatmadan failure oldu. Bu nedenle asıl doğrulama şu anda kullanıcının Windows bilgisayarında `DERLE_CALISTIR.bat` ile yapılıyor.
+Bu sonuç GitHub Actions değil, kullanıcının gerçek Windows bilgisayarında .NET 8 SDK ile yapılan yerel build doğrulamasıdır. GitHub Actions runner sorunu ayrıca devam etmektedir; bu nedenle “yerel build doğrulandı” denebilir ancak “CI doğrulandı” denmeyecek.
 
 ## Sıradaki iş
 
-**Önce yerel build tekrar doğrulaması, ardından Aşama 2 — Mimari Temizlik.**
+**Kısa manuel smoke kontrolü, ardından Aşama 2 — Mimari Temizlik.**
 
-Hemen uygulanacak sıra:
+Manuel kontrol:
 
-1. GitHub Desktop'ta **Fetch origin**.
-2. Branch'in `hardening/1.1-data-safety` olduğunu doğrula.
-3. **Pull origin**.
-4. **Repository > Show in Explorer**.
-5. Repo kökündeki `DERLE_CALISTIR.bat` dosyasını çift tıkla.
-6. Build başarılı olursa açılan DoğruFatura'da splash, sağ üst simgeler ve ikinci örnek engelini kontrol et.
-7. Yeni hata çıkarsa ilk hata satırını bu sohbete gönder.
-8. Yerel build başarılı olduktan sonra **Aşama 2**ye geç.
+1. Açılan DoğruFatura'da splash ekranının yaklaşık 5–6 saniye görünmesini kontrol et.
+2. İlerleme çubuğunun dur-kalk yapmadan akıcı ilerlediğini kontrol et.
+3. Ana pencerenin sağ üstündeki küçült / büyüt / kapat simgelerinin optik olarak aynı boyutta göründüğünü kontrol et.
+4. Program açıkken aynı `DogruFatura.exe`yi ikinci kez çalıştır; ikinci ana pencere açılmamalı ve “DoğruFatura zaten açık” mesajı gelmeli.
+5. Bu dört kontrol uygunsa **Aşama 2 — Mimari Temizlik** çalışmalarına geç.
 
 ## GitHub Desktop'ta çalışmaları görme
 
@@ -228,7 +240,7 @@ Hemen uygulanacak sıra:
 5. **History** sekmesinde commit'leri görebilirsiniz.
 6. **Repository > Show in Explorer** ile dosyaları açabilirsiniz.
 7. `main` farkı için **Branch > Compare to Branch... > main** kullanın.
-8. Yerel build/smoke kontrolü tamamlanana kadar branch'i `main` ile birleştirmeyin.
+8. Manuel smoke kontrolü tamamlanana kadar branch'i `main` ile birleştirmeyin.
 
 ## Programı GitHub Desktop üzerinden yerelde derleme ve çalıştırma
 
@@ -263,13 +275,15 @@ Kritik bağlam:
 - Branch: `hardening/1.1-data-safety`
 - `main` başlangıç commit'i: `72963ec0a829f2e4b487393160c7ca93290b470f`
 - Aşama 1'in 1.1–1.5 kod/test kapsamı tamamlandı.
-- Sağ üst simge eşitlemesi tamamlandı.
-- Yaklaşık 5,5 saniyelik akıcı splash tamamlandı.
-- İlk gerçek kullanıcı-PC build'i `DogruFatura.Core` için başarılı oldu; WPF tarafında tek `CS0103 IOException` hatası bulundu ve düzeltildi.
-- `StartupSplashHost` CS4014 uyarısı da temizlendi.
+- Sağ üst simge eşitlemesi tamamlandı; manuel görsel teyit bekliyor.
+- Yaklaşık 5,5 saniyelik akıcı splash tamamlandı; manuel görsel teyit bekliyor.
+- İlk yerel build hatası (`SingleInstanceGuard.cs` / `IOException`) düzeltildi.
+- Düzeltme sonrası `DogruFatura.Core` ve `DogruFatura.Wpf` yerel Windows/.NET 8 ortamında başarıyla derlendi.
+- Yerel build sonucu: 0 hata, 57 analyzer uyarısı.
+- `DERLE_CALISTIR.bat` program başlatma aşamasına ulaştı.
 - Son kod commit'i: `abff2d44ac6160c9a21e961df610d1c41388d00d`.
-- Kullanıcının sıradaki işlemi: GitHub Desktop'ta Pull origin yapıp `DERLE_CALISTIR.bat` dosyasını yeniden çalıştırmak.
-- Yerel build başarılı olursa sıradaki ana parça: **Aşama 2 — Mimari Temizlik**.
+- Kullanıcının sıradaki işlemi: splash + sağ üst simgeler + ikinci örnek engeli için kısa manuel smoke kontrolü.
+- Smoke kontrolü uygunsa sıradaki ana parça: **Aşama 2 — Mimari Temizlik**.
 - CI durumu: GitHub Actions job'ları runner/step başlamadan failure oluyor; gerçek CI build/test sonucu alınamıyor.
 - `main` ile henüz merge yapılmayacak.
 
@@ -281,6 +295,8 @@ Kritik bağlam:
 - Tek örnek güvenliği fail-closed çalışacak; kilit güvenli kurulamıyorsa yazma modunda uygulama açılmayacak.
 - Splash görsel süresi performans ölçümünden ayrı tutulacak.
 - Kullanıcı yerel derleme için Visual Studio yerine GitHub Desktop + `DERLE_CALISTIR.bat` akışını kullanacak.
+- Yerel build doğrulaması ile GitHub Actions CI doğrulaması ayrı statüler olarak tutulacak.
+- Analyzer uyarıları Aşama 4'te kontrollü olarak ele alınacak; davranış değiştiren toplu “uyarı temizliği” yapılmayacak.
 - Her tamamlanan parçadan sonra bu dosya mutlaka repoda güncellenecek.
 - Her tamamlanan parçadan sonra dosyanın tam güncel içeriği sohbet içinde de kullanıcıya verilecek.
 - CI runner sorunu çözülmeden hiçbir aşama için “CI doğrulandı” ifadesi kullanılmayacak.
