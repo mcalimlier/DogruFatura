@@ -49,8 +49,9 @@ public sealed class SchoolDataStore
             {
                 try
                 {
+                    var backupPath = DataFileSchemaService.CreatePreUpgradeBackup(DataFilePath, schema.SourceSchemaVersion);
                     Save(schools);
-                    warning = $"Okul/kurum veri dosyası şema {DataFileSchemaService.CurrentSchemaVersion} biçimine güvenle yükseltildi.";
+                    warning = $"Okul/kurum veri dosyası şema {DataFileSchemaService.CurrentSchemaVersion} biçimine güvenle yükseltildi. Önceki biçim korundu: {backupPath}";
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
