@@ -23,6 +23,7 @@ public partial class MainWindow : Window
 {
     private static readonly string[] InstitutionTypes =
         { "İlkokul", "Ortaokul", "Anasınıfı/Anaokulu", "Kurum" };
+    private static readonly string[] AllInstitutionTypeFilterPrefix = { "Tümü" };
 
     public ObservableCollection<SchoolRecord> AllSchools { get; }
     public ObservableCollection<InvoiceRecord> ActiveInvoices { get; }
@@ -180,7 +181,7 @@ public partial class MainWindow : Window
         _suppressFormEvents = false;
 
         _suppressSchoolEvents = true;
-        SchoolFilterTypeBox.ItemsSource = new[] { "Tümü" }.Concat(InstitutionTypes).ToArray();
+        SchoolFilterTypeBox.ItemsSource = AllInstitutionTypeFilterPrefix.Concat(InstitutionTypes).ToArray();
         SchoolFilterTypeBox.SelectedIndex = 0;
         SchoolTypeEditorBox.ItemsSource = InstitutionTypes;
         _schoolView = CollectionViewSource.GetDefaultView(AllSchools);
