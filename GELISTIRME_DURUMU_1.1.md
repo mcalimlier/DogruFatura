@@ -20,7 +20,7 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
   - [x] 1.1 Bozuk veri kurtarma davranışı
   - [x] 1.2 Veri şema sürümleme
   - [x] 1.3 Yedekten geri yükleme semantik doğrulaması
-  - [ ] 1.4 Yedek ve PDF bütünlük doğrulaması
+  - [x] 1.4 Yedek ve PDF bütünlük doğrulaması
   - [ ] 1.5 Tek örnek / yazma güvenliği
 - [ ] Aşama 2 — Mimari Temizlik
 - [ ] Aşama 3 — Mali Denetim ve İzlenebilirlik
@@ -74,22 +74,45 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 - [x] Zorunlu veri dosyası eksik yedeğin reddedildiği entegrasyon testi eklendi.
 - [x] Şema-1 tam veri kümesinin `CheckIntegrity()` tarafından sağlıklı kabul edildiği test eklendi.
 - [x] Semantik olarak bozuk canlı verinin bütünlük kontrolünde raporlandığı test eklendi.
-- [ ] GitHub Actions ile derleme/test doğrulaması — **altyapı engeli nedeniyle beklemede**. Son denemede `build-and-test` job'ı `steps=null` ile failure oldu ve `setup-smoke` skipped oldu; gerçek kod çalıştırılmadı.
+- [ ] GitHub Actions ile derleme/test doğrulaması — **altyapı engeli nedeniyle beklemede**.
 
 ### 1.4 Yedek ve PDF bütünlük doğrulaması
 
-- [ ] Yedek manifestine her dosya için SHA-256 özeti ekle.
-- [ ] Yedek manifestine her dosyanın beklenen byte boyutunu ekle.
-- [ ] Restore sırasında manifestte kayıtlı hash ve boyutları açılan dosyalarla karşılaştır.
-- [ ] Manifestte olmayan/fazladan dosya veya hash uyuşmazlığında restore'u reddet.
-- [ ] `ArchivedInvoiceList` içine arşiv PDF'sinin SHA-256 bütünlük bilgisini ekle.
-- [ ] Kapalı arşiv PDF'si mevcutsa hash doğrulaması yap; dosya değiştirilmişse kullanıcıyı uyar ve otomatik olarak “sağlam” kabul etme.
-- [ ] PDF bütünlük senaryolarını otomatik testlerle koru.
+- [x] Genel amaçlı `FileIntegrityService.cs` eklendi; dosya SHA-256 üretimi ve doğrulaması tek noktaya alındı.
+- [x] Yeni yedek biçimi `DogruFaturaBackup/2` olarak tanımlandı.
+- [x] Yedek manifestine yedekteki her dosya için göreli yol (`RelativePath`) eklendi.
+- [x] Yedek manifestine her dosyanın beklenen byte boyutu (`ByteLength`) eklendi.
+- [x] Yedek manifestine her dosyanın SHA-256 özeti (`Sha256`) eklendi.
+- [x] Restore başlamadan önce ZIP içindeki gerçek dosya listesi manifestle birebir karşılaştırılıyor.
+- [x] Manifestte olmayan fazladan dosya reddediliyor.
+- [x] Manifestte olup ZIP'te bulunmayan dosya reddediliyor.
+- [x] Aynı ZIP yolunun birden fazla kez kullanılması reddediliyor.
+- [x] Dosya byte boyutu manifestle eşleşmezse restore reddediliyor.
+- [x] Dosya SHA-256 özeti manifestle eşleşmezse restore reddediliyor.
+- [x] Hash/manifest doğrulaması semantik doğrulamadan ve canlı klasör swap işleminden önce yapılıyor.
+- [x] Eski `DogruFaturaBackup/1` yedekleri geriye uyumlu olarak desteklenmeye devam ediyor; bu yedeklerde SHA-256 manifesti olmadığı için semantik doğrulama ve PDF imza kontrolü uygulanıyor ve sonuç mesajında eski v1 biçimi olduğu belirtiliyor.
+- [x] `ArchivedInvoiceList` modeline `PdfSha256` alanı eklendi.
+- [x] `ArchivedInvoiceListValidationService`, dolu `PdfSha256` değerinin 64 haneli geçerli hex SHA-256 olmasını doğruluyor.
+- [x] PDF eşitleme sırasında eski kayıtta hash yoksa mevcut PDF için başlangıç SHA-256 değeri kaydediliyor.
+- [x] Eksik PDF yeniden oluşturulursa yeni dosyanın SHA-256 özeti kaydediliyor.
+- [x] Kayıtlı hash bulunan mevcut PDF'nin içeriği değişmişse eşitleme hash'i otomatik güncellemiyor; bütünlük hatası üretiyor.
+- [x] Tarihsel PDF içe aktarımında arşive alınan PDF'nin SHA-256 özeti anında kaydediliyor.
+- [x] `ApplicationSafetyService.CheckIntegrity()` kapalı arşivlerde hash kayıtlı PDF'lerin varlığını ve SHA-256 bütünlüğünü kontrol ediyor.
+- [x] Yedekten restore sırasında `IslemArsivi.json` içindeki kayıtlı kapalı PDF hashleri, yedek içindeki `Belgeler/Arşivlenenler` PDF'leriyle karşılaştırılıyor.
+- [x] ZIP içindeki dosyanın sonradan değiştirilmesinin restore'u engellediği entegrasyon testi eklendi.
+- [x] Kapalı arşiv PDF'si sonradan değiştirilirse `CheckIntegrity()` tarafından SHA-256 hatası olarak yakalandığı test eklendi.
+- [x] PDF eşitlemenin hash bulunmayan legacy kayda hash eklediği test eklendi.
+- [x] PDF eşitlemenin hash uyuşmazlığında kayıtlı hash'i değiştirmediği test eklendi.
+- [x] V2 manifestin her dosya için boyut ve SHA-256 içerdiğini ZIP içinden doğrulayan test eklendi (`BackupManifestIntegrityTests.cs`).
+- [ ] GitHub Actions ile derleme/test doğrulaması — **altyapı engeli nedeniyle beklemede**. Run #151 dahil son workflow'larda `build-and-test` job'u `steps=null` ile failure oluyor; `setup-smoke` skipped kalıyor. Gerçek kod çalıştırılmadı.
 
 ### 1.5 Tek örnek / yazma güvenliği
 
 - [ ] Mutex oluşturulamadığında fail-open davranışını kaldır.
+- [ ] İkinci örnek açılma / yazma yarışını güvenli biçimde engelle.
 - [ ] Gerekirse salt okunur güvenli çalışma modu tasarla.
+- [ ] Tek örnek davranışını test edilebilir bir servis/sonuç modeline ayır.
+- [ ] Başarısız mutex senaryolarını otomatik testlerle koru.
 
 ## Aşama 2 — Mimari Temizlik
 
@@ -122,34 +145,38 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 
 ## Tamamlanan son parça
 
-**Aşama 1.3 — Yedekten geri yükleme semantik doğrulaması**
+**Aşama 1.4 — Yedek ve PDF bütünlük doğrulaması**
 
-Son kod commit'i: `d82140b8fa31b5e10406d830010df2119cf129c4`
+Son kod commit'i: `98a241726adba07e529d694039c002f6b1c17033`
 
-Bu parçada:
+Bu parçada öne çıkan değişiklikler:
 
-- `DogruFatura.Core/Services/DataDirectoryValidationService.cs` eklendi.
-- `DogruFatura.Wpf/ApplicationSafetyService.cs` restore ve bütünlük kontrolü merkezi semantik doğrulamaya bağlandı.
-- `DogruFatura.Tests/DataSafetyIntegrationTests.cs` geçerli restore senaryosu ve yeni güvenlik/red senaryolarıyla genişletildi.
-- Geçersiz yedek canlı veri üzerinde hiçbir swap/copy işlemi başlamadan reddediliyor.
-- Yeni şema-1 arşiv formatıyla eski bütünlük kontrolü arasındaki uyumsuzluk giderildi.
+- `DogruFatura.Core/Services/FileIntegrityService.cs` eklendi.
+- `DogruFatura.Core/Models/ArchivedInvoiceList.cs` içine `PdfSha256` eklendi.
+- `DogruFatura.Core/Services/ArchivedInvoiceListValidationService.cs` hash doğrulamasıyla genişletildi.
+- `DogruFatura.Wpf/ApplicationSafetyService.cs` yedek formatı v2, dosya boyutu/hash manifesti ve restore öncesi kriptografik bütünlük kontrolüyle güçlendirildi.
+- `DogruFatura.Wpf/ArchivePdfSynchronizationService.cs` mevcut PDF'nin kayıtlı hashle uyuşmadığı durumda otomatik hash yenilemeyi reddedecek biçimde güçlendirildi.
+- `DogruFatura.Wpf/MainWindow.ArchiveDocuments.cs` tarihsel PDF içe aktarımında hash kaydediyor.
+- `DogruFatura.Tests/DataSafetyIntegrationTests.cs` ZIP değiştirme ve arşiv PDF değiştirme senaryolarıyla genişletildi.
+- `DogruFatura.Tests/ArchivePdfIntegrityTests.cs` eklendi.
+- `DogruFatura.Tests/BackupManifestIntegrityTests.cs` eklendi.
 
 ### Doğrulama notu
 
-17.09.2026 tarihindeki son branch workflow denemesinde GitHub Actions `build-and-test` job'ı yine step oluşturmadan failure oldu (`steps=null`); `setup-smoke` skipped oldu. Bu nedenle 1.3 için kod ve otomatik test kapsamı hazırlanmış durumda ancak CI üzerinde gerçek derleme/test yürütülemedi. Bu sorun kod hatası olarak sınıflandırılmıyor; Actions/runner tarafındaki engel çözülene kadar “CI doğrulandı” denmeyecek.
+17.09.2026 tarihindeki GitHub Actions run #151 (`98a2417...`) yine gerçek bir build adımına başlayamadan kapandı. `build-and-test` job kaydında `steps=null`; `setup-smoke` skipped. Dolayısıyla kod ve otomatik test kapsamı hazır ancak GitHub Actions üzerinde gerçek derleme/test henüz yürütülemedi. Actions/runner engeli çözülene kadar hiçbir aşama için “CI doğrulandı” denmeyecek.
 
 ## Sıradaki iş
 
-**Aşama 1.4 — Yedek ve PDF bütünlük doğrulaması.**
+**Aşama 1.5 — Tek örnek / yazma güvenliği.**
 
 Uygulanacak sıra:
 
-1. `BackupManifest` yapısını sürümleyerek her yedek dosyası için göreli yol, byte boyutu ve SHA-256 özeti saklamak.
-2. Restore sırasında çıkarılan bütün dosyaların manifestle birebir eşleşmesini ve hash/byte boyutlarını doğrulamak.
-3. Eski `DogruFaturaBackup/1` yedekleri için güvenli geriye uyumluluk stratejisini belirlemek; yeni yedekleri daha güçlü manifest formatında üretmek.
-4. `ArchivedInvoiceList` modeline arşiv PDF bütünlük alanı eklemek.
-5. PDF üretimi/kapatma/senkronizasyon akışlarında SHA-256 kaydetmek ve mevcut PDF'yi doğrulamak.
-6. Hash uyuşmazlığı, eksik dosya ve değiştirilmiş PDF senaryolarını otomatik testlerle korumak.
+1. `App.xaml.cs` içindeki mevcut named Mutex davranışını yeniden incelemek.
+2. Mutex oluşturma/açma sırasında exception oluştuğunda mevcut fail-open davranışını kaldırmak.
+3. İkinci uygulama örneğinin aynı JSON/PDF dosyalarına eşzamanlı yazmasını kesin olarak engellemek.
+4. Uygun durumda kullanıcıya “DoğruFatura zaten açık” veya güvenli başlatma hatası göstermek; veri yazma moduna geçmemek.
+5. Tek örnek kararını test edilebilir bir servis/sınıfa ayırmak.
+6. Mutex edinildi, zaten başka örnek var ve mutex altyapısı başarısız senaryoları için otomatik testler eklemek.
 7. Bölüm tamamlanınca bu MD dosyasını yeniden güncellemek ve tamamını sohbet içinde kullanıcıya vermek.
 
 ## GitHub Desktop'ta çalışmaları görme
@@ -164,6 +191,22 @@ Uygulanacak sıra:
 8. Kodun mevcut `main` sürümünden farkını görmek için **Branch > Compare to Branch... > main** yolunu kullanın.
 9. Bu branch'i şimdilik `main` ile birleştirmeyin; Veri Güvenliği Aşaması 1.5 dahil tamamlanıp toplu kontrol yapıldıktan sonra merge edilecek.
 
+## Programı yerelde çalıştırma
+
+GitHub Desktop'ta **Repository > Show in Explorer** yaptıktan sonra çalıştırılacak uygulama dosyasının adı:
+
+`DogruFatura.exe`
+
+Debug derlemesi varsa tipik yol:
+
+`DogruFatura.Wpf\bin\Debug\net8.0-windows\DogruFatura.exe`
+
+Release derlemesi varsa tipik yol:
+
+`DogruFatura.Wpf\bin\Release\net8.0-windows\DogruFatura.exe`
+
+`bin` klasörü veya `DogruFatura.exe` yoksa GitHub Desktop kaynak kodu çekmiş ancak program henüz yerel bilgisayarda derlenmemiş demektir. Visual Studio'da solution açılıp **Build > Build Solution** yapılmalı; ardından yukarıdaki Debug veya Release yolundaki `DogruFatura.exe` çalıştırılmalıdır.
+
 ## Yeni sohbete aktarım özeti
 
 Yeni bir ChatGPT sohbetine geçilirse bu dosyanın tamamını yapıştırın ve şu talimatı ekleyin:
@@ -175,17 +218,21 @@ Kritik bağlam:
 - Repo: `mcalimlier/DogruFatura`
 - Branch: `hardening/1.1-data-safety`
 - `main` başlangıç noktası: `72963ec0a829f2e4b487393160c7ca93290b470f`
-- Son tamamlanan kod parçası: **Aşama 1.3**
-- Son kod commit'i: `d82140b8fa31b5e10406d830010df2119cf129c4`
-- Sıradaki parça: **Aşama 1.4 — Yedek ve PDF bütünlük doğrulaması**
+- Son tamamlanan kod parçası: **Aşama 1.4**
+- Son kod commit'i: `98a241726adba07e529d694039c002f6b1c17033`
+- Sıradaki parça: **Aşama 1.5 — Tek örnek / yazma güvenliği**
 - CI durumu: GitHub Actions job'ları runner/step başlamadan failure oluyor; gerçek derleme/test sonucu henüz alınamıyor.
 - `main` ile henüz merge yapılmayacak.
+- Yerel uygulama EXE adı: `DogruFatura.exe`
+- Tipik Debug yolu: `DogruFatura.Wpf\bin\Debug\net8.0-windows\DogruFatura.exe`
 
 ## Notlar
 
 - Mevcut kullanıcı verisini otomatik silen veya geri döndürülemez biçimde dönüştüren değişiklik yapılmayacak.
 - Otomatik şema yükseltmelerinde geri dönüş kopyası olmadan kaynak dosya dönüştürülmeyecek.
-- Restore işleminde semantik doğrulama tamamlanmadan canlı veri klasörlerine dokunulmayacak.
+- Restore işleminde hash/manifest ve semantik doğrulama tamamlanmadan canlı veri klasörlerine dokunulmayacak.
+- Kayıtlı PDF hash'iyle uyuşmayan mevcut PDF otomatik olarak yeni hash ile “sağlam” kabul edilmeyecek.
+- SHA-256 manifest bütünlüğü dosya bozulmasını/değişikliğini tespit eder; dijital imza yerine geçmez.
 - Her parça bağımsız ve geri alınabilir commit olarak tutulacak.
 - Her tamamlanan parçadan sonra bu dosya mutlaka güncellenecek.
 - Her tamamlanan parçadan sonra bu dosyanın **tam güncel içeriği sohbet içinde de kullanıcıya verilecek**.
