@@ -49,45 +49,37 @@ Kalan ana işler:
 
 ### Paket 1 — CA1512
 
-Commit'ler:
-
-- `4b8979930b29fe08e2d76f8c440f407d2520cb02`
-- `1709dea16c4824eff1233bf5aaf44e3f9d2fe04a`
-
-Yerel sonuç: **57 → 53 warning / 0 error**.
+- Commit'ler: `4b8979930b29fe08e2d76f8c440f407d2520cb02`, `1709dea16c4824eff1233bf5aaf44e3f9d2fe04a`
+- Yerel sonuç: **57 → 53 warning / 0 error**.
 
 ### Paket 2 — kontrollü warning temizliği
 
-Kod aralığı:
-
-- `a4e60d5aa30151184e0f38dd5bd58ccb6768f7fa`
-- `a6461692baa761c3a9d901f537a8ca653515f77a`
-
-Yerel sonuç: **53 → 12 warning / 0 error**.
+- Kod aralığı: `a4e60d5aa30151184e0f38dd5bd58ccb6768f7fa` → `a6461692baa761c3a9d901f537a8ca653515f77a`
+- Yerel sonuç: **53 → 12 warning / 0 error**.
 
 ### Paket 3 — CA1861
 
-Commit'ler:
+- Commit'ler: `2f3216a2b1f42c663f3e8e9a8ddd49df8cd14688`, `4d7eb4a097867c019bed7aeca0d714118d683226`
+- Yerel sonuç: **12 → 10 warning / 0 error**.
 
-- `2f3216a2b1f42c663f3e8e9a8ddd49df8cd14688` — `MainWindow.xaml.cs`
-- `4d7eb4a097867c019bed7aeca0d714118d683226` — `HistoricalPdfImportService.cs`
+### Paket 4A — ilk CA1859
 
-17.09.2026 yerel tam analiz sonucu:
+- Commit: `7410e73bee7a35ea597f0fca823cb1964fe5ff2d`
+- `HistoricalPdfImportService.BuildLines` dönüş tipi `PdfLineData[]` yapıldı.
+- 17.09.2026 yerel tam analiz sonucu:
+  - Core: **2 warning**
+  - WPF: **7 warning**
+  - Toplam: **9 warning / 0 error**
+  - Program `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
 
-- Core: **2 warning**
-- WPF: **8 warning**
-- Toplam: **10 warning / 0 error**
-- Program `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
-- İki `CA1861` uyarısı temizlendi.
-
-## Kalan 10 warning
+## Kalan 9 warning
 
 ### Core — 2
 
 - `CA1822` — `TaxCalculationService.Calculate`
 - `CA1309` — `ControlCenterService` dize karşılaştırması
 
-### WPF — 8
+### WPF — 7
 
 - `CA1822` — `DiagnosticPackageService.Create`
 - `CA1822` — `FinalReportDocumentService.Build`
@@ -96,26 +88,25 @@ Commit'ler:
 - `CA1822` — `ApplicationSafetyService.RuntimeDescription`
 - `CA1859` — `ApplicationSafetyService.CollectBackupFiles`
 - `CA1309` — `HistoricalPdfImportService` kurum adı karşılaştırması
-- `CA1859` — `HistoricalPdfImportService.BuildLines`
 
 ## Kodlanan fakat yerel doğrulaması bekleyen parça
 
-İlk `CA1859` tek başına ele alındı:
+Son `CA1859` tek başına ele alındı:
 
-- Commit: `7410e73bee7a35ea597f0fca823cb1964fe5ff2d`
-- Dosya: `HistoricalPdfImportService.cs`
-- `BuildLines` zaten dizi döndürdüğü için private dönüş tipi `IReadOnlyList<PdfLineData>` yerine `PdfLineData[]` yapıldı.
-- İş kuralı ve kullanıcı davranışı değişmedi.
+- Commit: `bc6b93c0c11d8d09a75ceb9e756ebdc61c5c3e64`
+- Dosya: `ApplicationSafetyService.cs`
+- `CollectBackupFiles` zaten dizi döndürdüğü için private dönüş tipi `IReadOnlyList<BackupSourceFile>` yerine `BackupSourceFile[]` yapıldı.
+- Yedek içeriği, sırası, manifest ve restore davranışı değişmedi.
 
-Beklenen sonraki sonuç: **9 warning / 0 error**.
+Beklenen sonraki sonuç: **8 warning / 0 error**.
 
 ## Sıradaki iş
 
 1. GitHub Desktop → **Fetch origin → Pull origin**.
 2. `hardening/1.1-data-safety` branch'inde `DERLE_CALISTIR.bat` çalıştır.
-3. Beklenen: **9 warning / 0 error**.
-4. Doğrulanırsa kalan `CA1859` olan `ApplicationSafetyService.CollectBackupFiles` tek başına ele alınacak.
-5. Sonrasında `CA1822` grubu kontrollü biçimde temizlenecek.
+3. Beklenen: **8 warning / 0 error**.
+4. Doğrulanırsa kalan warning'ler yalnız **6 adet CA1822 + 2 adet CA1309** olacak.
+5. `CA1822` grubu kontrollü küçük paketlerle ele alınacak.
 6. İki `CA1309` en sona bırakılacak; Türkçe kültür/string davranışı test edilmeden değiştirilmemeli.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
