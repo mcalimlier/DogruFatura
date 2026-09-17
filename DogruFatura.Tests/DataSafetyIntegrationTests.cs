@@ -1,3 +1,5 @@
+using DogruFatura.Core.Models;
+using DogruFatura.Core.Services;
 using DogruFatura.Wpf;
 using System.Text;
 
@@ -9,27 +11,118 @@ public sealed class DataSafetyIntegrationTests
     public void ManualBackup_Restore_RoundTripRestoresDataAndPdf()
     {
         using var temp = new TempFolders();
-        var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.0.0-rc1-test");
+        var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");
         service.InitializeAndCheck();
         SeedCompleteData(service.DataFolder);
         Directory.CreateDirectory(service.ActivePdfFolder);
         var pdfPath = Path.Combine(service.ActivePdfFolder, "AKTIF-TEST.pdf");
         File.WriteAllBytes(pdfPath, Encoding.ASCII.GetBytes("%PDF-1.4\n% test\n"));
 
-        var originalSchools = "[{\"Name\":\"Asıl Kurum\"}]";
-        File.WriteAllText(Path.Combine(service.DataFolder, "Okullar.json"), originalSchools, Encoding.UTF8);
+        var schoolsPath = Path.Combine(service.DataFolder, "Okullar.json");
+        new SchoolDataStore(schoolsPath).Save(new[] { School("Asıl Kurum") });
+        var originalSchools = File.ReadAllText(schoolsPath, Encoding.UTF8);
         var backup = service.CreateManualSafetyBackup("Test");
 
-        File.WriteAllText(Path.Combine(service.DataFolder, "Okullar.json"), "[{\"Name\":\"DEĞİŞTİ\"}]", Encoding.UTF8);
+        new SchoolDataStore(schoolsPath).Save(new[] { School("Değişen Kurum") });
         File.Delete(pdfPath);
 
         var result = service.RestoreFromBackup(backup);
 
         Assert.True(result.Success, result.Message);
-        Assert.Equal(originalSchools, File.ReadAllText(Path.Combine(service.DataFolder, "Okullar.json"), Encoding.UTF8));
+        Assert.Equal(originalSchools, File.ReadAllText(schoolsPath, Encoding.UTF8));
         Assert.True(File.Exists(pdfPath));
         Assert.NotNull(result.SafetyBackupPath);
         Assert.True(File.Exists(result.SafetyBackupPath));
+    }
+
+    [Fact]
+    public void Restore_SemanticallyInvalidBackup_IsRejectedWithoutChangingLiveData()
+    {
+        using var temp = new TempFolders();
+        var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");
+        service.InitializeAndCheck();
+        SeedCompleteData(service.DataFolder);
+
+        File.WriteAllText(
+            Path.Combine(service.DataFolder, "YetkiliProfili.json"),
+            "{}",
+            Encoding.UTF8);
+        var invalidBackup = service.CreateManualSafetyBackup("SemantikGecersiz");
+
+        SeedCompleteData(service.DataFolder);
+        var schoolsPath = Path.Combine(service.DataFolder, "Okullar.json");
+        new SchoolDataStore(schoolsPath).Save(new[] { School("CANLI VERI KORUNACAK") });
+        var liveSchoolsBefore = File.ReadAllText(schoolsPath, Encoding.UTF8);
+
+        var result = service.RestoreFromBackup(invalidBackup);
+
+        Assert.False(result.Success);
+        Assert.Null(result.SafetyBackupPath);
+        Assert.Contains("semantik", result.Message, StringComparison.CurrentCultureIgnoreCase);
+        Assert.Equal(liveSchoolsBefore, File.ReadAllText(schoolsPath, Encoding.UTF8));
+    }
+
+    [Fact]
+    public void Restore_BackupMissingRequiredDataFile_IsRejectedWithoutChangingLiveData()
+    {
+        using var temp = new TempFolders();
+        var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");
+        service.InitializeAndCheck();
+
+        Directory.CreateDirectory(service.DataFolder);
+        foreach (var fileName in DataDirectoryValidationService.RequiredFileNames)
+        {
+            var path = Path.Combine(service.DataFolder, fileName);
+            if (File.Exists(path)) File.Delete(path);
+        }
+        new SchoolDataStore(Path.Combine(service.DataFolder, "Okullar.json"))
+            .Save(new[] { School("Eksik Yedek Kurumu") });
+        var incompleteBackup = service.CreateManualSafetyBackup("EksikVeri");
+
+        SeedCompleteData(service.DataFolder);
+        var authorityPath = Path.Combine(service.DataFolder, "YetkiliProfili.json");
+        var liveAuthorityBefore = File.ReadAllText(authorityPath, Encoding.UTF8);
+
+        var result = service.RestoreFromBackup(incompleteBackup);
+
+        Assert.False(result.Success);
+        Assert.Null(result.SafetyBackupPath);
+        Assert.Contains("eksik", result.Message, StringComparison.CurrentCultureIgnoreCase);
+        Assert.Equal(liveAuthorityBefore, File.ReadAllText(authorityPath, Encoding.UTF8));
+    }
+
+    [Fact]
+    public void CheckIntegrity_CurrentSchemaCompleteData_IsHealthy()
+    {
+        using var temp = new TempFolders();
+        var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");
+        service.InitializeAndCheck();
+        SeedCompleteData(service.DataFolder);
+
+        var result = service.CheckIntegrity();
+
+        Assert.True(result.IsHealthy, result.Message);
+        Assert.Equal(4, result.JsonFileCount);
+        Assert.Equal(0, result.ProblemCount);
+    }
+
+    [Fact]
+    public void CheckIntegrity_SemanticallyInvalidData_IsReported()
+    {
+        using var temp = new TempFolders();
+        var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");
+        service.InitializeAndCheck();
+        SeedCompleteData(service.DataFolder);
+        File.WriteAllText(
+            Path.Combine(service.DataFolder, "YetkiliProfili.json"),
+            "{}",
+            Encoding.UTF8);
+
+        var result = service.CheckIntegrity();
+
+        Assert.False(result.IsHealthy);
+        Assert.True(result.ProblemCount > 0);
+        Assert.Contains("YetkiliProfili.json", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -43,7 +136,7 @@ public sealed class DataSafetyIntegrationTests
         File.WriteAllText(Path.Combine(legacyRoot, "Yedekler", "eski.zip"), "backup", Encoding.UTF8);
         File.WriteAllText(Path.Combine(legacyRoot, "Loglar", "eski.log"), "log", Encoding.UTF8);
 
-        var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.0.0-rc1-test");
+        var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");
         var result = service.InitializeAndCheck();
 
         Assert.True(File.Exists(Path.Combine(service.DataFolder, "Okullar.json")));
@@ -62,12 +155,12 @@ public sealed class DataSafetyIntegrationTests
 
         var desktopData = Path.Combine(temp.Desktop, "DoğruFatura", "Veri");
         Directory.CreateDirectory(desktopData);
-        File.WriteAllText(Path.Combine(desktopData, "Okullar.json"), "[{\"Name\":\"Yeni\"}]", Encoding.UTF8);
+        File.WriteAllText(Path.Combine(desktopData, "Okullar.json"), "DESKTOP-KORUNACAK", Encoding.UTF8);
 
-        var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.0.0-rc1-test");
+        var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");
         var result = service.InitializeAndCheck();
 
-        Assert.Equal("[{\"Name\":\"Yeni\"}]", File.ReadAllText(Path.Combine(desktopData, "Okullar.json"), Encoding.UTF8));
+        Assert.Equal("DESKTOP-KORUNACAK", File.ReadAllText(Path.Combine(desktopData, "Okullar.json"), Encoding.UTF8));
         Assert.True(File.Exists(Path.Combine(legacyData, "Okullar.json")));
         Assert.Contains("eski konumunda bırakıldı", result.Message, StringComparison.CurrentCultureIgnoreCase);
     }
@@ -75,11 +168,22 @@ public sealed class DataSafetyIntegrationTests
     private static void SeedCompleteData(string dataFolder)
     {
         Directory.CreateDirectory(dataFolder);
-        File.WriteAllText(Path.Combine(dataFolder, "Okullar.json"), "[]", Encoding.UTF8);
-        File.WriteAllText(Path.Combine(dataFolder, "AktifFaturalar.json"), "[]", Encoding.UTF8);
-        File.WriteAllText(Path.Combine(dataFolder, "YetkiliProfili.json"), "{}", Encoding.UTF8);
-        File.WriteAllText(Path.Combine(dataFolder, "IslemArsivi.json"), "[]", Encoding.UTF8);
+        new SchoolDataStore(Path.Combine(dataFolder, "Okullar.json")).Save(Array.Empty<SchoolRecord>());
+        new InvoiceDataStore(Path.Combine(dataFolder, "AktifFaturalar.json")).Save(Array.Empty<InvoiceRecord>());
+        new AuthorityProfileDataStore(Path.Combine(dataFolder, "YetkiliProfili.json"))
+            .Save(AuthorityProfileDefaults.Create());
+        new ArchivedInvoiceListDataStore(Path.Combine(dataFolder, "IslemArsivi.json"))
+            .Save(Array.Empty<ArchivedInvoiceList>());
     }
+
+    private static SchoolRecord School(string name) => new(
+        "İlkokul",
+        name,
+        "1234567890",
+        "1111111111",
+        "2222222222",
+        "3333333333",
+        "4444444444");
 
     private sealed class TempFolders : IDisposable
     {
