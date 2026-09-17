@@ -13,6 +13,7 @@ internal static class UiPolishService
 
         window.Loaded += (_, _) =>
         {
+            WindowControlPolishService.Apply(window);
             UiVisualPolishService.Apply(window);
             UiPerformanceService.Apply(window);
             UiAccessibilityService.Apply(window);
