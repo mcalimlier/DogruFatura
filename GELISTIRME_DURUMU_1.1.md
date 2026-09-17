@@ -22,10 +22,10 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
   - [x] 1.3 Yedekten geri yükleme semantik doğrulaması
   - [x] 1.4 Yedek ve PDF bütünlük doğrulaması
   - [x] 1.5 Tek örnek / yazma güvenliği
-- [ ] Ek kullanıcı arayüzü düzeltmeleri
-  - [ ] Sağ üst küçült / büyüt-geri yükle / kapat simgelerini görsel olarak eşitle
-  - [ ] Karşılama ekranını yaklaşık 5–6 saniye görünür tut
-  - [ ] Karşılama ilerleme çubuğunu kesintisiz ve akıcı ilerlet
+- [x] Ek kullanıcı arayüzü düzeltmeleri
+  - [x] Sağ üst küçült / büyüt-geri yükle / kapat simgeleri aynı optik ölçüye getirildi
+  - [x] Karşılama ekranı yaklaşık 5,5 saniye görünür kalacak şekilde ayarlandı
+  - [x] Karşılama ilerleme çubuğu ana pencere yükünden bağımsız akıcı hale getirildi
 - [ ] Aşama 2 — Mimari Temizlik
 - [ ] Aşama 3 — Mali Denetim ve İzlenebilirlik
 - [ ] Aşama 4 — Kalite / CI
@@ -89,27 +89,45 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 ### 1.5 Tek örnek / yazma güvenliği
 
 - [x] Mevcut mutex fail-open davranışı kaldırıldı.
-- [x] Yeni `SingleInstanceGuard.cs` ile tek örnek kararı test edilebilir servis/sonuç modeline ayrıldı.
+- [x] `SingleInstanceGuard.cs` ile tek örnek kararı test edilebilir servis/sonuç modeline ayrıldı.
 - [x] Sonuçlar `Acquired`, `AlreadyRunning`, `Unavailable` olarak açıkça ayrılıyor.
 - [x] İkinci uygulama örneği mevcutsa uygulama bilgi mesajıyla açılmadan kapanıyor.
-- [x] Mutex altyapısı/izin hatası oluşursa uygulama artık açılmıyor; veri yazma moduna geçmeden güvenli biçimde kapanıyor.
+- [x] Mutex altyapısı/izin hatası oluşursa uygulama veri yazma moduna geçmeden güvenli biçimde kapanıyor.
 - [x] Başarılı mutex ediniminde sahiplik `SingleInstanceLease` ile yaşam döngüsü boyunca tutuluyor.
 - [x] Normal kapanışta lease güvenli biçimde bırakılıyor.
-- [x] Yedekten geri yükleme sonrası yeniden başlatma akışı mutex'i kontrollü biçimde serbest bırakmaya devam ediyor.
-- [x] Lease `Dispose()` idempotent olacak biçimde tasarlandı.
-- [x] `SingleInstanceGuardTests.cs` ile edinim, zaten açık örnek ve mutex altyapı hatası senaryoları eklendi.
+- [x] Yedekten geri yükleme sonrası yeniden başlatma akışı mutex'i kontrollü biçimde serbest bırakıyor.
+- [x] Lease `Dispose()` idempotent.
+- [x] `SingleInstanceGuardTests.cs` ile edinim, zaten açık örnek ve mutex altyapı hatası testleri eklendi.
 - [x] Fail-open yerine fail-closed güvenlik ilkesi uygulanıyor.
-- [ ] GitHub Actions doğrulaması — run #155 dahil Actions job'ı `steps=null` ile gerçek build başlamadan failure oluyor; `setup-smoke` skipped.
+- [ ] GitHub Actions doğrulaması — run #155 dahil Actions job'ları gerçek build başlamadan `steps=null` ile failure oluyor.
 
-## Ek kullanıcı arayüzü düzeltmeleri — devam ediyor
+## Ek kullanıcı arayüzü düzeltmeleri — tamamlandı
 
-Kullanıcının 17.09.2026 tarihli isteği:
+### Sağ üst pencere düğmeleri
 
-- Sağ üstteki **küçült / büyüt-geri yükle / kapat** simgelerinin algılanan büyüklükleri eşitlenecek.
-- Karşılama ekranı yaklaşık **5–6 saniye** görünür kalacak.
-- İlerleme çubuğu “dur-yükle-dur-yükle” hissi vermeden baştan sona **akıcı** ilerleyecek.
+- [x] Eski durumda küçültme `—` karakteri 23.5 pt, kapatma `×` karakteri 27.5 pt, büyütme ise Segoe MDL2 Assets 16.5 pt kullanıyordu.
+- [x] `WindowControlPolishService.cs` eklendi.
+- [x] Küçült, büyüt/geri yükle ve kapat kontrolleri aynı `Segoe MDL2 Assets` simge ailesine geçirildi.
+- [x] Küçült için `E921`, büyüt için mevcut `E922/E923`, kapat için `E8BB` Windows simgeleri kullanılıyor.
+- [x] Üç kontrolün optik simge boyutu 16.5, buton ölçüsü 44×42 ve içerik hizası merkez olarak standardize edildi.
+- [x] Servis `UiPolishService` üzerinden MainWindow yüklendiğinde uygulanıyor.
 
-Durum: 1.5 tamamlandıktan sonra bu üç UI işi uygulanıyor.
+### Karşılama ekranı ve akıcı ilerleme
+
+- [x] `StartupProgressProfile` minimum görünür süreyi 5500 ms olarak tanımlıyor.
+- [x] Normal ilerleme 0 → %94 arasında ilk 5000 ms boyunca kesintisiz ilerliyor.
+- [x] Çok uzun açılışlarda %94 → %98 arasında yavaş devam eden kuyruk animasyonu bulunuyor; %100 yalnız gerçek hazırlık tamamlanınca kullanılıyor.
+- [x] `StartupSplashHost.cs` eklendi.
+- [x] Splash penceresi ana MainWindow thread'inden bağımsız STA/Dispatcher thread'inde çalışıyor.
+- [x] `MainWindow()` veri/arayüz hazırlığı ana thread'i meşgul etse bile splash spinner ve progress animasyonu ayrı Dispatcher'da akmaya devam ediyor.
+- [x] MainWindow erken hazır olsa dahi splash yaklaşık 5,5 saniye dolmadan kapanmıyor.
+- [x] MainWindow geç hazır olursa splash %98'e kadar kontrollü biçimde ilerlemeye devam ediyor ve hazır olunca son geçişi yapıyor.
+- [x] Tamamlanma aşaması mevcut animasyon genişliğinden %100'e 450 ms EaseOut geçişle tamamlanıyor.
+- [x] Yüzde metni yaklaşık 33 ms cadence ile zaman tabanlı güncelleniyor.
+- [x] Spinner yaklaşık 0,9 saniyelik sürekli dönüşle çalışıyor.
+- [x] `StartupProgressProfileTests.cs` yeni 5–6 saniye ve monoton progress davranışına göre güncellendi.
+- [x] Bilinçli 5,5 saniyelik splash süresi `StartupPerformanceService` performans metriğine dahil edilmiyor; performans ölçümü MainWindow gerçek hazırlığı bittiğinde tamamlanıyor.
+- [ ] GitHub Actions doğrulaması — run #165 dahil `build-and-test` job'ı `steps=null`; gerçek build/test çalışmadı.
 
 ## Aşama 2 — Mimari Temizlik
 
@@ -142,32 +160,43 @@ Durum: 1.5 tamamlandıktan sonra bu üç UI işi uygulanıyor.
 
 ## Tamamlanan son parça
 
-**Aşama 1.5 — Tek örnek / yazma güvenliği**
+**Aşama 1.5 + kullanıcı tarafından istenen pencere/splash arayüz düzeltmeleri**
 
-Son kod commit'i: `731c64efea0ac1ba05ba803bcaa3cedc09007edd`
+Son kod commit'i: `b506457ec04e391c9a256116011a5945e5fa8c78`
 
-Bu parçada:
+Bu turda eklenen/değişen ana dosyalar:
 
-- `DogruFatura.Wpf/SingleInstanceGuard.cs` eklendi.
-- `DogruFatura.Wpf/App.xaml.cs` fail-closed tek örnek akışına geçirildi.
-- `DogruFatura.Tests/SingleInstanceGuardTests.cs` eklendi.
-- Mutex oluşturulamaması artık “program yine açılsın” şeklinde ele alınmıyor.
-- Aynı kullanıcı oturumunda ikinci süreç veya güvenli kilit altyapısı sorunu, JSON/PDF yazma başlamadan engelleniyor.
+- `DogruFatura.Wpf/SingleInstanceGuard.cs`
+- `DogruFatura.Wpf/App.xaml.cs`
+- `DogruFatura.Tests/SingleInstanceGuardTests.cs`
+- `DogruFatura.Wpf/WindowControlPolishService.cs`
+- `DogruFatura.Wpf/UiPolishService.cs`
+- `DogruFatura.Wpf/StartupSplashHost.cs`
+- `DogruFatura.Wpf/SplashWindow.xaml.cs`
+- `DogruFatura.Wpf/StartupProgressProfile.cs`
+- `DogruFatura.Tests/StartupProgressProfileTests.cs`
 
 ### Doğrulama notu
 
-17.09.2026 GitHub Actions run #155, commit `731c64e...` için `build-and-test` job'ı yine `steps=null` ile failure oldu; `setup-smoke` skipped. Bu nedenle 1.5 kod/test kapsamı tamamlandı ancak GitHub Actions üzerinde gerçek build/test yürütülemedi.
+17.09.2026 GitHub Actions run #165, commit `b506457...` için `build-and-test` job'ı yine `steps=null` ile failure oldu ve `setup-smoke` skipped kaldı. Bu nedenle kod/test kapsamı hazırlanmış durumda fakat GitHub Actions altyapısı gerçek derleme/test çalıştırmadı.
+
+Bu aşamadan sonra kullanıcı yerel bilgisayarda branch'i çekip Visual Studio ile build ederek gerçek WPF görünümünü kontrol etmelidir. Özellikle sağ üst simgelerin optik eşitliği ve splash akıcılığı görsel olarak yerel çalıştırmada kontrol edilebilir.
 
 ## Sıradaki iş
 
-**Ek kullanıcı arayüzü düzeltmeleri:**
+**Aşama 2 — Mimari Temizlik**
 
-1. `MainWindow.xaml` sağ üst pencere kontrol simgelerini aynı görsel ölçekte standardize etmek.
-2. `SplashWindow` / `StartupProgressProfile` açılış süresini yaklaşık 5.5 saniyeye sabitlemek.
-3. Progress animasyonunu gerçek yükleme aşamalarından bağımsız, tek kesintisiz zaman çizgisi üzerinde akıcı ilerletmek.
-4. MainWindow hazırlığı erken biterse splash minimum süre dolana kadar akıcı animasyona devam etmek; hazırlık uzarsa ilerlemeyi %98 civarında tutup hazır olduğunda tamamlamak.
-5. UI davranışlarını mümkün olduğunca test edilebilir profil/hesaplama koduyla korumak.
-6. İşler bitince bu MD'yi tekrar güncellemek ve tam metnini sohbet içinde vermek.
+Önerilen uygulama sırası:
+
+1. MainWindow'daki servis oluşturma ve veri yükleme sorumluluklarını application service katmanına çıkarmak.
+2. Dependency Injection composition root oluşturmak.
+3. Fatura doğrulama/Kontrol Merkezi kurallarını ortak `InvoiceRulesEngine` altında birleştirmek.
+4. String tabanlı `InvoiceType` / `InstitutionType` değerlerini güvenli value object/enum modeline geçirmek.
+5. `SchoolRecord` için kalıcı `SchoolId` ekleyip fatura-kurum bağını isim yerine ID ile güçlendirmek.
+6. Her alt parçayı bağımsız commit/test ile yapmak.
+7. Her tamamlanan alt parçada bu MD'yi hem repoda hem sohbet içinde tam metin olarak güncellemek.
+
+> Not: Aşama 1 kod/test kapsamı tamamlandı. `main` ile merge kararı vermeden önce yerel build ve kısa manuel smoke test yapılması tercih edilir; GitHub Actions runner sorunu nedeniyle uzaktaki CI henüz güvenilir doğrulama sağlayamıyor.
 
 ## GitHub Desktop'ta çalışmaları görme
 
@@ -178,7 +207,7 @@ Bu parçada:
 5. **History** sekmesinde commit'leri görebilirsiniz.
 6. **Repository > Show in Explorer** ile dosyaları açabilirsiniz.
 7. `main` farkı için **Branch > Compare to Branch... > main** kullanın.
-8. Branch'i şimdilik `main` ile birleştirmeyin; UI düzeltmeleri ve toplu yerel kontrol sonrası merge kararı verilecek.
+8. Yerel build/smoke kontrolü yapılana kadar branch'i `main` ile birleştirmeyin.
 
 ## Programı yerelde çalıştırma
 
@@ -194,6 +223,18 @@ Release yolu:
 
 EXE yoksa Visual Studio'da solution açılıp **Build > Build Solution** yapılmalıdır.
 
+Bu turdaki değişiklikleri yerelde görmek için:
+
+1. GitHub Desktop → **Fetch origin**.
+2. Branch `hardening/1.1-data-safety` seçili olsun.
+3. **Pull origin** yapın.
+4. Visual Studio'da solution'ı açın.
+5. **Build > Rebuild Solution** yapın.
+6. Build başarılıysa `DogruFatura.Wpf\bin\Debug\net8.0-windows\DogruFatura.exe` çalıştırın.
+7. Açılışta splash yaklaşık 5,5 saniye görünmeli ve bar kesintisiz akmalıdır.
+8. Ana pencere açılınca sağ üst üç kontrolün simgeleri aynı optik ölçüde görünmelidir.
+9. EXE açıkken aynı EXE'yi ikinci kez çalıştırın; ikinci örnek açılmamalı ve “DoğruFatura zaten açık” mesajı görünmelidir.
+
 ## Yeni sohbete aktarım özeti
 
 Yeni bir sohbete geçilirse bu dosyanın tamamını yapıştırın ve şu talimatı ekleyin:
@@ -205,12 +246,13 @@ Kritik bağlam:
 - Repo: `mcalimlier/DogruFatura`
 - Branch: `hardening/1.1-data-safety`
 - `main` başlangıç commit'i: `72963ec0a829f2e4b487393160c7ca93290b470f`
-- Son tamamlanan ana parça: **Aşama 1.5**
-- Son kod commit'i: `731c64efea0ac1ba05ba803bcaa3cedc09007edd`
 - Aşama 1'in 1.1–1.5 kod/test kapsamı tamamlandı.
-- Şu an yürütülen iş: sağ üst pencere simgeleri + splash süresi/akıcı progress.
-- CI durumu: GitHub Actions job'ları step başlamadan failure oluyor; gerçek build/test sonucu alınamıyor.
-- `main` ile henüz merge yapılmayacak.
+- Kullanıcının istediği sağ üst simge eşitlemesi tamamlandı.
+- Kullanıcının istediği yaklaşık 5,5 saniyelik akıcı splash tamamlandı.
+- Son kod commit'i: `b506457ec04e391c9a256116011a5945e5fa8c78`
+- Sıradaki ana parça: **Aşama 2 — Mimari Temizlik**.
+- CI durumu: GitHub Actions job'ları runner/step başlamadan failure oluyor; gerçek build/test sonucu henüz alınamıyor.
+- `main` ile henüz merge yapılmayacak; önce yerel build/smoke kontrolü öneriliyor.
 
 ## Notlar
 
@@ -218,6 +260,7 @@ Kritik bağlam:
 - Restore hash/manifest ve semantik doğrulama bitmeden canlı verilere dokunmayacak.
 - PDF hash uyuşmazlığı otomatik olarak “yeni doğru hash” şeklinde kabul edilmeyecek.
 - Tek örnek güvenliği fail-closed çalışacak; kilit güvenli kurulamıyorsa yazma modunda uygulama açılmayacak.
+- Splash görsel süresi performans ölçümünden ayrı tutulacak.
 - Her tamamlanan parçadan sonra bu dosya mutlaka repoda güncellenecek.
 - Her tamamlanan parçadan sonra dosyanın tam güncel içeriği sohbet içinde de kullanıcıya verilecek.
 - CI runner sorunu çözülmeden hiçbir aşama için “CI doğrulandı” ifadesi kullanılmayacak.
