@@ -7,8 +7,8 @@ namespace DogruFatura.Wpf;
 
 internal static class UiPerformanceService
 {
-    private static readonly IReadOnlyDictionary<string, string> EmptyMessages =
-        new Dictionary<string, string>(StringComparer.Ordinal)
+    private static readonly Dictionary<string, string> EmptyMessages =
+        new(StringComparer.Ordinal)
         {
             ["ActiveInvoiceGrid"] = "Aktif listede henüz fatura yok.",
             ["SchoolsGrid"] = "Bu filtreye uyan okul / kurum bulunamadı.",
