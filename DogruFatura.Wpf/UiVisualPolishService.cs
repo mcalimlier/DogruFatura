@@ -227,6 +227,6 @@ internal static class UiVisualPolishService
         panel.Children.Add(button);
     }
 
-    private static Brush BrushFrom(string value) =>
-        new SolidColorBrush((Color)ColorConverter.ConvertFromString(value));
+    private static SolidColorBrush BrushFrom(string value) =>
+        new((Color)ColorConverter.ConvertFromString(value));
 }
