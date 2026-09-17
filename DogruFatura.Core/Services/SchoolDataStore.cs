@@ -74,7 +74,7 @@ public sealed class SchoolDataStore
         }
     }
 
-    private IReadOnlyList<SchoolRecord> TryRecoverSchools(out int rejectedCount)
+    private List<SchoolRecord> TryRecoverSchools(out int rejectedCount)
     {
         rejectedCount = 0;
         var recovered = new List<SchoolRecord>();
