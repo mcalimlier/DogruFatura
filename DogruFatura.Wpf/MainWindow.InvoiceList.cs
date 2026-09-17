@@ -73,7 +73,10 @@ public partial class MainWindow
         var invoice = row.Invoice;
         var school = AllSchools.FirstOrDefault(candidate =>
             string.Equals(candidate.InstitutionType, invoice.InstitutionType, StringComparison.Ordinal)
-            && (string.Equals(candidate.Name, invoice.InstitutionName, StringComparison.CurrentCultureIgnoreCase)
+            && (CultureInfo.CurrentCulture.CompareInfo.Compare(
+                    candidate.Name,
+                    invoice.InstitutionName,
+                    CompareOptions.IgnoreCase) == 0
                 || (string.Equals(candidate.Vkn, invoice.Vkn, StringComparison.Ordinal)
                     && string.Equals(candidate.GetServiceNumber(invoice.InvoiceType), invoice.ServiceNumber, StringComparison.Ordinal))));
 
