@@ -211,7 +211,7 @@ Not: CA1014/CA1822/CA1859/CA1305/CA1307/CA1309/CA1512/CA1861/CA1806 gibi kayıtl
 
 ### 2.2 Dependency Injection — başladı
 
--  İlk dilim commit'i: `22867f07fbe5e02f4a3c537c8eaf1ea4a0411ac2`.
+-  İlk dilim commit'i: `427fb23d309b53db9366056ea27730e546d9eba2`.
 -  `MainWindow` içinde doğrudan oluşturulan `TaxCalculationService`, `SchoolDataStore`, `InvoiceDataStore`, `AuthorityProfileDataStore`, `ArchivedInvoiceListDataStore` ve `ApplicationSafetyService` constructor bağımlılığına dönüştürüldü.
 -  Bu bağımlılıkların oluşturulması `App.Application_Startup` composition root'una taşındı.
 -  Yeni NuGet DI paketi eklenmedi; framework bağımlılığı oluşturmadan constructor injection ile başlanıyor.
@@ -270,7 +270,7 @@ Bu sonuç GitHub Actions değil, kullanıcının gerçek Windows bilgisayarında
 
 **Aşama 2 — ilk Dependency Injection diliminin yerel doğrulaması.**
 
-Kod commit'i: `22867f07fbe5e02f4a3c537c8eaf1ea4a0411ac2`
+Kod commit'i: `427fb23d309b53db9366056ea27730e546d9eba2`
 
 Doğrulama:
 
@@ -331,7 +331,7 @@ Kritik bağlam:
 -  Merkezi InvoiceRulesEngine + Kontrol Merkezi ortaklaştırması yerel build ile doğrulandı.
 -  Son doğrulanan kod commit'i: `540801dc8f542c9907e218beefe8586c6d08fb59`.
 -  Son yerel build: 0 hata, 57 legacy analyzer uyarısı.
--  Güncel kod commit'i: `22867f07fbe5e02f4a3c537c8eaf1ea4a0411ac2` — ilk constructor injection / DI dilimi; yerel build bekleniyor.
+-  Güncel kod commit'i: `427fb23d309b53db9366056ea27730e546d9eba2` — ilk constructor injection / DI dilimi; yerel build bekleniyor.
 -  Sıradaki işlem: bu DI commit'ini yerelde derleyip program açılışını kontrol etmek.
 -  CI durumu: GitHub Actions job'ları runner/step başlamadan failure oluyor; gerçek CI build/test sonucu alınamıyor.
 -  `main` ile henüz merge yapılmayacak.
