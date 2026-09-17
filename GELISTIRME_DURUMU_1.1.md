@@ -61,53 +61,46 @@ Kalan ana işler:
   - `7410e73bee7a35ea597f0fca823cb1964fe5ff2d`
 - Son `CA1859`: **9 → 8** warning.
   - `bc6b93c0c11d8d09a75ceb9e756ebdc61c5c3e64`
+- `DiagnosticPackageService.Create` CA1822: **8 → 7** warning.
+  - `13eb6f0feddae591ea7d0532fd11977af46159a1`
+  - `798126f7ede47ed16cf03a5081a8fdceedc1d25b`
+  - Eksik static çağrı düzeltmesi: `1353947c17419e34ac9acf2a6f960a98e25706c8`
 
 ### 17.09.2026 son başarılı yerel build
 
 - SDK: `.NET 10.0.400`
 - Core: **2 warning**
-- WPF: **6 warning**
-- Toplam: **8 warning / 0 error**
+- WPF: **5 warning**
+- Toplam: **7 warning / 0 error**
 - Program `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
-- `CA1859` warning grubu tamamen temizlendi.
+- Önceki `CS0176` ara derleme hatası tamamen doğrulanarak kapandı.
 
-## Kalan 8 warning
+## Kalan 7 warning
 
 ### Core — 2
 
 - `CA1822` — `TaxCalculationService.Calculate`
 - `CA1309` — `ControlCenterService` dize karşılaştırması
 
-### WPF — 6
+### WPF — 5
 
-- `CA1822` — `DiagnosticPackageService.Create`
 - `CA1822` — `FinalReportDocumentService.Build`
 - `CA1822` — `FinalReportPdfService.Save`
-- `CA1822` — `HistoricalPdfImportService.Read`
 - `CA1822` — `ApplicationSafetyService.RuntimeDescription`
+- `CA1822` — `HistoricalPdfImportService.Read`
 - `CA1309` — `HistoricalPdfImportService` kurum adı karşılaştırması
 
-## CA1822 Paket 1 — yerel doğrulama bekliyor
+## Kodlanan fakat yerel doğrulaması bekleyen parça
 
-`DiagnosticPackageService.Create` durumsuz olduğu için static metoda dönüştürüldü:
+`TaxCalculationService.Calculate` mevcut DI yapısı korunarak ele alındı:
 
-- `13eb6f0feddae591ea7d0532fd11977af46159a1` — metot static yapıldı.
-- `798126f7ede47ed16cf03a5081a8fdceedc1d25b` — test statik çağrıya geçirildi.
+- Commit: `afbf23eadae45da6a1a3cb976a9c7a982824c723`
+- `StampDutyRate` public sabiti korunuyor.
+- Aynı oran `_activeStampDutyRate` örnek durumunda tutuluyor ve hesaplama bu aktif servis kuralını kullanıyor.
+- Matematik, oran, kullanıcı mesajları ve mevcut çağrı biçimi değişmedi.
+- Servisi static yapmadan `CA1822` nedenini ortadan kaldırıyor ve ileride planlanan vergi kural sürümü/yürürlük tarihi mimarisine uyumlu kalıyor.
 
-İlk yerel denemede:
-
-- Core: **2 warning**
-- WPF: **5 warning + 1 error**
-- Toplam: **7 warning / 1 error**
-- Hata: `CS0176` — `UiVisualPolishService.cs` içinde eski örnek çağrısı kalmıştı.
-
-Düzeltme:
-
-- `1353947c17419e34ac9acf2a6f960a98e25706c8`
-- `new DiagnosticPackageService().Create(safety)` yerine `DiagnosticPackageService.Create(safety)` kullanıldı.
-- İşlevsel davranış değişmedi; yalnız static çağrı biçimi tamamlandı.
-
-Beklenen sonraki yerel sonuç: **7 warning / 0 error**.
+Beklenen sonraki yerel sonuç: **6 warning / 0 error**.
 
 ## CA1822 yaklaşımı
 
@@ -115,14 +108,14 @@ Beklenen sonraki yerel sonuç: **7 warning / 0 error**.
 
 - Gerçekten durumsuz yardımcı davranışlar static yapılabilir.
 - DI veya servis sınırı olarak bilinçli biçimde örnek kullanılan sınıflar yalnız warning düşürmek için static yapılmayacak.
-- Özellikle `TaxCalculationService` mevcut DI mimarisinin parçasıdır; bu warning ayrı mimari değerlendirmeyle ele alınacak.
+- Güvenlik-kritik büyük dosyalarda sırf warning için geniş çağrı zinciri değişikliği yapılmayacak.
 
 ## Sıradaki iş
 
 1. GitHub Desktop → **Fetch origin → Pull origin**.
 2. `hardening/1.1-data-safety` branch'inde `DERLE_CALISTIR.bat` çalıştır.
-3. Beklenen: **7 warning / 0 error**.
-4. Doğrulanırsa sıradaki en izole `CA1822` tek başına ele alınacak.
+3. Beklenen: **6 warning / 0 error**.
+4. Doğrulanırsa sıradaki `CA1822` küçük ve izole bir paket olarak ele alınacak.
 5. İki `CA1309` en sona bırakılacak; Türkçe kültür/string davranışı test edilmeden değiştirilmeyecek.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
