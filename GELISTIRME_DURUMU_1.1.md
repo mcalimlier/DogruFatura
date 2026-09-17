@@ -30,11 +30,11 @@ Tamamlananlar:
 - Merkezi `InvoiceRulesEngine`.
 - `InvoiceValidationService` ve Kontrol Merkezi ortak kural motoru.
 - Dependency Injection ilk dilimi.
-- Son doğrulanan DI commit'i: `427fb23d309b53db9366056ea27730e546d9eba2`.
+- `HistoricalPdfImportService` içinde `TaxCalculationService` bağımlılığı örnek servise taşındı.
 
 Kalan ana işler:
 
-- DI kapsamını rapor/arşiv servislerine genişletmek.
+- DI kapsamını rapor/arşiv servislerine daha fazla genişletmek.
 - `MainWindow` sorumluluklarını daha fazla ayırmak.
 - Tür/status alanlarını enum/value object yapısına taşımak.
 - `SchoolRecord` için değişmez `SchoolId` eklemek.
@@ -67,65 +67,60 @@ Kalan ana işler:
   - Eksik static çağrı düzeltmesi: `1353947c17419e34ac9acf2a6f960a98e25706c8`
 - `TaxCalculationService.Calculate` CA1822: **7 → 6** warning.
   - `afbf23eadae45da6a1a3cb976a9c7a982824c723`
-  - DI yapısı korunarak aktif damga vergisi oranı servis örneği durumuna bağlandı.
 - `FinalReportDocumentService.Build` CA1822: **6 → 5** warning.
   - `f984e834d36827d7a03da2132a23318cdf0fbe50`
-  - Rapor sayfa ölçüsü servis örneği durumuna bağlandı; çıktı ölçüsü değişmedi.
 - `FinalReportPdfService.Save` CA1822: **5 → 4** warning.
   - `014df5f68752205ed0201e97015a620036ca1d0f`
-  - A4 yatay PDF ayarları servis örneği durumuna bağlandı; çıktı yapısı değişmedi.
 - `HistoricalPdfImportService.Read` CA1822: **4 → 3** warning.
   - `b04c2c1cc61cf382a31fc38088305390b1620f9c`
-  - `TaxCalculationService` bağımlılığı servis örneğine taşındı; PDF doğrulama davranışı değişmedi.
+- `ApplicationSafetyService.RuntimeDescription` CA1822: **3 → 2** warning.
+  - `71d952b84aac1a5f4599978f135b7d2a77eab815`
+  - Runtime açıklaması servis örneği durumuna bağlandı; güvenlik/restore/hash davranışı değişmedi.
 
 ### 17.09.2026 son başarılı yerel build
 
 - SDK: `.NET 10.0.400`
 - Core: **1 warning**
-- WPF: **2 warning**
-- Toplam: **3 warning / 0 error**
+- WPF: **1 warning**
+- Toplam: **2 warning / 0 error**
 - Program `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
-- `HistoricalPdfImportService.Read` CA1822 uyarısı doğrulanarak kapandı.
+- Tüm `CA1822` warning'leri yerel build ile doğrulanarak kapandı.
 
-## Kalan 3 warning
+## Kalan 2 warning
 
-### Core — 1
+- Core `CA1309` — `ControlCenterService` kurum adı karşılaştırması.
+- WPF `CA1309` — `HistoricalPdfImportService` kurum adı karşılaştırması.
 
-- `CA1309` — `ControlCenterService` dize karşılaştırması
+## Kodlanan fakat yerel doğrulaması bekleyen son warning paketi
 
-### WPF — 2
+İki `CA1309` warning'i Türkçe davranış korunarak merkezi hale getirildi:
 
-- `CA1822` — `ApplicationSafetyService.RuntimeDescription`
-- `CA1309` — `HistoricalPdfImportService` kurum adı karşılaştırması
+- `6d3b00fc3d8db55b3b51138de041109dbff9111e` — `TurkishTextComparison` eklendi.
+  - Açık `tr-TR` `CompareInfo` kullanıyor.
+  - `CompareOptions.IgnoreCase` ile Türkçe büyük/küçük harf eşleştirmesi deterministik.
+- `2f9f99a989ade01488cdd265b4ccdd3b638c6d00` — Türkçe karşılaştırma regresyon testleri eklendi.
+  - `İSTANBUL ↔ istanbul` eşleşir.
+  - `ISPARTA ↔ ısparta` eşleşir.
+  - `ISPARTA ↔ isparta` eşleşmez.
+  - `İSTANBUL ↔ ıstanbul` eşleşmez.
+  - null davranışı sabitlendi.
+- `ff239b3a7f9a64b8de1b6315a750452f21c882a5` — `ControlCenterService` merkezi Türkçe karşılaştırıcıya geçirildi.
+- `601d409a56db4d7c73ec17936ee5a8b816bb763d` — `HistoricalPdfImportService` merkezi Türkçe karşılaştırıcıya geçirildi.
 
-## Kodlanan fakat yerel doğrulaması bekleyen parça
+Warning suppress edilmedi ve `OrdinalIgnoreCase` ile Türkçe `I/İ/ı/i` davranışı kaybedilmedi.
 
-`ApplicationSafetyService.RuntimeDescription` örnek servis yapısı korunarak ele alındı:
+Beklenen sonraki yerel build sonucu: **0 warning / 0 error**.
 
-- Commit: `71d952b84aac1a5f4599978f135b7d2a77eab815`
-- Çalışma ortamı açıklaması servis constructor'ında bir kez hesaplanıp `_runtimeDescription` örnek alanında saklanıyor.
-- `RuntimeDescription` public örnek özelliği ve tüm çağrı noktaları değişmedi.
-- Yedekleme, restore, SHA-256, manifest, klasör erişimi ve veri doğrulama koduna işlevsel değişiklik yapılmadı.
-- Bu nedenle son `CA1822` uyarısının kalkması bekleniyor.
-
-Beklenen sonraki yerel sonuç: **2 warning / 0 error**.
-
-## CA1822 yaklaşımı
-
-`CA1822` uyarıları topluca static yapılmadı.
-
-- Gerçekten durumsuz yardımcı davranış static yapılabildi.
-- DI veya servis sınırı olan sınıflarda örnek yapı korundu.
-- Güvenlik-kritik kodda davranış değişikliği yaratacak toplu düzenleme yapılmadı.
-- Son `CA1822` yerel doğrulaması sonrası yalnız `CA1309` warning'leri kalacak.
+Not: Yeni regresyon testleri repoya eklendi; kullanıcının son paylaştığı `DERLE_CALISTIR.bat` çıktısı test yürütme sonucu değildir. Test çalıştırması ayrıca doğrulanmalıdır.
 
 ## Sıradaki iş
 
 1. GitHub Desktop → **Fetch origin → Pull origin**.
 2. `hardening/1.1-data-safety` branch'inde `DERLE_CALISTIR.bat` çalıştır.
-3. Beklenen: **2 warning / 0 error**.
-4. Doğrulanırsa kalan iki `CA1309` için önce Türkçe `I/İ/ı/i` davranış testleri eklenecek.
-5. Testlerden sonra kurum adı karşılaştırması analyzer uyumlu ve Türkçe davranışı korunmuş biçimde merkezi hale getirilecek.
+3. Beklenen: **0 warning / 0 error** ve uygulamanın başlaması.
+4. Build temizse warning temizliği tamamlandı olarak işaretlenecek.
+5. Ardından test paketi ayrıca çalıştırılıp Türkçe regresyon testleri doğrulanacak.
+6. Sonrasında Aşama 2 kalan mimari işlere veya Aşama 3 mali izlenebilirlik çalışmalarına geçilebilir.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
@@ -160,6 +155,7 @@ BAT `--no-incremental` tam analiz yapar.
 ## Kritik notlar
 
 - Warning'ler suppress edilerek gizlenmeyecek; mümkün olduğunda nedeni düzeltilecek.
+- Türkçe kurum adı karşılaştırmalarında dil davranışı korunacak.
 - Kullanıcı verisini otomatik silen veya geri döndürülemez dönüştüren değişiklik yapılmayacak.
 - Restore/hash/manifest güvenliği zayıflatılmayacak.
 - Yerel build ve GitHub Actions CI statüleri ayrı tutulacak.
