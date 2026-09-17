@@ -39,6 +39,12 @@ public sealed class HistoricalPdfImportService
     private static readonly string[] InvoiceTypes = { "Elektrik", "Telefon", "İnternet", "Su" };
     private static readonly string[] DateFormats = { "dd.MM.yyyy", "d.M.yyyy" };
     private static readonly CultureInfo Tr = CultureInfo.GetCultureInfo("tr-TR");
+    private readonly TaxCalculationService _taxCalculationService;
+
+    public HistoricalPdfImportService(TaxCalculationService? taxCalculationService = null)
+    {
+        _taxCalculationService = taxCalculationService ?? new TaxCalculationService();
+    }
 
     public HistoricalPdfImportPreview Read(
         string sourcePath,
@@ -226,7 +232,7 @@ public sealed class HistoricalPdfImportService
             .ToArray();
     }
 
-    private static IEnumerable<ParsedInvoiceRow> ExtractRows(
+    private IEnumerable<ParsedInvoiceRow> ExtractRows(
         PdfPageData page,
         string invoiceType,
         IReadOnlyList<SchoolRecord> schools,
@@ -316,7 +322,7 @@ public sealed class HistoricalPdfImportService
         }
     }
 
-    private static bool TryResolveCalculation(
+    private bool TryResolveCalculation(
         string invoiceType,
         decimal payableAmount,
         decimal vatAmount,
@@ -325,8 +331,7 @@ public sealed class HistoricalPdfImportService
         out TaxCalculationResult calculation,
         out decimal compensationAmount)
     {
-        var engine = new TaxCalculationService();
-        calculation = engine.Calculate(payableAmount, vatAmount, invoiceType);
+        calculation = _taxCalculationService.Calculate(payableAmount, vatAmount, invoiceType);
         compensationAmount = 0m;
         if (MatchesPrinted(calculation, printedStampDuty, printedPaymentAmount)) return true;
         if (!TaxCalculationService.IsInterruptionCompensationAllowed(invoiceType)) return false;
@@ -341,7 +346,8 @@ public sealed class HistoricalPdfImportService
             {
                 if (candidateInCents <= 0) continue;
                 var candidate = candidateInCents / 100m;
-                var candidateCalculation = engine.Calculate(payableAmount, vatAmount, invoiceType, candidate);
+                var candidateCalculation = _taxCalculationService.Calculate(
+                    payableAmount, vatAmount, invoiceType, candidate);
                 if (!MatchesPrinted(candidateCalculation, printedStampDuty, printedPaymentAmount)) continue;
                 calculation = candidateCalculation;
                 compensationAmount = candidate;
