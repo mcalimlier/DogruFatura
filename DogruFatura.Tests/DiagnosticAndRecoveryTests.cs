@@ -19,7 +19,7 @@ public sealed class DiagnosticAndRecoveryTests
         File.WriteAllBytes(Path.Combine(safety.ActivePdfFolder, "secret.pdf"), Encoding.ASCII.GetBytes("%PDF-1.4\nsecret"));
         File.WriteAllText(Path.Combine(safety.LogFolder, "test.log"), "C:\\Users\\TestUser\\DoğruFatura hata", Encoding.UTF8);
 
-        var package = new DiagnosticPackageService().Create(safety);
+        var package = DiagnosticPackageService.Create(safety);
 
         Assert.True(File.Exists(package));
         using var zip = ZipFile.OpenRead(package);
