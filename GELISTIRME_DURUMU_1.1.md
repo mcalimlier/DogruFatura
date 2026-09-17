@@ -65,42 +65,43 @@ Kalan ana işler:
   - `13eb6f0feddae591ea7d0532fd11977af46159a1`
   - `798126f7ede47ed16cf03a5081a8fdceedc1d25b`
   - Eksik static çağrı düzeltmesi: `1353947c17419e34ac9acf2a6f960a98e25706c8`
+- `TaxCalculationService.Calculate` CA1822: **7 → 6** warning.
+  - `afbf23eadae45da6a1a3cb976a9c7a982824c723`
+  - DI yapısı korunarak aktif damga vergisi oranı servis örneği durumuna bağlandı.
 
 ### 17.09.2026 son başarılı yerel build
 
 - SDK: `.NET 10.0.400`
-- Core: **2 warning**
+- Core: **1 warning**
 - WPF: **5 warning**
-- Toplam: **7 warning / 0 error**
+- Toplam: **6 warning / 0 error**
 - Program `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
-- Önceki `CS0176` ara derleme hatası tamamen doğrulanarak kapandı.
+- `TaxCalculationService.Calculate` CA1822 uyarısı doğrulanarak kapandı.
 
-## Kalan 7 warning
+## Kalan 6 warning
 
-### Core — 2
+### Core — 1
 
-- `CA1822` — `TaxCalculationService.Calculate`
 - `CA1309` — `ControlCenterService` dize karşılaştırması
 
 ### WPF — 5
 
 - `CA1822` — `FinalReportDocumentService.Build`
 - `CA1822` — `FinalReportPdfService.Save`
-- `CA1822` — `ApplicationSafetyService.RuntimeDescription`
 - `CA1822` — `HistoricalPdfImportService.Read`
+- `CA1822` — `ApplicationSafetyService.RuntimeDescription`
 - `CA1309` — `HistoricalPdfImportService` kurum adı karşılaştırması
 
 ## Kodlanan fakat yerel doğrulaması bekleyen parça
 
-`TaxCalculationService.Calculate` mevcut DI yapısı korunarak ele alındı:
+`FinalReportDocumentService.Build` servis örneği korunarak ele alındı:
 
-- Commit: `afbf23eadae45da6a1a3cb976a9c7a982824c723`
-- `StampDutyRate` public sabiti korunuyor.
-- Aynı oran `_activeStampDutyRate` örnek durumunda tutuluyor ve hesaplama bu aktif servis kuralını kullanıyor.
-- Matematik, oran, kullanıcı mesajları ve mevcut çağrı biçimi değişmedi.
-- Servisi static yapmadan `CA1822` nedenini ortadan kaldırıyor ve ileride planlanan vergi kural sürümü/yürürlük tarihi mimarisine uyumlu kalıyor.
+- Commit: `f984e834d36827d7a03da2132a23318cdf0fbe50`
+- Mevcut `1122.24 × 793.92` sayfa ölçüsü `_pageSize` örnek durumuna bağlandı.
+- `Build` bu servis durumunu kullanıyor.
+- Sabit sayfa ölçüleri, tablo yerleşimi, çıktı görünümü ve çağrı biçimi değişmedi.
 
-Beklenen sonraki yerel sonuç: **6 warning / 0 error**.
+Beklenen sonraki yerel sonuç: **5 warning / 0 error**.
 
 ## CA1822 yaklaşımı
 
@@ -109,12 +110,13 @@ Beklenen sonraki yerel sonuç: **6 warning / 0 error**.
 - Gerçekten durumsuz yardımcı davranışlar static yapılabilir.
 - DI veya servis sınırı olarak bilinçli biçimde örnek kullanılan sınıflar yalnız warning düşürmek için static yapılmayacak.
 - Güvenlik-kritik büyük dosyalarda sırf warning için geniş çağrı zinciri değişikliği yapılmayacak.
+- Rapor servisleri ileride DI kapsamına alınacağı için örnek servis yapısı korunuyor.
 
 ## Sıradaki iş
 
 1. GitHub Desktop → **Fetch origin → Pull origin**.
 2. `hardening/1.1-data-safety` branch'inde `DERLE_CALISTIR.bat` çalıştır.
-3. Beklenen: **6 warning / 0 error**.
+3. Beklenen: **5 warning / 0 error**.
 4. Doğrulanırsa sıradaki `CA1822` küçük ve izole bir paket olarak ele alınacak.
 5. İki `CA1309` en sona bırakılacak; Türkçe kültür/string davranışı test edilmeden değiştirilmeyecek.
 
