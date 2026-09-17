@@ -33,11 +33,12 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
   -  `DogruFatura.Wpf` yerel Windows/.NET 8+ ortamında başarıyla derlendi
   -  `DERLE_CALISTIR.bat` programı başlatma adımına ulaştı
   -  Görsel/işlevsel manuel smoke kontrolü: splash, sağ üst simgeler, ikinci örnek engeli
--  Aşama 2 — Mimari Temizlik (başladı)
+-  Aşama 2 — Mimari Temizlik (devam ediyor)
   -  Merkezi `InvoiceRulesEngine` oluşturuldu
-  -  `InvoiceValidationService` merkezi motoru kullanıyor
-  -  İlk Aşama 2 parçası yerel build ile doğrulandı
-  -  Kontrol Merkezi entegrasyonu kodlandı; yerel build doğrulaması bekleniyor
+  -  `InvoiceValidationService` ve Kontrol Merkezi aynı merkezi motoru kullanıyor
+  -  Motor + Kontrol Merkezi ortaklaştırması yerel build ile 0 hata / 57 legacy analyzer uyarısıyla doğrulandı
+  -  İlk motor commit'inin eklediği iki analyzer uyarısı temizlendi
+  -  Dependency Injection ilk dilimi kodlandı; yerel build doğrulaması bekleniyor
 -  Aşama 3 — Mali Denetim ve İzlenebilirlik
 -  Aşama 4 — Kalite / CI
 -  Aşama 5 — Kullanıcı Deneyimi
@@ -180,28 +181,47 @@ Kullanıcı `GitHub Desktop → Show in Explorer → DERLE_CALISTIR.bat` yoluyla
 -  Toplam sonuç: 59 uyarı, **0 derleme hatası**, başarılı build.
 -  BAT dosyası `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
 -  Önceki 57 uyarıya eklenen iki yeni kayıt yalnız analyzer önerisiydi: `InvoiceValidationService.cs` CA1826 ve `InvoiceRulesEngine.cs` CA1859.
--  Bu iki yeni uyarı sonraki Aşama 2 commit'inde temizlenecek; mevcut 57 legacy analyzer uyarısı Aşama 4 kapsamında ele alınacak.
+-  Bu iki yeni uyarı sonraki Aşama 2 commit'inde temizlendi.
+
+### 17.09.2026 — Aşama 2 Kontrol Merkezi ortaklaştırması yerel doğrulaması
+
+-  Doğrulanan kod commit'i: `540801dc8f542c9907e218beefe8586c6d08fb59`.
+-  `DogruFatura.Core` 16 analyzer uyarısıyla başarıyla derlendi.
+-  `DogruFatura.Wpf` 41 analyzer uyarısıyla başarıyla derlendi.
+-  Toplam sonuç: 57 uyarı, **0 derleme hatası**, başarılı build.
+-  İlk Aşama 2 commit'inin eklediği CA1826 ve CA1859 uyarıları artık görünmüyor.
+-  BAT dosyası `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
+-  Bu çıktı build doğrulamasıdır; Kontrol Merkezi ekranının ayrı manuel smoke sonucu bu logda kayıtlı değildir.
 
 Not: CA1014/CA1822/CA1859/CA1305/CA1307/CA1309/CA1512/CA1861/CA1806 gibi kayıtlar analyzer uyarılarıdır; build'i durdurmaz. Bunlar Aşama 4 kalite/uyarı temizliğinde sistematik olarak ele alınacaktır. Aşama 2'de eklenen yeni kodun warning borcunu artırmaması ayrıca korunacaktır.
 
 ## Aşama 2 — Mimari Temizlik
 
-### 2.1 Merkezi fatura kural motoru — başladı
+### 2.1 Merkezi fatura kural motoru — kod/build tamamlandı
 
 -  `InvoiceRulesEngine.cs` eklendi.
 -  Desteklenen fatura türleri merkezi motora taşındı.
 -  Kimlik, kurum, VKN, fatura türü, hizmet numarası, tarih ve vergi hesap bütünlüğü kuralları tek değerlendirme modelinde toplandı.
 -  `InvoiceValidationService` mevcut kullanıcı hata sırasını/metinlerini koruyarak `InvoiceRulesEngine` sonucunu kullanmaya geçirildi.
--  `InvoiceRulesEngineTests.cs` eklendi.
--  İlk motor/validation entegrasyonu yerel build ile 0 hata sonucu doğrulandı.
--  İlk build'de yeni koddan gelen CA1826 ve CA1859 analyzer önerileri saptandı; sonraki committe temizleniyor.
--  Kontrol Merkezi'nin aynı motoru kullanması için entegrasyon kodlandı; yerel build/test doğrulaması bekleniyor.
+-  Kontrol Merkezi aynı kural motorunun sonuçlarını kullanacak şekilde ortaklaştırıldı.
+-  `InvoiceRulesEngineTests.cs` motor/validation/Kontrol Merkezi ortaklığını kapsayacak şekilde genişletildi.
+-  İlk motor commit'inde oluşan iki yeni analyzer uyarısı temizlendi.
+-  Ortaklaştırma sonrası yerel build 57 legacy analyzer uyarısı ve 0 hata ile tamamlandı.
+-  Kontrol Merkezi ekranının ayrı manuel smoke teyidi ayrıca kayda geçirilecek.
+
+### 2.2 Dependency Injection — başladı
+
+-  İlk dilim commit'i: `4192ea68e8eb74663307ee82926ca57f4f05d49b`.
+-  `MainWindow` içinde doğrudan oluşturulan `TaxCalculationService`, `SchoolDataStore`, `InvoiceDataStore`, `AuthorityProfileDataStore`, `ArchivedInvoiceListDataStore` ve `ApplicationSafetyService` constructor bağımlılığına dönüştürüldü.
+-  Bu bağımlılıkların oluşturulması `App.Application_Startup` composition root'una taşındı.
+-  Yeni NuGet DI paketi eklenmedi; framework bağımlılığı oluşturmadan constructor injection ile başlanıyor.
+-  Veri yükleme, arşiv, splash ve kullanıcı akışının mevcut davranışı korunuyor.
+-  Yerel build doğrulaması bekleniyor.
 
 ### Aşama 2 kalan işleri
 
+-  Dependency Injection kapsamını rapor/arşiv servislerine kontrollü biçimde genişlet.
 -  MainWindow sorumluluklarını ViewModel / application service katmanlarına ayır.
--  Dependency Injection kullan.
--  Merkezi InvoiceRulesEngine'i validation ve Kontrol Merkezi arasında tam ortak kaynak haline getir.
 -  InvoiceType / InstitutionType / ArchiveStatus için enum veya value object kullan.
 -  SchoolRecord için değişmez `SchoolId` ekle ve fatura-kurum bağını ID üzerinden kur.
 
@@ -230,33 +250,36 @@ Not: CA1014/CA1822/CA1859/CA1305/CA1307/CA1309/CA1512/CA1861/CA1806 gibi kayıtl
 
 ## Tamamlanan son parça
 
-**Aşama 2 ilk parça — merkezi InvoiceRulesEngine + InvoiceValidationService entegrasyonu yerel build doğrulaması başarılı**
+**Aşama 2 — merkezi InvoiceRulesEngine + Kontrol Merkezi ortaklaştırmasının yerel build doğrulaması başarılı**
 
-Doğrulanan kod commit'i: `12e8a80dbd18e24a5cabc7b4b2a239f67656eab8`
+Doğrulanan kod commit'i: `540801dc8f542c9907e218beefe8586c6d08fb59`
 
 Doğrulama sonucu:
 
 -  Core ve WPF yerel kullanıcı bilgisayarında başarıyla derlendi.
 -  Derleme hatası yok.
--  Toplam 59 analyzer uyarısı görüldü; bunların 2'si yeni Aşama 2 kodundan geldi ve sonraki committe temizleniyor.
+-  Toplam 57 legacy analyzer uyarısı görüldü.
+-  Önceki yeni CA1826 ve CA1859 uyarıları temizlendi.
 -  BAT dosyası programı başlatma aşamasına ulaştı.
 
 ### Doğrulama notu
 
-Bu sonuç GitHub Actions değil, kullanıcının gerçek Windows bilgisayarında .NET SDK 10.0.400 ile yapılan yerel build doğrulamasıdır. GitHub Actions runner sorunu ayrıca devam etmektedir; bu nedenle “yerel build doğrulandı” denebilir ancak “CI doğrulandı” denmeyecek.
+Bu sonuç GitHub Actions değil, kullanıcının gerçek Windows bilgisayarında .NET SDK 10.0.400 ile yapılan yerel build doğrulamasıdır. GitHub Actions runner sorunu ayrıca devam etmektedir; bu nedenle “yerel build doğrulandı” denebilir ancak “CI doğrulandı” denmeyecek. Kontrol Merkezi'nin ayrı manuel smoke sonucu bu derleme logundan çıkarılamaz.
 
 ## Sıradaki iş
 
-**Aşama 2 — Kontrol Merkezi'ni `InvoiceRulesEngine` ile ortaklaştıran commit'in yerel doğrulaması.**
+**Aşama 2 — ilk Dependency Injection diliminin yerel doğrulaması.**
+
+Kod commit'i: `4192ea68e8eb74663307ee82926ca57f4f05d49b`
 
 Doğrulama:
 
 1. GitHub Desktop'ta `hardening/1.1-data-safety` branch'inde Fetch/Pull yap.
 2. `DERLE_CALISTIR.bat` çalıştır.
 3. Derleme özetinde `0 error` doğrula.
-4. Yeni koddan gelen CA1826 ve CA1859 uyarılarının kaybolduğunu; toplam warning sayısının yeniden legacy tabana yaklaşmasını kontrol et.
-5. Program açıldığında Kontrol Merkezi'ni aç ve mevcut kayıtların kontrol taramasının çalıştığını kontrol et.
-6. Bu kontrol uygunsa merkezi kural motoru + Kontrol Merkezi entegrasyonunu tamamlandı kabul et ve sonraki mimari parçaya geç.
+4. Yeni analyzer warning oluşup oluşmadığını kontrol et; hedef mevcut legacy tabanı olan yaklaşık 57 warning'i aşmamak.
+5. Programın normal açıldığını ve ana ekranın veri yükleyebildiğini kontrol et.
+6. Bu kontrol uygunsa DI ilk dilimini tamamlandı kabul et ve rapor/arşiv servisleri ile MainWindow sorumluluk ayrışmasına geç.
 
 ## GitHub Desktop'ta çalışmaları görme
 
@@ -305,10 +328,11 @@ Kritik bağlam:
 -  Sağ üst simge eşitlemesi tamamlandı; manuel görsel teyit bekliyor.
 -  Yaklaşık 5,5 saniyelik akıcı splash tamamlandı; manuel görsel teyit bekliyor.
 -  Tek örnek güvenliği tamamlandı.
--  Yerel build doğrulaması başarılı; ilk Aşama 2 motor/validation parçası da 0 hatayla derlendi.
--  Son doğrulanan kod commit'i: `12e8a80dbd18e24a5cabc7b4b2a239f67656eab8`.
--  Son yerel build: 0 hata, 59 analyzer uyarısı; 2 yeni analyzer uyarısı sonraki committe temizleniyor.
--  Sıradaki işlem: Kontrol Merkezi'nin `InvoiceRulesEngine` entegrasyonu için yeni commit'i yerelde derleyip Kontrol Merkezi smoke kontrolü yapmak.
+-  Merkezi InvoiceRulesEngine + Kontrol Merkezi ortaklaştırması yerel build ile doğrulandı.
+-  Son doğrulanan kod commit'i: `540801dc8f542c9907e218beefe8586c6d08fb59`.
+-  Son yerel build: 0 hata, 57 legacy analyzer uyarısı.
+-  Güncel kod commit'i: `4192ea68e8eb74663307ee82926ca57f4f05d49b` — ilk constructor injection / DI dilimi; yerel build bekleniyor.
+-  Sıradaki işlem: bu DI commit'ini yerelde derleyip program açılışını kontrol etmek.
 -  CI durumu: GitHub Actions job'ları runner/step başlamadan failure oluyor; gerçek CI build/test sonucu alınamıyor.
 -  `main` ile henüz merge yapılmayacak.
 
