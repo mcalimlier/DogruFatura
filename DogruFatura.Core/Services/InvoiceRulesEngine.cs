@@ -126,7 +126,7 @@ public static class InvoiceRulesEngine
     }
 
     private static void Add(
-        ICollection<InvoiceRuleViolation> violations,
+        List<InvoiceRuleViolation> violations,
         InvoiceRuleCode code,
         string message) =>
         violations.Add(new InvoiceRuleViolation(code, message));

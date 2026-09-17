@@ -33,6 +33,38 @@ public sealed class InvoiceRulesEngineTests
         Assert.Equal("Faturanın vergi hesap sonuçları güncel hesap motoruyla uyuşmuyor.", validation.Message);
     }
 
+    [Fact]
+    public void ControlCenter_UsesEngineVknRuleWithoutChangingIssueContract()
+    {
+        var invoice = ValidInvoice() with { Vkn = "12A" };
+
+        var result = ControlCenterService.Scan(
+            new[] { MatchingSchool() },
+            new[] { invoice },
+            new DateTime(2026, 9, 17));
+
+        var issue = Assert.Single(result.Issues.Where(item => item.Code == "INVOICE_VKN_INVALID"));
+        Assert.Equal(ControlIssueSeverity.Error, issue.Severity);
+        Assert.Equal("Faturanın VKN bilgisi geçersiz", issue.Title);
+        Assert.Equal("VKN girildiyse 10 haneli ve yalnızca rakamlardan oluşmalıdır.", issue.Detail);
+    }
+
+    [Fact]
+    public void ControlCenter_UsesEngineTaxMismatchWithoutChangingIssueContract()
+    {
+        var invoice = ValidInvoice();
+        invoice = invoice with { PaymentAmount = invoice.PaymentAmount + 1m };
+
+        var result = ControlCenterService.Scan(
+            new[] { MatchingSchool() },
+            new[] { invoice },
+            new DateTime(2026, 9, 17));
+
+        var issue = Assert.Single(result.Issues.Where(item => item.Code == "INVOICE_TAX_MISMATCH"));
+        Assert.Equal(ControlIssueSeverity.Error, issue.Severity);
+        Assert.Equal("Vergi hesabı güncel kuralla uyuşmuyor", issue.Title);
+    }
+
     [Theory]
     [InlineData("Elektrik")]
     [InlineData("Telefon")]
@@ -44,9 +76,17 @@ public sealed class InvoiceRulesEngineTests
     }
 
     [Fact]
-    public void UnknownInvoiceType_IsRejected()
+    public void UnknownInvoiceType_IsRejectedByEngineAndControlCenter()
     {
-        Assert.False(InvoiceRulesEngine.IsSupportedInvoiceType("Doğalgaz"));
+        var invoice = ValidInvoice() with { InvoiceType = "Doğalgaz" };
+
+        var result = ControlCenterService.Scan(
+            new[] { MatchingSchool() },
+            new[] { invoice },
+            new DateTime(2026, 9, 17));
+
+        Assert.False(InvoiceRulesEngine.IsSupportedInvoiceType(invoice.InvoiceType));
+        Assert.Contains(result.Issues, item => item.Code == "INVOICE_TYPE_INVALID");
     }
 
     private static InvoiceRecord ValidInvoice()
@@ -70,4 +110,13 @@ public sealed class InvoiceRulesEngineTests
             calculation.StampDuty,
             calculation.PaymentAmount);
     }
+
+    private static SchoolRecord MatchingSchool() => new(
+        "İlkokul",
+        "Test Kurumu",
+        string.Empty,
+        "12345",
+        "1",
+        "1",
+        "1");
 }
