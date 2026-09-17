@@ -12,8 +12,7 @@ public static class FinalReportPagePlanner
 
     public static IReadOnlyList<FinalReportPageSlice> Plan(int itemCount)
     {
-        if (itemCount < 0)
-            throw new ArgumentOutOfRangeException(nameof(itemCount));
+        ArgumentOutOfRangeException.ThrowIfNegative(itemCount);
         if (itemCount == 0)
             return Array.Empty<FinalReportPageSlice>();
 
