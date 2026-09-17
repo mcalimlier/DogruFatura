@@ -6,6 +6,8 @@ Bu dosya DoğruFatura 1.1 sağlamlaştırma çalışmalarının kalıcı ilerlem
 
 `hardening/1.1-data-safety`
 
+> Bu dosya şu anda `main` dalında değil, yukarıdaki çalışma dalındadır. GitHub Desktop'ta görmek için **Fetch origin** yaptıktan sonra **Current branch** menüsünden `hardening/1.1-data-safety` dalına geçin.
+
 ## Genel hedef
 
 DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri güvenliği, arşiv bütünlüğü, mimari ayrışma, mali izlenebilirlik ve CI kalite kapılarını güçlendirmek.
@@ -35,9 +37,19 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 
 ### 1.2 Veri şema sürümleme
 
-- [ ] Kalıcı JSON verileri için açık şema sürümü tanımla.
-- [ ] Sürüm geçişlerini merkezi migration zincirine taşı.
-- [ ] Eski sürüm dosyaları için geriye uyumluluk testleri ekle.
+- [x] Kalıcı JSON verileri için açık şema sürümü tanımlandı (`SchemaVersion`).
+- [x] Veri dosyasının türünü doğrulayan `DataType` alanı eklendi.
+- [x] İş verisi `Data` alanı altında sürümlü bir zarf içine alındı.
+- [x] Şema sürümü ve migration zinciri `DataFileSchemaService` altında merkezileştirildi.
+- [x] DoğruFatura 1.0.x dosyaları açıkça `Schema 0` olarak tanımlandı ve geriye uyumlu okunuyor.
+- [x] Schema 0 -> Schema 1 geçişinde iş verisi değiştirilmeden yeni zarfa taşınıyor.
+- [x] Otomatik yükseltmeden önce eski dosyanın fiziksel geri dönüş kopyası oluşturuluyor (`*_Schema0_Onceki_*.json`).
+- [x] Geri dönüş kopyası oluşturulamazsa otomatik şema dönüşümü yapılmıyor.
+- [x] Daha yeni/bilinmeyen şema sürümleri güvenli biçimde reddediliyor ve kaynak dosya ezilmiyor.
+- [x] Yanlış `DataType` içeren dosyalar güvenli biçimde reddediliyor.
+- [x] `InvoiceDataStore`, `SchoolDataStore`, `AuthorityProfileDataStore` ve `ArchivedInvoiceListDataStore` yeni şema sistemine geçirildi.
+- [x] Eski dosyaların yükseltilmesi, yeni format round-trip'i, gelecek şema reddi ve veri türü doğrulaması için otomatik testler eklendi (`DataSchemaMigrationTests.cs`).
+- [ ] GitHub Actions ile derleme/test doğrulaması — **runner altyapısı nedeniyle beklemede**. Son denemede de `windows-latest` job'u hiçbir step başlamadan `runner_id=0` ile kapandı.
 
 ### 1.3 Yedekten geri yükleme semantik doğrulaması
 
@@ -87,25 +99,38 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 
 ## Tamamlanan son parça
 
-**Aşama 1.1 — Bozuk veri kurtarma davranışı:**
+**Aşama 1.2 — Veri şema sürümleme:**
 
-- `InvoiceDataStore`, `SchoolDataStore`, `AuthorityProfileDataStore` ve `ArchivedInvoiceListDataStore` güvenli kurtarma davranışına geçirildi.
-- Bozuk ana JSON dosyaları artık otomatik boş/varsayılan içerikle değiştirilmiyor.
-- Sorunlu dosyanın zaman damgalı koruma kopyası oluşturuluyor.
-- Aktif fatura, kurum ve işlem arşivinde mümkün olan sağlam kayıtlar oturum için kurtarılıyor.
-- `RecoveryModeTests.cs` ile ana dosyanın değişmeden kaldığı ve sağlam kayıtların kurtarıldığı senaryolar eklendi.
+- Yeni `DataFileSchemaService.cs` ile kalıcı JSON formatının sürümü tek merkezden yönetiliyor.
+- Yeni dosya biçimi `SchemaVersion`, `DataType` ve `Data` alanlarını kullanıyor.
+- Eski 1.0.x dosyaları Schema 0 olarak tanınıyor ve doğrulama başarılıysa Schema 1'e yükseltiliyor.
+- Her otomatik yükseltmeden önce eski dosyanın birebir geri dönüş kopyası saklanıyor.
+- Gelecek sürüm şemaları veya yanlış veri türleri otomatik dönüştürülmüyor ve kaynak dosya korunuyor.
+- `DataSchemaMigrationTests.cs` ile geriye uyumluluk ve güvenli yükseltme senaryoları eklendi.
 
 ### Doğrulama notu
 
-17.09.2026 tarihindeki branch workflow denemeleri build adımlarına ulaşmadan başarısız oldu. GitHub Actions job kaydında runner atanmadığı ve `steps` listesinin boş olduğu görüldü. Bu nedenle Aşama 1.1'in otomatik CI doğrulaması henüz tamamlanmış sayılmıyor; kod ve test değişiklikleri hazır durumda.
+17.09.2026 tarihindeki son branch workflow denemesinde `build-and-test` job'u yine runner atanmadan (`runner_id=0`) ve `steps=[]` durumunda birkaç saniye içinde failure oldu. Bu nedenle Aşama 1.2 kod/test kapsamı tamamlandı ancak GitHub Actions CI doğrulaması henüz tamamlanmış sayılmıyor.
 
 ## Sıradaki iş
 
-**Aşama 1.2 — Veri şema sürümleme.** Kalıcı JSON verilerine açık bir schema/version yapısı eklenecek; geçişler merkezi migration katmanına taşınacak ve mevcut 1.0.x dosyalarının geriye uyumlu biçimde açılması testlerle korunacak.
+**Aşama 1.3 — Yedekten geri yükleme semantik doğrulaması.** `ApplicationSafetyService` yalnızca JSON sözdizimini kontrol etmek yerine yedekteki `Okullar`, `AktifFaturalar`, `YetkiliProfili` ve `IslemArsivi` verilerini model ve iş kurallarıyla doğrulayacak. Geçersiz yedek mevcut canlı verinin üzerine hiçbir şekilde geçirilmeden reddedilecek ve bu davranış entegrasyon testleriyle korunacak.
+
+## GitHub Desktop'ta çalışmaları görme
+
+1. GitHub Desktop'ta `DogruFatura` deposunu seçin.
+2. Üst bölümde **Fetch origin** düğmesine basın.
+3. **Current branch** menüsünü açın.
+4. `hardening/1.1-data-safety` branch'ini seçin. İlk kez görünüyorsa **Other Branches / Remote Branches** bölümünden seçin.
+5. Branch açıldıktan sonra **History** sekmesinde yaptığım commit'leri görebilirsiniz.
+6. Dosyaları diskte görmek için **Repository > Show in Explorer** seçeneğini kullanın. Kök dizinde `GELISTIRME_DURUMU_1.1.md` görünecektir.
+7. Kodun mevcut `main` sürümünden farkını görmek için GitHub Desktop'ta **Branch > Compare to Branch... > main** yolunu kullanabilirsiniz.
+8. Bu branch'i şimdilik `main` ile birleştirmeyin; veri güvenliği aşamasının tamamını bitirip doğrulama yaptıktan sonra birlikte merge edeceğiz.
 
 ## Notlar
 
 - Mevcut kullanıcı verisini otomatik silen veya geri döndürülemez biçimde dönüştüren değişiklik yapılmayacak.
+- Otomatik şema yükseltmelerinde geri dönüş kopyası olmadan kaynak dosya dönüştürülmeyecek.
 - Her parça bağımsız ve geri alınabilir commit olarak tutulacak.
 - Her tamamlanan parçadan sonra bu dosya mutlaka güncellenecek.
 - CI runner sorunu çözülmeden hiçbir aşama için "CI doğrulandı" ifadesi kullanılmayacak.
