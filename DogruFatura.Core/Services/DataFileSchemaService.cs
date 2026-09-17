@@ -75,6 +75,26 @@ public static class DataFileSchemaService
         return JsonSerializer.Serialize(envelope, options);
     }
 
+    public static string CreatePreUpgradeBackup(
+        string dataFilePath,
+        int sourceSchemaVersion)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(dataFilePath);
+
+        var directory = Path.GetDirectoryName(dataFilePath)
+                        ?? throw new IOException("Veri dosyasının klasörü belirlenemedi.");
+        Directory.CreateDirectory(directory);
+
+        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(dataFilePath);
+        var extension = Path.GetExtension(dataFilePath);
+        var backupPath = Path.Combine(
+            directory,
+            $"{fileNameWithoutExtension}_Schema{sourceSchemaVersion}_Onceki_{DateTime.Now:yyyyMMdd_HHmmss_fff}{extension}");
+
+        File.Copy(dataFilePath, backupPath, overwrite: false);
+        return backupPath;
+    }
+
     private static MigrationResult ApplyMigrations(int sourceVersion, JsonElement data)
     {
         var version = sourceVersion;
