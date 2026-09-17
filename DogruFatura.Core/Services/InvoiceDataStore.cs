@@ -38,9 +38,10 @@ public sealed class InvoiceDataStore
         try
         {
             var json = File.ReadAllText(DataFilePath, Encoding.UTF8);
-            var invoices = JsonSerializer.Deserialize<List<InvoiceRecord>>(json, _jsonOptions)
+            var schema = DataFileSchemaService.Read(json, DataFileKinds.ActiveInvoices);
+            var invoices = schema.Data.Deserialize<List<InvoiceRecord>>(_jsonOptions)
                            ?? new List<InvoiceRecord>();
-            return FinalizeLoadedInvoices(invoices);
+            return FinalizeLoadedInvoices(invoices, schema.RequiresUpgrade);
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
@@ -55,7 +56,7 @@ public sealed class InvoiceDataStore
         }
     }
 
-    private InvoiceLoadResult FinalizeLoadedInvoices(List<InvoiceRecord> invoices)
+    private InvoiceLoadResult FinalizeLoadedInvoices(List<InvoiceRecord> invoices, bool requiresSchemaUpgrade)
     {
         var migratedWaterInvoices = 0;
         var taxService = new TaxCalculationService();
@@ -76,11 +77,26 @@ public sealed class InvoiceDataStore
         var warnings = new List<string>();
         var invalidCount = invoices.Count(invoice => !InvoiceValidationService.Validate(invoice).IsValid);
         if (invalidCount > 0) warnings.Add($"Aktif listede {invalidCount} eksik veya hatalı kayıt korunarak açıldı. Ayrıntıları Kontrol Merkezi'nden düzeltin.");
-        if (migratedWaterInvoices > 0)
+
+        if (requiresSchemaUpgrade || migratedWaterInvoices > 0)
         {
-            try { Save(invoices); warnings.Add($"{migratedWaterInvoices} su faturası yeni damga vergisi kuralına göre güncellendi."); }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { warnings.Add($"Su faturası geçişi bu oturumda uygulandı ancak kalıcı dosya yazılamadı: {ex.Message}"); }
+            try
+            {
+                Save(invoices);
+                if (requiresSchemaUpgrade)
+                    warnings.Add($"Aktif fatura veri dosyası şema {DataFileSchemaService.CurrentSchemaVersion} biçimine güvenle yükseltildi.");
+                if (migratedWaterInvoices > 0)
+                    warnings.Add($"{migratedWaterInvoices} su faturası yeni damga vergisi kuralına göre güncellendi.");
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                if (requiresSchemaUpgrade)
+                    warnings.Add($"Aktif fatura veri dosyasının şema yükseltmesi bu oturumda uygulanamadı; mevcut dosya korunuyor: {ex.Message}");
+                if (migratedWaterInvoices > 0)
+                    warnings.Add($"Su faturası geçişi bu oturumda uygulandı ancak kalıcı dosya yazılamadı: {ex.Message}");
+            }
         }
+
         var types = InvoiceListTypePolicy.GetDistinctTypes(invoices);
         if (types.Count > 1) warnings.Add($"Eski aktif listede birden fazla fatura türü var ({string.Join(", ", types)}). Kayıtlar korunmuştur.");
         return new InvoiceLoadResult(invoices, warnings.Count == 0 ? null : string.Join(" ", warnings), DataFilePath);
@@ -92,9 +108,10 @@ public sealed class InvoiceDataStore
         var recovered = new List<InvoiceRecord>();
         try
         {
-            using var document = JsonDocument.Parse(File.ReadAllText(DataFilePath, Encoding.UTF8));
-            if (document.RootElement.ValueKind != JsonValueKind.Array) return recovered;
-            foreach (var element in document.RootElement.EnumerateArray())
+            var json = File.ReadAllText(DataFilePath, Encoding.UTF8);
+            var schema = DataFileSchemaService.Read(json, DataFileKinds.ActiveInvoices);
+            if (schema.Data.ValueKind != JsonValueKind.Array) return recovered;
+            foreach (var element in schema.Data.EnumerateArray())
             {
                 try
                 {
@@ -126,7 +143,11 @@ public sealed class InvoiceDataStore
         var folder = Path.GetDirectoryName(DataFilePath) ?? throw new InvalidOperationException("Aktif fatura veri klasörü belirlenemedi.");
         Directory.CreateDirectory(folder);
         var temporaryPath = DataFilePath + ".tmp";
-        File.WriteAllText(temporaryPath, JsonSerializer.Serialize(invoices.ToList(), _jsonOptions), new UTF8Encoding(false));
+        var json = DataFileSchemaService.SerializeCurrent(
+            DataFileKinds.ActiveInvoices,
+            invoices.ToList(),
+            _jsonOptions);
+        File.WriteAllText(temporaryPath, json, new UTF8Encoding(false));
         File.Move(temporaryPath, DataFilePath, true);
     }
 
