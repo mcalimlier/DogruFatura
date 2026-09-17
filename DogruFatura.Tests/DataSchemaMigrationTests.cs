@@ -8,12 +8,13 @@ namespace DogruFatura.Tests;
 public sealed class DataSchemaMigrationTests
 {
     [Fact]
-    public void LegacyInvoiceFile_IsLoaded_AndUpgradedToCurrentSchema()
+    public void LegacyInvoiceFile_IsLoaded_Upgraded_AndOriginalFormatIsBackedUp()
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "AktifFaturalar.json");
         var invoice = Invoice("LEGACY-INV-001");
-        File.WriteAllText(path, JsonSerializer.Serialize(new[] { invoice }), Encoding.UTF8);
+        var original = JsonSerializer.Serialize(new[] { invoice });
+        File.WriteAllText(path, original, Encoding.UTF8);
 
         var result = new InvoiceDataStore(path).LoadOrCreate();
 
@@ -21,6 +22,8 @@ public sealed class DataSchemaMigrationTests
         Assert.Equal(invoice.Id, result.Invoices[0].Id);
         AssertCurrentEnvelope(path, DataFileKinds.ActiveInvoices);
         Assert.Contains("şema", result.WarningMessage!, StringComparison.CurrentCultureIgnoreCase);
+        var backup = Assert.Single(Directory.EnumerateFiles(temp.Path, "AktifFaturalar_Schema0_Onceki_*.json"));
+        Assert.Equal(original, File.ReadAllText(backup, Encoding.UTF8));
     }
 
     [Fact]
@@ -39,6 +42,7 @@ public sealed class DataSchemaMigrationTests
         Assert.Equal(school.Name, result.Schools[0].Name);
         AssertCurrentEnvelope(path, DataFileKinds.Schools);
         Assert.Contains("şema", result.WarningMessage!, StringComparison.CurrentCultureIgnoreCase);
+        Assert.Single(Directory.EnumerateFiles(temp.Path, "Okullar_Schema0_Onceki_*.json"));
     }
 
     [Fact]
@@ -54,6 +58,7 @@ public sealed class DataSchemaMigrationTests
         Assert.True(result.Profile.IsComplete);
         AssertCurrentEnvelope(path, DataFileKinds.AuthorityProfile);
         Assert.Contains("şema", result.WarningMessage!, StringComparison.CurrentCultureIgnoreCase);
+        Assert.Single(Directory.EnumerateFiles(temp.Path, "YetkiliProfili_Schema0_Onceki_*.json"));
     }
 
     [Fact]
@@ -76,6 +81,7 @@ public sealed class DataSchemaMigrationTests
         Assert.Equal(archive.Id, result.Archives[0].Id);
         AssertCurrentEnvelope(path, DataFileKinds.InvoiceArchive);
         Assert.Contains("şema", result.WarningMessage!, StringComparison.CurrentCultureIgnoreCase);
+        Assert.Single(Directory.EnumerateFiles(temp.Path, "IslemArsivi_Schema0_Onceki_*.json"));
     }
 
     [Fact]
@@ -93,6 +99,7 @@ public sealed class DataSchemaMigrationTests
         Assert.Equal(invoice.Id, result.Invoices[0].Id);
         AssertCurrentEnvelope(path, DataFileKinds.ActiveInvoices);
         Assert.True(string.IsNullOrWhiteSpace(result.WarningMessage));
+        Assert.Empty(Directory.EnumerateFiles(temp.Path, "*_Schema*_Onceki_*.json"));
     }
 
     [Fact]
