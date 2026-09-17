@@ -30,7 +30,7 @@ public static class ControlCenterService
         return new ControlScanResult(ordered);
     }
 
-    private static void ScanSchools(IReadOnlyList<SchoolRecord> schools, ICollection<ControlIssue> issues)
+    private static void ScanSchools(IReadOnlyList<SchoolRecord> schools, List<ControlIssue> issues)
     {
         foreach (var school in schools)
         {
@@ -62,7 +62,7 @@ public static class ControlCenterService
         }
     }
 
-    private static void ScanActiveList(IReadOnlyList<InvoiceRecord> invoices, ICollection<ControlIssue> issues)
+    private static void ScanActiveList(IReadOnlyList<InvoiceRecord> invoices, List<ControlIssue> issues)
     {
         var types = InvoiceListTypePolicy.GetDistinctTypes(invoices);
         if (types.Count <= 1) return;
@@ -83,7 +83,7 @@ public static class ControlCenterService
         IReadOnlyList<SchoolRecord> schools,
         IReadOnlyList<InvoiceRecord> invoices,
         DateTime today,
-        ICollection<ControlIssue> issues)
+        List<ControlIssue> issues)
     {
         foreach (var invoice in invoices)
         {
@@ -212,7 +212,7 @@ public static class ControlCenterService
     private static void ScanInvoiceSchoolLink(
         IReadOnlyList<SchoolRecord> schools,
         InvoiceRecord invoice,
-        ICollection<ControlIssue> issues)
+        List<ControlIssue> issues)
     {
         var school = schools.FirstOrDefault(candidate =>
             string.Equals(candidate.InstitutionType, invoice.InstitutionType, StringComparison.Ordinal)
@@ -256,7 +256,7 @@ public static class ControlCenterService
         }
     }
 
-    private static void ScanDuplicates(IReadOnlyList<InvoiceRecord> invoices, ICollection<ControlIssue> issues)
+    private static void ScanDuplicates(IReadOnlyList<InvoiceRecord> invoices, List<ControlIssue> issues)
     {
         var duplicateGroups = invoices
             .Where(invoice => !string.IsNullOrWhiteSpace(invoice.InvoiceType)
