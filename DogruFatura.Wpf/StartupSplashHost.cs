@@ -14,6 +14,7 @@ internal sealed class StartupSplashHost : IDisposable
     private readonly Stopwatch _visibleStopwatch = new();
     private Thread? _thread;
     private SplashWindow? _window;
+    private Exception? _startupException;
     private bool _disposed;
 
     public void Show()
@@ -31,6 +32,8 @@ internal sealed class StartupSplashHost : IDisposable
 
         if (!_shown.Wait(TimeSpan.FromSeconds(5)))
             throw new TimeoutException("Karşılama ekranı zamanında başlatılamadı.");
+        if (_startupException is not null)
+            throw new InvalidOperationException("Karşılama ekranı başlatılamadı.", _startupException);
     }
 
     public async Task CompleteAsync()
@@ -47,13 +50,13 @@ internal sealed class StartupSplashHost : IDisposable
         var window = _window;
         if (window is null) return;
 
-        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         window.Dispatcher.BeginInvoke(new Action(async () =>
         {
             try
             {
                 await window.CompleteAndCloseAsync();
-                completion.TrySetResult();
+                completion.TrySetResult(true);
             }
             catch (Exception ex)
             {
@@ -94,10 +97,10 @@ internal sealed class StartupSplashHost : IDisposable
             window.Show();
             Dispatcher.Run();
         }
-        catch
+        catch (Exception ex)
         {
+            _startupException = ex;
             _shown.Set();
-            throw;
         }
     }
 
