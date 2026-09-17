@@ -62,7 +62,7 @@ Kalan ana işler:
 - Son `CA1859`: **9 → 8** warning.
   - `bc6b93c0c11d8d09a75ceb9e756ebdc61c5c3e64`
 
-### 17.09.2026 son doğrulanan yerel build
+### 17.09.2026 son başarılı yerel build
 
 - SDK: `.NET 10.0.400`
 - Core: **2 warning**
@@ -87,16 +87,25 @@ Kalan ana işler:
 - `CA1822` — `ApplicationSafetyService.RuntimeDescription`
 - `CA1309` — `HistoricalPdfImportService` kurum adı karşılaştırması
 
-## Kodlanan fakat yerel doğrulaması bekleyen parça
+## CA1822 Paket 1 — yerel doğrulama bekliyor
 
-İlk `CA1822` paketi yalnız `DiagnosticPackageService.Create` için hazırlandı:
+`DiagnosticPackageService.Create` durumsuz olduğu için static metoda dönüştürüldü:
 
-- `13eb6f0feddae591ea7d0532fd11977af46159a1`
-  - `DiagnosticPackageService.Create` statik metoda dönüştürüldü.
-- `798126f7ede47ed16cf03a5081a8fdceedc1d25b`
-  - Mevcut tanılama paketi testi statik çağrı biçimine geçirildi.
+- `13eb6f0feddae591ea7d0532fd11977af46159a1` — metot static yapıldı.
+- `798126f7ede47ed16cf03a5081a8fdceedc1d25b` — test statik çağrıya geçirildi.
 
-Bu servis kendi örnek durumunu kullanmıyordu; dosya oluşturma, içerik temizleme ve güvenlik kontrolü davranışı değişmedi.
+İlk yerel denemede:
+
+- Core: **2 warning**
+- WPF: **5 warning + 1 error**
+- Toplam: **7 warning / 1 error**
+- Hata: `CS0176` — `UiVisualPolishService.cs` içinde eski örnek çağrısı kalmıştı.
+
+Düzeltme:
+
+- `1353947c17419e34ac9acf2a6f960a98e25706c8`
+- `new DiagnosticPackageService().Create(safety)` yerine `DiagnosticPackageService.Create(safety)` kullanıldı.
+- İşlevsel davranış değişmedi; yalnız static çağrı biçimi tamamlandı.
 
 Beklenen sonraki yerel sonuç: **7 warning / 0 error**.
 
