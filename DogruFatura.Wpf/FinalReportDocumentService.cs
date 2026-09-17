@@ -28,6 +28,7 @@ public sealed class FinalReportDocumentService
     private static readonly Brush Gold = BrushFrom("#FFB41F");
     private static readonly Brush Muted = BrushFrom("#526277");
     private static readonly Brush Light = BrushFrom("#D8E4EF");
+    private readonly Size _pageSize = new(PageWidth, PageHeight);
 
     public FixedDocument Build(FinalReportData data)
     {
@@ -35,7 +36,7 @@ public sealed class FinalReportDocumentService
 
         var slices = FinalReportPagePlanner.Plan(data.Invoices.Count);
         var document = new FixedDocument();
-        document.DocumentPaginator.PageSize = new Size(PageWidth, PageHeight);
+        document.DocumentPaginator.PageSize = _pageSize;
 
         for (var pageIndex = 0; pageIndex < slices.Count; pageIndex++)
         {
