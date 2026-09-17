@@ -74,57 +74,58 @@ Kalan ana işler:
 - `FinalReportPdfService.Save` CA1822: **5 → 4** warning.
   - `014df5f68752205ed0201e97015a620036ca1d0f`
   - A4 yatay PDF ayarları servis örneği durumuna bağlandı; çıktı yapısı değişmedi.
+- `HistoricalPdfImportService.Read` CA1822: **4 → 3** warning.
+  - `b04c2c1cc61cf382a31fc38088305390b1620f9c`
+  - `TaxCalculationService` bağımlılığı servis örneğine taşındı; PDF doğrulama davranışı değişmedi.
 
 ### 17.09.2026 son başarılı yerel build
 
 - SDK: `.NET 10.0.400`
 - Core: **1 warning**
-- WPF: **3 warning**
-- Toplam: **4 warning / 0 error**
+- WPF: **2 warning**
+- Toplam: **3 warning / 0 error**
 - Program `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
-- `FinalReportPdfService.Save` CA1822 uyarısı doğrulanarak kapandı.
+- `HistoricalPdfImportService.Read` CA1822 uyarısı doğrulanarak kapandı.
 
-## Kalan 4 warning
+## Kalan 3 warning
 
 ### Core — 1
 
 - `CA1309` — `ControlCenterService` dize karşılaştırması
 
-### WPF — 3
+### WPF — 2
 
-- `CA1822` — `HistoricalPdfImportService.Read`
 - `CA1822` — `ApplicationSafetyService.RuntimeDescription`
 - `CA1309` — `HistoricalPdfImportService` kurum adı karşılaştırması
 
 ## Kodlanan fakat yerel doğrulaması bekleyen parça
 
-`HistoricalPdfImportService.Read` DI yönüne uygun biçimde ele alındı:
+`ApplicationSafetyService.RuntimeDescription` örnek servis yapısı korunarak ele alındı:
 
-- Commit: `b04c2c1cc61cf382a31fc38088305390b1620f9c`
-- `HistoricalPdfImportService`, `TaxCalculationService` bağımlılığını constructor üzerinden kabul ediyor.
-- Parametre verilmezse önceki davranışı korumak için varsayılan `TaxCalculationService` oluşturuluyor.
-- PDF satır doğrulamasında her hesaplamada yeni servis oluşturmak yerine aynı servis örneği kullanılıyor.
-- Vergi matematiği, tazminat arama aralığı, PDF doğrulama kuralları, kullanıcı mesajları ve mevcut `new HistoricalPdfImportService()` çağrıları değişmedi.
-- `Read` artık gerçek servis örneği durumunu kullandığı için `CA1822` nedeninin kalkması bekleniyor.
+- Commit: `71d952b84aac1a5f4599978f135b7d2a77eab815`
+- Çalışma ortamı açıklaması servis constructor'ında bir kez hesaplanıp `_runtimeDescription` örnek alanında saklanıyor.
+- `RuntimeDescription` public örnek özelliği ve tüm çağrı noktaları değişmedi.
+- Yedekleme, restore, SHA-256, manifest, klasör erişimi ve veri doğrulama koduna işlevsel değişiklik yapılmadı.
+- Bu nedenle son `CA1822` uyarısının kalkması bekleniyor.
 
-Beklenen sonraki yerel sonuç: **3 warning / 0 error**.
+Beklenen sonraki yerel sonuç: **2 warning / 0 error**.
 
 ## CA1822 yaklaşımı
 
-`CA1822` uyarıları topluca static yapılmayacak.
+`CA1822` uyarıları topluca static yapılmadı.
 
-- Gerçekten durumsuz yardımcı davranışlar static yapılabilir.
-- DI veya servis sınırı olarak bilinçli biçimde örnek kullanılan sınıflar yalnız warning düşürmek için static yapılmayacak.
-- Güvenlik-kritik büyük dosyalarda sırf warning için geniş çağrı zinciri değişikliği yapılmayacak.
-- Rapor ve arşiv servisleri ileride DI kapsamına alınacağı için örnek servis yapısı korunuyor.
+- Gerçekten durumsuz yardımcı davranış static yapılabildi.
+- DI veya servis sınırı olan sınıflarda örnek yapı korundu.
+- Güvenlik-kritik kodda davranış değişikliği yaratacak toplu düzenleme yapılmadı.
+- Son `CA1822` yerel doğrulaması sonrası yalnız `CA1309` warning'leri kalacak.
 
 ## Sıradaki iş
 
 1. GitHub Desktop → **Fetch origin → Pull origin**.
 2. `hardening/1.1-data-safety` branch'inde `DERLE_CALISTIR.bat` çalıştır.
-3. Beklenen: **3 warning / 0 error**.
-4. Doğrulanırsa son `CA1822` (`ApplicationSafetyService.RuntimeDescription`) kontrollü ele alınacak.
-5. İki `CA1309` en sona bırakılacak; Türkçe kültür/string davranışı test edilmeden değiştirilmeyecek.
+3. Beklenen: **2 warning / 0 error**.
+4. Doğrulanırsa kalan iki `CA1309` için önce Türkçe `I/İ/ı/i` davranış testleri eklenecek.
+5. Testlerden sonra kurum adı karşılaştırması analyzer uyumlu ve Türkçe davranışı korunmuş biçimde merkezi hale getirilecek.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
