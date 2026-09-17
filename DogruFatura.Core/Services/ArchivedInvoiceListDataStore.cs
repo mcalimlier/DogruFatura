@@ -52,8 +52,9 @@ public sealed class ArchivedInvoiceListDataStore
             {
                 try
                 {
+                    var backupPath = DataFileSchemaService.CreatePreUpgradeBackup(DataFilePath, schema.SourceSchemaVersion);
                     Save(normalized);
-                    warning = $"İşlem arşivi veri dosyası şema {DataFileSchemaService.CurrentSchemaVersion} biçimine güvenle yükseltildi.";
+                    warning = $"İşlem arşivi veri dosyası şema {DataFileSchemaService.CurrentSchemaVersion} biçimine güvenle yükseltildi. Önceki biçim korundu: {backupPath}";
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
