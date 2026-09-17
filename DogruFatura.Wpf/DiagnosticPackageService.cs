@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -49,13 +50,13 @@ public sealed class DiagnosticPackageService
         var builder = new StringBuilder();
         builder.AppendLine("DoğruFatura Tanılama Paketi");
         builder.AppendLine(new string('=', 48));
-        builder.AppendLine($"Oluşturma       : {DateTimeOffset.Now:dd.MM.yyyy HH:mm:ss zzz}");
-        builder.AppendLine($"Sürüm           : {service.InformationalVersion}");
-        builder.AppendLine($"Çalışma ortamı  : {service.RuntimeDescription}");
-        builder.AppendLine($"Veri bütünlüğü  : {(integrity.IsHealthy ? "Sağlıklı" : "Sorun bulundu")}");
-        builder.AppendLine($"Kontrol edilen  : {integrity.JsonFileCount} JSON, {integrity.PdfFileCount} PDF");
-        builder.AppendLine($"Sorun sayısı    : {integrity.ProblemCount}");
-        builder.AppendLine($"Açıklama        : {integrity.Message}");
+        builder.AppendLine(CultureInfo.CurrentCulture, $"Oluşturma       : {DateTimeOffset.Now:dd.MM.yyyy HH:mm:ss zzz}");
+        builder.AppendLine(CultureInfo.CurrentCulture, $"Sürüm           : {service.InformationalVersion}");
+        builder.AppendLine(CultureInfo.CurrentCulture, $"Çalışma ortamı  : {service.RuntimeDescription}");
+        builder.AppendLine(CultureInfo.CurrentCulture, $"Veri bütünlüğü  : {(integrity.IsHealthy ? "Sağlıklı" : "Sorun bulundu")}");
+        builder.AppendLine(CultureInfo.CurrentCulture, $"Kontrol edilen  : {integrity.JsonFileCount} JSON, {integrity.PdfFileCount} PDF");
+        builder.AppendLine(CultureInfo.CurrentCulture, $"Sorun sayısı    : {integrity.ProblemCount}");
+        builder.AppendLine(CultureInfo.CurrentCulture, $"Açıklama        : {integrity.Message}");
         builder.AppendLine();
         builder.AppendLine("Gizlilik notu: Bu paket fatura JSON verilerini veya PDF belgelerini içermez.");
         builder.AppendLine("Yalnız uygulama/ortam özeti ve en fazla son 5 hata günlüğü eklenir.");
