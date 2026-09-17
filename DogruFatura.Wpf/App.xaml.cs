@@ -82,13 +82,23 @@ public partial class App : Application
             splashHost = new StartupSplashHost();
             splashHost.Show();
 
+            var taxService = new TaxCalculationService();
+            var finalReportDocumentService = new FinalReportDocumentService();
+            var finalReportPdfService = new FinalReportPdfService();
+            var documentArchiveStorageService = new DocumentArchiveStorageService();
+            var historicalPdfImportService = new HistoricalPdfImportService(taxService);
+
             var main = new MainWindow(
-                new TaxCalculationService(),
+                taxService,
                 new SchoolDataStore(),
                 new InvoiceDataStore(),
                 new AuthorityProfileDataStore(),
                 new ArchivedInvoiceListDataStore(),
-                new ApplicationSafetyService());
+                new ApplicationSafetyService(),
+                finalReportDocumentService,
+                finalReportPdfService,
+                documentArchiveStorageService,
+                historicalPdfImportService);
             UiPolishService.Apply(main);
 
             // Performans metriği yalnız gerçek hazırlık süresini ölçer; kullanıcı isteğiyle
