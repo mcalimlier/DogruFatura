@@ -33,7 +33,8 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
   -  `DogruFatura.Wpf` yerel Windows/.NET 8+ ortamında başarıyla derlendi
   -  `DERLE_CALISTIR.bat` programı başlatma adımına ulaştı
   -  `DERLE_CALISTIR.bat` tam analiz için `--no-incremental` build moduna geçirildi; warning sayısı her doğrulamada yeniden üretiliyor
-  -  Son tam analiz baseline: Core 16 + WPF 41 = toplam 57 analyzer warning, 0 hata
+  -  İlk tam analiz baseline: Core 16 + WPF 41 = toplam 57 analyzer warning, 0 hata
+  -  İlk `CA1512` warning paketi sonrası kullanıcı yerel doğrulamasında toplam warning sayısı 53’e düştü
   -  Görsel/işlevsel manuel smoke kontrolü: splash, sağ üst simgeler, ikinci örnek engeli
 -  Aşama 2 — Mimari Temizlik (devam ediyor)
   -  Merkezi `InvoiceRulesEngine` oluşturuldu
@@ -43,7 +44,8 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
   -  Dependency Injection ilk dilimi kodlandı ve tam analiz yerel build ile 0 hata / 57 warning sonucu doğrulandı
 -  Aşama 3 — Mali Denetim ve İzlenebilirlik
 -  Aşama 4 — Kalite / CI (warning temizliği güvenli küçük paketlerle öne alındı)
-  -  İlk güvenli warning paketi: dört `CA1512` kod düzeltmesi yapıldı; yerel build doğrulaması bekleniyor
+  -  İlk güvenli warning paketi: dört `CA1512` düzeltmesi yerel build ile doğrulandı; warning toplamı 57 → 53
+  -  İkinci warning temizliği paketi repoda kodlandı; yerel tam analiz doğrulaması bekleniyor
 -  Aşama 5 — Kullanıcı Deneyimi
 
 ## Aşama 1 — Veri Güvenliği
@@ -270,13 +272,15 @@ Not: CA1014/CA1822/CA1859/CA1305/CA1307/CA1309/CA1512/CA1861/CA1806 gibi kayıtl
 -  Mevcut analyzer uyarılarını sınıflandır ve güvenli olanları temizle.
 -  Yerel build'de görülen legacy analyzer uyarılarını kontrollü biçimde azalt.
 -  Warning envanterini `--no-incremental` tam analiz build'i üzerinden takip et; warning'leri yalnız gizleme/suppress etme yerine nedenlerini düzelt.
--  İlk güvenli warning paketi kodlandı:
+-  İlk güvenli warning paketi tamamlandı:
   -  `FinalReportPagePlanner.cs`: 1 adet `CA1512`, `ArgumentOutOfRangeException.ThrowIfNegative` ile düzeltildi. Commit: `4b8979930b29fe08e2d76f8c440f407d2520cb02`.
   -  `ResponsiveLayoutService.cs`: 3 adet `CA1512`, `ArgumentOutOfRangeException.ThrowIfNegativeOrZero` ile düzeltildi. Commit: `1709dea16c4824eff1233bf5aaf44e3f9d2fe04a`.
-  -  Bu paket exception türünü ve geçersiz sınır koşullarını değiştirmez; yalnız modern guard API kullanır.
-  -  Yerel tam analiz doğrulaması bekleniyor; beklenen warning toplamı 57'den yaklaşık 53'e düşmesi.
--  Sonraki düşük riskli adaylar: `CA1861` sabit diziler ve davranış değiştirmeyen seçili `CA1859` tip daraltmaları.
--  Kültür/para/tarih/string davranışını etkileyebilecek `CA1305`, `CA1307`, `CA1309` uyarıları test kapsamı hazırlanarak ayrı ele alınacak.
+  -  Kullanıcı yerel tam analizinde warning toplamı **57 → 53** düştü; beklenen dört `CA1512` temizliği doğrulandı.
+-  İkinci kontrollü warning paketi repoda kodlandı, yerel doğrulama bekliyor:
+  -  Aralık: `a4e60d5aa30151184e0f38dd5bd58ccb6768f7fa` → `a6461692baa761c3a9d901f537a8ca653515f77a`.
+  -  Kapsam: private koleksiyon/dönüş tipi daraltmaları, açık kültür/string karşılaştırmaları, HRESULT sonucunun işlenmesi ve Core CLS işaretlemesi.
+  -  Bu paket doğrulanmadan yeni warning grubuna geçilmeyecek.
+-  Kalan kültür/para/tarih/string davranışını etkileyebilecek warning'ler, sonuçları görülerek küçük paketlerle ele alınacak.
 -  Coverage için minimum kalite eşiği ekle.
 -  Güvenlik/bağımlılık otomasyonunu güçlendir.
 -  Sürüm/release belgelerini `VersionPrefix` üzerinden otomatikleştir.
@@ -290,48 +294,33 @@ Not: CA1014/CA1822/CA1859/CA1305/CA1307/CA1309/CA1512/CA1861/CA1806 gibi kayıtl
 
 ## Tamamlanan son parça
 
-**Aşama 2 — Dependency Injection ilk dilimi tam analiz yerel build ile doğrulandı**
+**Aşama 4 — ilk güvenli `CA1512` warning paketi yerel tam analizle doğrulandı**
 
-Doğrulanan kod commit'i: `427fb23d309b53db9366056ea27730e546d9eba2`
-
-Doğrulama sonucu:
-
--  `.NET SDK 10.0.400`.
--  Core: 16 warning.
--  WPF: 41 warning.
--  Toplam: 57 analyzer warning, **0 hata**.
--  BAT programı başlatma aşamasına ulaştı.
--  DI ilk dilimi warning borcunu artırmadı.
+-  Başlangıç: 57 analyzer warning.
+-  Sonuç: **53 analyzer warning**.
+-  Beklenen dört `CA1512` warning'i temizlendi.
+-  Kod commit'leri: `4b8979930b29fe08e2d76f8c440f407d2520cb02`, `1709dea16c4824eff1233bf5aaf44e3f9d2fe04a`.
 
 ### Kodlanan fakat doğrulanmayı bekleyen parça
 
-**Aşama 4 — ilk güvenli `CA1512` warning temizliği**
+**Aşama 4 — ikinci kontrollü warning temizliği paketi**
 
-Kod commit'leri:
-
--  `4b8979930b29fe08e2d76f8c440f407d2520cb02` — FinalReportPagePlanner.
--  `1709dea16c4824eff1233bf5aaf44e3f9d2fe04a` — ResponsiveLayoutService.
-
-Beklenti: 0 hata korunurken warning toplamının 57'den yaklaşık 53'e düşmesi.
+-  Commit aralığı: `a4e60d5aa30151184e0f38dd5bd58ccb6768f7fa` → `a6461692baa761c3a9d901f537a8ca653515f77a`.
+-  Paket küçük ve davranış korumalı tip/kültür/sonuç işleme düzeltmelerinden oluşuyor.
+-  Henüz kullanıcı bilgisayarında tam analiz build'i ile doğrulanmadı.
 
 ### Doğrulama notu
 
-Bu sonuçlar GitHub Actions değil, kullanıcının gerçek Windows bilgisayarında .NET SDK 10.0.400 ile yapılan yerel build doğrulamalarıdır. GitHub Actions runner sorunu ayrıca devam etmektedir; bu nedenle “yerel build doğrulandı” denebilir ancak “CI doğrulandı” denmeyecek.
+Yerel build sonuçları GitHub Actions CI sonucu değildir. CI runner sorunu ayrıca devam ediyor.
 
 ## Sıradaki iş
 
-**Aşama 4 — ilk güvenli `CA1512` warning temizliği paketinin yerel tam analiz doğrulaması.**
+**İkinci warning paketini yerel tam analizle doğrula.**
 
-Doğrulama:
-
-1. GitHub Desktop'ta `hardening/1.1-data-safety` branch'inde **Fetch origin → Pull origin** yap.
-2. Güncellenen `DERLE_CALISTIR.bat` dosyasını çalıştır.
-3. Build `--no-incremental` olduğundan warning listesi her seferinde tam görünmelidir.
-4. Derleme özetinde **0 error** doğrula.
-5. `FinalReportPagePlanner.cs` ve `ResponsiveLayoutService.cs` için `CA1512` satırlarının artık görünmediğini kontrol et.
-6. Beklenen toplam warning: yaklaşık **53**.
-7. Programın başlatma aşamasına ulaştığını kontrol et.
-8. Bu doğrulama geçerse `CA1512` paketi tamamlandı olarak işaretlenecek ve sıradaki düşük riskli warning grubuna geçilecek.
+1. GitHub Desktop → **Fetch origin → Pull origin**.
+2. `hardening/1.1-data-safety` branch'inde `DERLE_CALISTIR.bat` çalıştır.
+3. Bana yalnızca **toplam warning sayısını**, **error sayısını** ve varsa ilk error satırını gönder.
+4. Sonuca göre sıradaki warning grubunu yine küçük paket halinde çözeceğiz.
 
 ## GitHub Desktop'ta çalışmaları görme
 
@@ -383,10 +372,11 @@ Kritik bağlam:
 -  Merkezi InvoiceRulesEngine + Kontrol Merkezi ortaklaştırması yerel build ile doğrulandı.
 -  Dependency Injection ilk dilimi yerel tam analiz build ile doğrulandı.
 -  Son doğrulanan mimari kod commit'i: `427fb23d309b53db9366056ea27730e546d9eba2`.
--  Son tam analiz yerel build: 0 hata, 57 analyzer warning.
+-  Son kullanıcı yerel tam analizinde warning toplamı **53**; ilk `CA1512` paketi hedeflenen dört warning düşüşünü sağladı.
 -  Yerel doğrulama BAT commit'i: `c64b7c3741f235b0dd89c051328a90f5f4964765` — `--no-incremental` tam analiz build etkin.
--  Warning temizliği ilk paket kod commit'leri: `4b8979930b29fe08e2d76f8c440f407d2520cb02` ve `1709dea16c4824eff1233bf5aaf44e3f9d2fe04a`; yerel build bekleniyor.
--  Sıradaki işlem: ilk `CA1512` paketini yerelde tam analizle doğrulamak; beklenen toplam yaklaşık 53 warning.
+-  İlk `CA1512` warning paketi yerel olarak doğrulandı: 57 → 53 warning.
+-  İkinci warning paketi repoda `a4e60d5aa30151184e0f38dd5bd58ccb6768f7fa` → `a6461692baa761c3a9d901f537a8ca653515f77a` aralığında kodlandı; yerel build bekleniyor.
+-  Sıradaki işlem: ikinci warning paketini `--no-incremental` tam analizle doğrulamak.
 -  CI durumu: GitHub Actions job'ları runner/step başlamadan failure oluyor; gerçek CI build/test sonucu alınamıyor.
 -  `main` ile henüz merge yapılmayacak.
 
