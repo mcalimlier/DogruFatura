@@ -1,400 +1,174 @@
 # DoğruFatura 1.1 — Geliştirme Durumu
 
-Bu dosya DoğruFatura 1.1 sağlamlaştırma çalışmalarının kalıcı ilerleme kaydıdır. Her tamamlanan geliştirme parçasından sonra güncellenir. Başka bir sohbete geçildiğinde bu dosyanın tamamı yeni sohbete yapıştırılarak kaldığımız yer milimetrik biçimde aktarılabilir.
+Bu dosya DoğruFatura 1.1 sağlamlaştırma çalışmasının güncel durum kaydıdır. Yeni sohbette bu dosya esas alınmalı; tamamlanan işler yeniden yapılmamalıdır.
 
 ## Çalışma dalı
 
-`hardening/1.1-data-safety`
+- Repo: `mcalimlier/DogruFatura`
+- Branch: `hardening/1.1-data-safety`
+- `main` başlangıç commit'i: `72963ec0a829f2e4b487393160c7ca93290b470f`
+- `main` ile henüz merge yapılmayacak.
 
-> Bu dosya şu anda `main` dalında değil, yukarıdaki çalışma dalındadır. GitHub Desktop'ta görmek için **Fetch origin** yaptıktan sonra **Current branch** menüsünden `hardening/1.1-data-safety` dalına geçin.
+## Genel durum
 
-## Genel hedef
+### Aşama 1 — Veri Güvenliği
 
-DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri güvenliği, arşiv bütünlüğü, mimari ayrışma, mali izlenebilirlik, CI kalite kapıları ve kullanıcı deneyimini güçlendirmek.
+Kod/test kapsamı tamamlandı:
 
-## Durum özeti
+- Bozuk veri kurtarma davranışı güvenli hale getirildi.
+- Veri şema sürümleme ve migration eklendi.
+- Restore öncesi semantik doğrulama eklendi.
+- Yedek manifest/SHA-256 ve arşiv PDF bütünlük doğrulaması eklendi.
+- Tek örnek/yazma güvenliği fail-closed hale getirildi.
 
--  1.1 geliştirme dalı oluşturuldu.
--  Kalıcı ilerleme/durum dosyası oluşturuldu.
--  Aşama 1 — Veri Güvenliği (kod/test kapsamı tamamlandı; CI altyapı doğrulaması beklemede)
-  -  1.1 Bozuk veri kurtarma davranışı
-  -  1.2 Veri şema sürümleme
-  -  1.3 Yedekten geri yükleme semantik doğrulaması
-  -  1.4 Yedek ve PDF bütünlük doğrulaması
-  -  1.5 Tek örnek / yazma güvenliği
--  Ek kullanıcı arayüzü düzeltmeleri
-  -  Sağ üst küçült / büyüt-geri yükle / kapat simgeleri aynı optik ölçüye getirildi
-  -  Karşılama ekranı yaklaşık 5,5 saniye görünür kalacak şekilde ayarlandı
-  -  Karşılama ilerleme çubuğu ana pencere yükünden bağımsız akıcı hale getirildi
--  Yerel build doğrulaması
-  -  İlk build'deki `SingleInstanceGuard.cs` / `IOException` derleme hatası düzeltildi
-  -  `StartupSplashHost.cs` içindeki `CS4014` async uyarısı temizlendi
-  -  `DogruFatura.Core` yerel Windows/.NET 8+ ortamında başarıyla derlendi
-  -  `DogruFatura.Wpf` yerel Windows/.NET 8+ ortamında başarıyla derlendi
-  -  `DERLE_CALISTIR.bat` programı başlatma adımına ulaştı
-  -  `DERLE_CALISTIR.bat` tam analiz için `--no-incremental` build moduna geçirildi; warning sayısı her doğrulamada yeniden üretiliyor
-  -  İlk tam analiz baseline: Core 16 + WPF 41 = toplam 57 analyzer warning, 0 hata
-  -  İlk `CA1512` warning paketi sonrası kullanıcı yerel doğrulamasında toplam warning sayısı 53’e düştü
-  -  Görsel/işlevsel manuel smoke kontrolü: splash, sağ üst simgeler, ikinci örnek engeli
--  Aşama 2 — Mimari Temizlik (devam ediyor)
-  -  Merkezi `InvoiceRulesEngine` oluşturuldu
-  -  `InvoiceValidationService` ve Kontrol Merkezi aynı merkezi motoru kullanıyor
-  -  Motor + Kontrol Merkezi ortaklaştırması yerel build ile 0 hata / 57 legacy analyzer uyarısıyla doğrulandı
-  -  İlk motor commit'inin eklediği iki analyzer uyarısı temizlendi
-  -  Dependency Injection ilk dilimi kodlandı ve tam analiz yerel build ile 0 hata / 57 warning sonucu doğrulandı
--  Aşama 3 — Mali Denetim ve İzlenebilirlik
--  Aşama 4 — Kalite / CI (warning temizliği güvenli küçük paketlerle öne alındı)
-  -  İlk güvenli warning paketi: dört `CA1512` düzeltmesi yerel build ile doğrulandı; warning toplamı 57 → 53
-  -  İkinci warning temizliği paketi repoda kodlandı; yerel tam analiz doğrulaması bekleniyor
--  Aşama 5 — Kullanıcı Deneyimi
+GitHub Actions runner sorunu nedeniyle CI doğrulaması halen ayrı olarak bekliyor.
 
-## Aşama 1 — Veri Güvenliği
+### Ek kullanıcı arayüzü düzeltmeleri
 
-### 1.1 Bozuk veri kurtarma davranışı
+- Sağ üst pencere simgeleri eşitlendi.
+- Splash yaklaşık 5,5 saniye görünür ve ana pencere yükünden bağımsız akıcı hale getirildi.
+- Yerel build/çalıştırma akışı `DERLE_CALISTIR.bat` üzerinden ve `--no-incremental` tam analizle yapılıyor.
 
--  Bozuk ana veri dosyasının otomatik olarak boş/varsayılan dosyayla ezilmesi kaldırıldı.
--  Sorunlu dosya zaman damgalı koruma kopyasıyla saklanıyor.
--  Uygulama kullanılabilir geçici veriyle açılırken kurtarma durumu kullanıcıya açıkça bildiriliyor.
--  İşlem arşivinde sağlam kayıtlar kayıt bazında kurtarılıyor; hatalı/çakışan kayıtlar dışarıda bırakılıyor.
--  Aktif fatura ve kurum verisinde mümkün olan sağlam kayıtlar kayıt bazında kurtarılıyor.
--  Yetkili profili bozulduğunda varsayılan profil yalnız oturum içinde kullanılıyor; ana dosya otomatik ezilmiyor.
--  `RecoveryModeTests.cs` eklendi.
--  GitHub Actions doğrulaması — altyapı engeli nedeniyle beklemede.
+### Aşama 2 — Mimari Temizlik
 
-### 1.2 Veri şema sürümleme
+Tamamlananlar:
 
--  `SchemaVersion`, `DataType`, `Data` zarfı eklendi.
--  Migration zinciri `DataFileSchemaService` altında merkezileştirildi.
--  1.0.x çıplak JSON dosyaları Schema 0 olarak geriye uyumlu okunuyor.
--  Schema 0 -> 1 geçişinde iş verisi değiştirilmeden yeni zarfa taşınıyor.
--  Otomatik yükseltme öncesi `*_Schema0_Onceki_*.json` geri dönüş kopyası oluşturuluyor.
--  Geri dönüş kopyası oluşturulamazsa otomatik dönüşüm yapılmıyor.
--  Gelecek şemalar ve yanlış `DataType` güvenli biçimde reddediliyor.
--  Dört ana veri deposu yeni şema sistemine geçirildi.
--  `DataSchemaMigrationTests.cs` eklendi.
--  GitHub Actions doğrulaması — altyapı engeli nedeniyle beklemede.
+- Merkezi `InvoiceRulesEngine` oluşturuldu.
+- `InvoiceValidationService` ve Kontrol Merkezi aynı motoru kullanıyor.
+- Dependency Injection ilk dilimi tamamlandı.
+- Son doğrulanan DI commit'i: `427fb23d309b53db9366056ea27730e546d9eba2`.
 
-### 1.3 Yedekten geri yükleme semantik doğrulaması
+Kalan ana işler:
 
--  Merkezi `DataDirectoryValidationService.cs` eklendi.
--  Okul/kurum, aktif fatura, yetkili profili ve işlem arşivi restore öncesi iş kurallarıyla doğrulanıyor.
--  Aktif faturalarda boş/mükerrer `Guid`, mükerrer fatura ve karma fatura türü reddediliyor.
--  Arşivlerde mükerrer kimlik, arşiv numarası ve HYS reddediliyor.
--  Restore dört zorunlu veri dosyasının tamamını gerektiriyor.
--  Geçersiz yedek canlı klasörlere dokunulmadan reddediliyor.
--  `CheckIntegrity()` aynı semantik doğrulayıcıya geçirildi.
--  Şema-1 arşiv biçimiyle eski kök-dizi kontrolü arasındaki uyumsuzluk giderildi.
--  Restore güvenlik entegrasyon testleri genişletildi.
--  GitHub Actions doğrulaması — altyapı engeli nedeniyle beklemede.
+- DI kapsamını rapor/arşiv servislerine genişletmek.
+- `MainWindow` sorumluluklarını daha fazla ayırmak.
+- Tür/status alanlarını enum/value object yapısına taşımak.
+- `SchoolRecord` için değişmez `SchoolId` eklemek.
 
-### 1.4 Yedek ve PDF bütünlük doğrulaması
+## Aşama 4 — Warning temizliği
 
--  `FileIntegrityService.cs` eklendi.
--  Yeni yedek biçimi `DogruFaturaBackup/2` olarak tanımlandı.
--  Manifestte her dosyanın göreli yolu, byte boyutu ve SHA-256 özeti saklanıyor.
--  Restore öncesi ZIP içeriği manifestle birebir karşılaştırılıyor.
--  Eksik/fazladan dosya, mükerrer ZIP yolu, boyut uyuşmazlığı ve SHA-256 uyuşmazlığı restore'u engelliyor.
--  Eski `DogruFaturaBackup/1` yedekleri geriye uyumlu destekleniyor; kriptografik manifest olmadığı açıkça ayrılıyor.
--  `ArchivedInvoiceList.PdfSha256` eklendi ve doğrulanıyor.
--  PDF eşitleme legacy kayıtlara başlangıç hash'i yazıyor.
--  Kayıtlı hash ile mevcut PDF uyuşmazsa hash otomatik yenilenmiyor, bütünlük hatası oluşuyor.
--  Tarihsel PDF içe aktarımında hash kaydediliyor.
--  `CheckIntegrity()` ve restore arşiv PDF hashlerini doğruluyor.
--  `ArchivePdfIntegrityTests.cs` ve `BackupManifestIntegrityTests.cs` eklendi.
--  GitHub Actions doğrulaması — altyapı engeli nedeniyle beklemede.
+### Başlangıç
 
-### 1.5 Tek örnek / yazma güvenliği
+İlk tam analiz baseline:
 
--  Mevcut mutex fail-open davranışı kaldırıldı.
--  `SingleInstanceGuard.cs` ile tek örnek kararı test edilebilir servis/sonuç modeline ayrıldı.
--  Sonuçlar `Acquired`, `AlreadyRunning`, `Unavailable` olarak açıkça ayrılıyor.
--  İkinci uygulama örneği mevcutsa uygulama bilgi mesajıyla açılmadan kapanıyor.
--  Mutex altyapısı/izin hatası oluşursa uygulama veri yazma moduna geçmeden güvenli biçimde kapanıyor.
--  Başarılı mutex ediniminde sahiplik `SingleInstanceLease` ile yaşam döngüsü boyunca tutuluyor.
--  Normal kapanışta lease güvenli biçimde bırakılıyor.
--  Yedekten geri yükleme sonrası yeniden başlatma akışı mutex'i kontrollü biçimde serbest bırakıyor.
--  Lease `Dispose()` idempotent.
--  `SingleInstanceGuardTests.cs` ile edinim, zaten açık örnek ve mutex altyapı hatası testleri eklendi.
--  Fail-open yerine fail-closed güvenlik ilkesi uygulanıyor.
--  Yerel ilk build'de görülen `IOException` / `CS0103` hatası `using System.IO;` eklenerek düzeltildi.
--  Düzeltme sonrası WPF projesi yerel Windows/.NET 8 ortamında başarıyla derlendi.
--  GitHub Actions doğrulaması — Actions job'ları gerçek build başlamadan `steps=null` ile failure oluyor.
+- Core: 16 warning
+- WPF: 41 warning
+- Toplam: **57 warning / 0 error**
 
-## Ek kullanıcı arayüzü düzeltmeleri — tamamlandı
+### Paket 1 — CA1512
 
-### Sağ üst pencere düğmeleri
+Commit'ler:
 
--  Eski durumda küçültme `—` karakteri 23.5 pt, kapatma `×` karakteri 27.5 pt, büyütme ise Segoe MDL2 Assets 16.5 pt kullanıyordu.
--  `WindowControlPolishService.cs` eklendi.
--  Küçült, büyüt/geri yükle ve kapat kontrolleri aynı `Segoe MDL2 Assets` simge ailesine geçirildi.
--  Küçült için `E921`, büyüt için mevcut `E922/E923`, kapat için `E8BB` Windows simgeleri kullanılıyor.
--  Üç kontrolün optik simge boyutu 16.5, buton ölçüsü 44×42 ve içerik hizası merkez olarak standardize edildi.
--  Servis `UiPolishService` üzerinden MainWindow yüklendiğinde uygulanıyor.
--  Görsel eşitlik kullanıcı tarafından çalışan EXE üzerinde manuel olarak teyit edilecek.
+- `4b8979930b29fe08e2d76f8c440f407d2520cb02`
+- `1709dea16c4824eff1233bf5aaf44e3f9d2fe04a`
 
-### Karşılama ekranı ve akıcı ilerleme
+Yerel doğrulama sonucu:
 
--  `StartupProgressProfile` minimum görünür süreyi 5500 ms olarak tanımlıyor.
--  Normal ilerleme 0 → %94 arasında ilk 5000 ms boyunca kesintisiz ilerliyor.
--  Çok uzun açılışlarda %94 → %98 arasında yavaş devam eden kuyruk animasyonu bulunuyor; %100 yalnız gerçek hazırlık tamamlanınca kullanılıyor.
--  `StartupSplashHost.cs` eklendi.
--  Splash penceresi ana MainWindow thread'inden bağımsız STA/Dispatcher thread'inde çalışıyor.
--  `MainWindow()` veri/arayüz hazırlığı ana thread'i meşgul etse bile splash spinner ve progress animasyonu ayrı Dispatcher'da akmaya devam ediyor.
--  MainWindow erken hazır olsa dahi splash yaklaşık 5,5 saniye dolmadan kapanmıyor.
--  MainWindow geç hazır olursa splash %98'e kadar kontrollü biçimde ilerlemeye devam ediyor ve hazır olunca son geçişi yapıyor.
--  Tamamlanma aşaması mevcut animasyon genişliğinden %100'e 450 ms EaseOut geçişle tamamlanıyor.
--  Yüzde metni yaklaşık 33 ms cadence ile zaman tabanlı güncelleniyor.
--  Spinner yaklaşık 0,9 saniyelik sürekli dönüşle çalışıyor.
--  `StartupProgressProfileTests.cs` yeni 5–6 saniye ve monoton progress davranışına göre güncellendi.
--  Bilinçli 5,5 saniyelik splash süresi `StartupPerformanceService` performans metriğine dahil edilmiyor; performans ölçümü MainWindow gerçek hazırlığı bittiğinde tamamlanıyor.
--  Yerel ilk build'deki `StartupSplashHost.cs` CS4014 uyarısı Dispatcher çağrısını gerçek await zincirine çevirerek temizlendi.
--  Splash süresi ve akıcılığı kullanıcı tarafından çalışan EXE üzerinde manuel olarak teyit edilecek.
--  GitHub Actions doğrulaması — `build-and-test` job'ı gerçek step başlatmadan failure oluyor.
+- **57 → 53 warning**
+- **0 error**
 
-## Yerel build doğrulama kaydı
+### Paket 2 — kontrollü warning temizliği
 
-### 17.09.2026 — İlk gerçek kullanıcı-PC derlemesi
+Kod aralığı:
 
-Kullanıcı `GitHub Desktop → Show in Explorer → DERLE_CALISTIR.bat` yoluyla gerçek Windows/.NET derlemesi çalıştırdı.
+- `a4e60d5aa30151184e0f38dd5bd58ccb6768f7fa`
+- `a6461692baa761c3a9d901f537a8ca653515f77a`
 
-İlk deneme:
+17.09.2026 yerel tam analiz sonucu:
 
--  `DogruFatura.Core` başarıyla derlendi.
--  Core tarafındaki 16 kayıt yalnız analyzer uyarısıydı; derlemeyi durdurmadı.
--  `DogruFatura.Wpf` ilk denemede 1 hata ve 42 uyarıyla durdu.
--  Tek gerçek hata: `SingleInstanceGuard.cs` içinde `IOException` adının çözülememesi (`CS0103`).
--  Hatanın nedeni: `System.IO` namespace'inin eksik olması.
--  Düzeltme commit'i: `26f3aa160d61a87ea8e6f4c7071e53ed9f8356f8`.
--  Aynı build çıktısındaki `StartupSplashHost.cs` `CS4014` uyarısı da ayrıca temizlendi.
--  Async uyarı düzeltme commit'i: `abff2d44ac6160c9a21e961df610d1c41388d00d`.
+- Core: **2 warning**
+- WPF: **10 warning**
+- Toplam: **12 warning / 0 error**
+- Program `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
+- Böylece toplam warning sayısı **53 → 12** düştü.
 
-İkinci deneme — düzeltmeler sonrası:
+## Kalan 12 warning
 
--  Genel restore/build adımı başarıyla tamamlandı.
--  `DogruFatura.Core` 16 analyzer uyarısıyla başarıyla derlendi.
--  `DogruFatura.Wpf` 41 analyzer uyarısıyla başarıyla derlendi.
--  Toplam sonuç: 57 uyarı, **0 derleme hatası**, başarılı build.
--  `DERLE_CALISTIR.bat` `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
--  Yerel derleme doğrulaması tamamlandı.
+### Core — 2
 
-### 17.09.2026 — Aşama 2 ilk parça yerel doğrulaması
+- `CA1822` — `TaxCalculationService.Calculate`
+- `CA1309` — `ControlCenterService` dize karşılaştırması
 
--  `InvoiceRulesEngine` ve `InvoiceValidationService` entegrasyonu sonrası yeniden derleme yapıldı.
--  Kullanıcı ortamındaki SDK sürümü: `.NET SDK 10.0.400`.
--  `DogruFatura.Core` 18 analyzer uyarısıyla başarıyla derlendi.
--  `DogruFatura.Wpf` 41 analyzer uyarısıyla başarıyla derlendi.
--  Toplam sonuç: 59 uyarı, **0 derleme hatası**, başarılı build.
--  BAT dosyası `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
--  Önceki 57 uyarıya eklenen iki yeni kayıt yalnız analyzer önerisiydi: `InvoiceValidationService.cs` CA1826 ve `InvoiceRulesEngine.cs` CA1859.
--  Bu iki yeni uyarı sonraki Aşama 2 commit'inde temizlendi.
+### WPF — 10
 
-### 17.09.2026 — Aşama 2 Kontrol Merkezi ortaklaştırması yerel doğrulaması
+- `CA1822` — `DiagnosticPackageService.Create`
+- `CA1822` — `FinalReportDocumentService.Build`
+- `CA1822` — `ApplicationSafetyService.RuntimeDescription`
+- `CA1859` — `ApplicationSafetyService.CollectBackupFiles`
+- `CA1822` — `FinalReportPdfService.Save`
+- `CA1822` — `HistoricalPdfImportService.Read`
+- `CA1309` — `HistoricalPdfImportService` kurum adı karşılaştırması
+- `CA1861` — `HistoricalPdfImportService` tarih formatı dizisi
+- `CA1859` — `HistoricalPdfImportService.BuildLines`
+- `CA1861` — `MainWindow` kurum filtresi `"Tümü"` dizisi
 
--  Doğrulanan kod commit'i: `540801dc8f542c9907e218beefe8586c6d08fb59`.
--  `DogruFatura.Core` 16 analyzer uyarısıyla başarıyla derlendi.
--  `DogruFatura.Wpf` 41 analyzer uyarısıyla başarıyla derlendi.
--  Toplam sonuç: 57 uyarı, **0 derleme hatası**, başarılı build.
--  İlk Aşama 2 commit'inin eklediği CA1826 ve CA1859 uyarıları artık görünmüyor.
--  BAT dosyası `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
--  Bu çıktı build doğrulamasıdır; Kontrol Merkezi ekranının ayrı manuel smoke sonucu bu logda kayıtlı değildir.
+## Kodlanan fakat yerel doğrulaması bekleyen paket
 
-### 17.09.2026 — Yerel warning görünürlüğü iyileştirmesi
+İki düşük riskli `CA1861` düzeltmesi yapıldı:
 
--  `DERLE_CALISTIR.bat` içindeki `dotnet build` komutuna `--no-incremental` eklendi.
--  Amaç, ikinci ve sonraki build'lerde incremental derleme nedeniyle analyzer warning'lerinin ekrandan kaybolmasını önlemek.
--  Bundan sonraki yerel doğrulamalarda Core/WPF analyzer uyarıları her build'de yeniden hesaplanacak.
--  Bu değişiklik uygulama çalışma davranışını değiştirmez; yalnız yerel doğrulama kalitesini artırır.
--  Commit: `c64b7c3741f235b0dd89c051328a90f5f4964765`.
+- `2f3216a2b1f42c663f3e8e9a8ddd49df8cd14688`
+  - `MainWindow.xaml.cs`
+  - `"Tümü"` önek dizisi `static readonly` alana taşındı.
+- `4d7eb4a097867c019bed7aeca0d714118d683226`
+  - `HistoricalPdfImportService.cs`
+  - Tarih formatı dizisi `static readonly` alana taşındı.
 
-### 17.09.2026 — Aşama 2 Dependency Injection ilk dilim yerel doğrulaması
+Beklenen sonraki yerel sonuç:
 
--  Doğrulanan DI kod commit'i: `427fb23d309b53db9366056ea27730e546d9eba2`.
--  Doğrulama güncel `--no-incremental` tam analiz BAT akışıyla yapıldı.
--  Kullanıcı ortamındaki SDK sürümü: `.NET SDK 10.0.400`.
--  `DogruFatura.Core` 16 analyzer uyarısıyla başarıyla derlendi.
--  `DogruFatura.Wpf` 41 analyzer uyarısıyla başarıyla derlendi.
--  Toplam sonuç: 57 uyarı, **0 derleme hatası**, başarılı build.
--  BAT dosyası `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
--  DI değişikliği mevcut warning borcunu artırmadı.
--  Bu log program çalıştırma komutuna ulaşıldığını kanıtlar; ana ekran/veri görünümünün ayrı manuel smoke teyidi ayrıca kayda geçirilebilir.
+- **12 → yaklaşık 10 warning**
+- **0 error**
 
-### Recovery session / beklenmeyen kapanma uyarısı
-
--  “Önceki DoğruFatura oturumu normal kapanmamış görünüyor...” mesajı bir derleme warning'i değildir.
--  `RecoverySessionService`, önceki oturumun marker dosyasını bulduğunda güvenlik yedeği oluşturur ve bu bilgilendirmeyi gösterir.
--  Uygulama normal kapanınca marker silinir; sonraki açılışta mesajın kaybolması beklenen davranıştır.
--  Program normal kapatıldığı halde bu mesaj her yeni açılışta tekrar ederse ayrı hata olarak incelenecektir.
-
-Not: CA1014/CA1822/CA1859/CA1305/CA1307/CA1309/CA1512/CA1861/CA1806 gibi kayıtlar analyzer uyarılarıdır; build'i durdurmaz. Bunlar kontrollü küçük paketlerle ele alınacaktır. Warning'ler suppress edilerek gizlenmeyecek; mümkün olduğunda asıl neden düzeltilecektir.
-
-## Aşama 2 — Mimari Temizlik
-
-### 2.1 Merkezi fatura kural motoru — kod/build tamamlandı
-
--  `InvoiceRulesEngine.cs` eklendi.
--  Desteklenen fatura türleri merkezi motora taşındı.
--  Kimlik, kurum, VKN, fatura türü, hizmet numarası, tarih ve vergi hesap bütünlüğü kuralları tek değerlendirme modelinde toplandı.
--  `InvoiceValidationService` mevcut kullanıcı hata sırasını/metinlerini koruyarak `InvoiceRulesEngine` sonucunu kullanmaya geçirildi.
--  Kontrol Merkezi aynı kural motorunun sonuçlarını kullanacak şekilde ortaklaştırıldı.
--  `InvoiceRulesEngineTests.cs` motor/validation/Kontrol Merkezi ortaklığını kapsayacak şekilde genişletildi.
--  İlk motor commit'inde oluşan iki yeni analyzer uyarısı temizlendi.
--  Ortaklaştırma sonrası yerel build 57 legacy analyzer uyarısı ve 0 hata ile tamamlandı.
--  Kontrol Merkezi ekranının ayrı manuel smoke teyidi ayrıca kayda geçirilecek.
-
-### 2.2 Dependency Injection — ilk dilim kod/build tamamlandı
-
--  İlk dilim commit'i: `427fb23d309b53db9366056ea27730e546d9eba2`.
--  `MainWindow` içinde doğrudan oluşturulan `TaxCalculationService`, `SchoolDataStore`, `InvoiceDataStore`, `AuthorityProfileDataStore`, `ArchivedInvoiceListDataStore` ve `ApplicationSafetyService` constructor bağımlılığına dönüştürüldü.
--  Bu bağımlılıkların oluşturulması `App.Application_Startup` composition root'una taşındı.
--  Yeni NuGet DI paketi eklenmedi; framework bağımlılığı oluşturmadan constructor injection ile başlanıyor.
--  Veri yükleme, arşiv, splash ve kullanıcı akışının mevcut davranışı korunuyor.
--  Repo ön kontrolünde DI değişikliği dışında ek bir doğrudan `MainWindow` oluşturma noktası saptanmadı.
--  Tam analiz yerel build sonucu: 57 warning, 0 hata; DI yeni warning eklemedi.
--  Rapor/arşiv servislerine genişletme, warning temizliğinin güvenli ilk paketlerinden sonra devam edecek.
-
-### Aşama 2 kalan işleri
-
--  Dependency Injection kapsamını rapor/arşiv servislerine kontrollü biçimde genişlet.
--  MainWindow sorumluluklarını ViewModel / application service katmanlarına ayır.
--  InvoiceType / InstitutionType / ArchiveStatus için enum veya value object kullan.
--  SchoolRecord için değişmez `SchoolId` ekle ve fatura-kurum bağını ID üzerinden kur.
-
-## Aşama 3 — Mali Denetim ve İzlenebilirlik
-
--  Vergi hesaplama kural sürümü / yürürlük tarihi modeli ekle.
--  Append-only audit trail ekle.
--  Çok dosyalı arşiv işlemleri için transaction journal ekle.
--  Kapalı HYS arşivini değişmez belge modeliyle güçlendir.
-
-## Aşama 4 — Kalite / CI
-
--  WPF katmanında warning-as-error kapısını yeniden etkinleştir.
--  Mevcut analyzer uyarılarını sınıflandır ve güvenli olanları temizle.
--  Yerel build'de görülen legacy analyzer uyarılarını kontrollü biçimde azalt.
--  Warning envanterini `--no-incremental` tam analiz build'i üzerinden takip et; warning'leri yalnız gizleme/suppress etme yerine nedenlerini düzelt.
--  İlk güvenli warning paketi tamamlandı:
-  -  `FinalReportPagePlanner.cs`: 1 adet `CA1512`, `ArgumentOutOfRangeException.ThrowIfNegative` ile düzeltildi. Commit: `4b8979930b29fe08e2d76f8c440f407d2520cb02`.
-  -  `ResponsiveLayoutService.cs`: 3 adet `CA1512`, `ArgumentOutOfRangeException.ThrowIfNegativeOrZero` ile düzeltildi. Commit: `1709dea16c4824eff1233bf5aaf44e3f9d2fe04a`.
-  -  Kullanıcı yerel tam analizinde warning toplamı **57 → 53** düştü; beklenen dört `CA1512` temizliği doğrulandı.
--  İkinci kontrollü warning paketi repoda kodlandı, yerel doğrulama bekliyor:
-  -  Aralık: `a4e60d5aa30151184e0f38dd5bd58ccb6768f7fa` → `a6461692baa761c3a9d901f537a8ca653515f77a`.
-  -  Kapsam: private koleksiyon/dönüş tipi daraltmaları, açık kültür/string karşılaştırmaları, HRESULT sonucunun işlenmesi ve Core CLS işaretlemesi.
-  -  Bu paket doğrulanmadan yeni warning grubuna geçilmeyecek.
--  Kalan kültür/para/tarih/string davranışını etkileyebilecek warning'ler, sonuçları görülerek küçük paketlerle ele alınacak.
--  Coverage için minimum kalite eşiği ekle.
--  Güvenlik/bağımlılık otomasyonunu güçlendir.
--  Sürüm/release belgelerini `VersionPrefix` üzerinden otomatikleştir.
-
-## Aşama 5 — Kullanıcı Deneyimi
-
--  PDF içe aktarmayı async + ilerleme + iptal destekli yap.
--  Boş fatura numarasında olası mükerrer uyarısı ekle.
--  Tanılama paketi için içerik önizlemesi / daha güçlü kişisel veri temizleme ekle.
--  Yeni PDF'lere makine-okunabilir DoğruFatura metadata formatı ekle.
-
-## Tamamlanan son parça
-
-**Aşama 4 — ilk güvenli `CA1512` warning paketi yerel tam analizle doğrulandı**
-
--  Başlangıç: 57 analyzer warning.
--  Sonuç: **53 analyzer warning**.
--  Beklenen dört `CA1512` warning'i temizlendi.
--  Kod commit'leri: `4b8979930b29fe08e2d76f8c440f407d2520cb02`, `1709dea16c4824eff1233bf5aaf44e3f9d2fe04a`.
-
-### Kodlanan fakat doğrulanmayı bekleyen parça
-
-**Aşama 4 — ikinci kontrollü warning temizliği paketi**
-
--  Commit aralığı: `a4e60d5aa30151184e0f38dd5bd58ccb6768f7fa` → `a6461692baa761c3a9d901f537a8ca653515f77a`.
--  Paket küçük ve davranış korumalı tip/kültür/sonuç işleme düzeltmelerinden oluşuyor.
--  Henüz kullanıcı bilgisayarında tam analiz build'i ile doğrulanmadı.
-
-### Doğrulama notu
-
-Yerel build sonuçları GitHub Actions CI sonucu değildir. CI runner sorunu ayrıca devam ediyor.
+Bu iki değişiklik iş kuralını veya kullanıcı davranışını değiştirmiyor; yalnız tekrarlanan sabit dizi tahsisini kaldırıyor.
 
 ## Sıradaki iş
 
-**İkinci warning paketini yerel tam analizle doğrula.**
-
 1. GitHub Desktop → **Fetch origin → Pull origin**.
 2. `hardening/1.1-data-safety` branch'inde `DERLE_CALISTIR.bat` çalıştır.
-3. Bana yalnızca **toplam warning sayısını**, **error sayısını** ve varsa ilk error satırını gönder.
-4. Sonuca göre sıradaki warning grubunu yine küçük paket halinde çözeceğiz.
+3. Sonuçta toplam warning ve error sayısını kontrol et.
+4. Beklenen: yaklaşık **10 warning / 0 error**.
+5. Sonuç doğrulanırsa sıradaki küçük paket olarak iki `CA1859` ele alınacak.
+6. `CA1822` grubu daha sonra kontrollü biçimde temizlenecek.
+7. `CA1309` en sona bırakılacak; Türkçe kültür/string davranışı test edilmeden değiştirilmemeli.
 
-## GitHub Desktop'ta çalışmaları görme
+## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
-1. GitHub Desktop'ta `DogruFatura` deposunu seçin.
-2. **Fetch origin** düğmesine basın.
-3. **Current branch** menüsünden `hardening/1.1-data-safety` dalını seçin.
-4. **Pull origin** görünüyorsa basın.
-5. **History** sekmesinde commit'leri görebilirsiniz.
-6. **Repository > Show in Explorer** ile dosyaları açabilirsiniz.
-7. `main` farkı için **Branch > Compare to Branch... > main** kullanın.
-8. Manuel smoke kontrolü tamamlanana kadar branch'i `main` ile birleştirmeyin.
+Warning temizliği sonrasında:
 
-## Programı GitHub Desktop üzerinden yerelde derleme ve çalıştırma
+- Vergi kural sürümü/yürürlük tarihi modeli.
+- Append-only audit trail.
+- Çok dosyalı işlemler için transaction journal.
+- Kapalı HYS arşivini değişmez belge modeliyle güçlendirme.
 
-Visual Studio kullanılmayacak. Standart yerel kontrol akışı:
+## Aşama 5 — Kullanıcı Deneyimi
 
-1. GitHub Desktop → **Fetch origin**.
-2. `hardening/1.1-data-safety` branch'ini seç.
-3. **Pull origin**.
-4. **Repository > Show in Explorer**.
-5. Repo kökündeki `DERLE_CALISTIR.bat` dosyasına çift tıkla.
-6. BAT dosyası .NET SDK'yı kontrol eder, restore yapar, `DogruFatura.Wpf` projesini Debug modunda `--no-incremental` ile tam analiz ederek derler ve başarılıysa programı otomatik çalıştırır.
+Daha sonra:
 
-Başarılı build sonrası EXE yolu:
+- PDF içe aktarmayı async + ilerleme + iptal destekli yapmak.
+- Boş fatura numarası için olası mükerrer uyarısı.
+- Tanılama paketinde daha güçlü kişisel veri temizleme.
+- PDF metadata formatı.
+
+## Yerel doğrulama yöntemi
+
+Visual Studio kullanılmıyor.
+
+1. GitHub Desktop → **Fetch origin**
+2. Branch: `hardening/1.1-data-safety`
+3. **Pull origin**
+4. **Repository > Show in Explorer**
+5. `DERLE_CALISTIR.bat`
+
+BAT `--no-incremental` tam analiz yaptığı için warning envanteri her build'de yeniden görünür.
+
+Başarılı Debug EXE:
 
 `DogruFatura.Wpf\bin\Debug\net8.0-windows\DogruFatura.exe`
 
-Release yolu:
+## Kritik notlar
 
-`DogruFatura.Wpf\bin\Release\net8.0-windows\DogruFatura.exe`
-
-Build hata verirse siyah pencereyi kapatmadan ilk `error` satırını ve mümkünse özet bölümünü sohbete gönderin.
-
-## Yeni sohbete aktarım özeti
-
-Yeni bir sohbete geçilirse bu dosyanın tamamını yapıştırın ve şu talimatı ekleyin:
-
-> “Bu MD, DoğruFatura 1.1 geliştirmesinde önceki sohbetten kalan tek doğru durum kaydıdır. GitHub reposu `mcalimlier/DogruFatura`, çalışma branch'i `hardening/1.1-data-safety`. MD'deki tamamlanan işleri yeniden yapma. `Sıradaki iş` bölümünden devam et ve her tamamlanan parçadan sonra bu MD'yi hem repoda güncelle hem de sohbet içinde tam metin olarak ver.”
-
-Kritik bağlam:
-
--  Repo: `mcalimlier/DogruFatura`
--  Branch: `hardening/1.1-data-safety`
--  `main` başlangıç commit'i: `72963ec0a829f2e4b487393160c7ca93290b470f`
--  Aşama 1'in 1.1–1.5 kod/test kapsamı tamamlandı.
--  Sağ üst simge eşitlemesi tamamlandı; manuel görsel teyit bekliyor.
--  Yaklaşık 5,5 saniyelik akıcı splash tamamlandı; manuel görsel teyit bekliyor.
--  Tek örnek güvenliği tamamlandı.
--  Merkezi InvoiceRulesEngine + Kontrol Merkezi ortaklaştırması yerel build ile doğrulandı.
--  Dependency Injection ilk dilimi yerel tam analiz build ile doğrulandı.
--  Son doğrulanan mimari kod commit'i: `427fb23d309b53db9366056ea27730e546d9eba2`.
--  Son kullanıcı yerel tam analizinde warning toplamı **53**; ilk `CA1512` paketi hedeflenen dört warning düşüşünü sağladı.
--  Yerel doğrulama BAT commit'i: `c64b7c3741f235b0dd89c051328a90f5f4964765` — `--no-incremental` tam analiz build etkin.
--  İlk `CA1512` warning paketi yerel olarak doğrulandı: 57 → 53 warning.
--  İkinci warning paketi repoda `a4e60d5aa30151184e0f38dd5bd58ccb6768f7fa` → `a6461692baa761c3a9d901f537a8ca653515f77a` aralığında kodlandı; yerel build bekleniyor.
--  Sıradaki işlem: ikinci warning paketini `--no-incremental` tam analizle doğrulamak.
--  CI durumu: GitHub Actions job'ları runner/step başlamadan failure oluyor; gerçek CI build/test sonucu alınamıyor.
--  `main` ile henüz merge yapılmayacak.
-
-## Notlar
-
--  Kullanıcı verisini otomatik silen veya geri döndürülemez dönüştüren değişiklik yapılmayacak.
--  Restore hash/manifest ve semantik doğrulama bitmeden canlı verilere dokunulmayacak.
--  PDF hash uyuşmazlığı otomatik olarak “yeni doğru hash” şeklinde kabul edilmeyecek.
--  Tek örnek güvenliği fail-closed çalışacak; kilit güvenli kurulamıyorsa yazma modunda uygulama açılmayacak.
--  Splash görsel süresi performans ölçümünden ayrı tutulacak.
--  Recovery session uyarısı derleme warning'i değildir; temiz kapanış marker'ı üzerinden ayrı güvenlik mekanizmasıdır.
--  Kullanıcı yerel derleme için Visual Studio yerine GitHub Desktop + `DERLE_CALISTIR.bat` akışını kullanacak.
--  `DERLE_CALISTIR.bat` `--no-incremental` kullanacak; warning envanteri her doğrulamada yeniden görülecek.
--  Yerel build doğrulaması ile GitHub Actions CI doğrulaması ayrı statüler olarak tutulacak.
--  Analyzer uyarıları kontrollü küçük paketlerle ele alınacak; davranış değiştiren toplu “uyarı temizliği” yapılmayacak.
--  Warning suppress/gizleme ancak açık gerekçe varsa kullanılacak; varsayılan yaklaşım warning'in nedenini düzeltmek olacak.
--  Kültür, para, tarih ve string karşılaştırması uyarıları (`CA1305/CA1307/CA1309`) testlerle korunmadan topluca değiştirilmeyecek.
--  Aşama 2'de eklenen kod mevcut analyzer warning borcunu artırmadan ilerletilecek.
--  Her tamamlanan parçadan sonra bu dosya mutlaka repoda güncellenecek.
--  Her tamamlanan parçadan sonra dosyanın tam güncel içeriği sohbet içinde de kullanıcıya verilecek.
--  CI runner sorunu çözülmeden hiçbir aşama için “CI doğrulandı” ifadesi kullanılmayacak.
+- Warning'ler suppress edilerek gizlenmeyecek; mümkün olduğunda nedeni düzeltilecek.
+- Kullanıcı verisini otomatik silen veya geri döndürülemez dönüştüren değişiklik yapılmayacak.
+- Restore/hash/manifest güvenliği zayıflatılmayacak.
+- Yerel build doğrulaması ile GitHub Actions CI doğrulaması ayrı statülerdir.
+- CI runner sorunu çözülmeden “CI doğrulandı” denmeyecek.
+- Her tamamlanan paketten sonra bu MD güncellenecek.
