@@ -15,27 +15,21 @@ Bu dosya DoğruFatura 1.1 sağlamlaştırma çalışmasının güncel durum kayd
 
 Kod/test kapsamı tamamlandı:
 
-- Bozuk veri kurtarma davranışı güvenli hale getirildi.
-- Veri şema sürümleme ve migration eklendi.
-- Restore öncesi semantik doğrulama eklendi.
-- Yedek manifest/SHA-256 ve arşiv PDF bütünlük doğrulaması eklendi.
-- Tek örnek/yazma güvenliği fail-closed hale getirildi.
+- Bozuk veri kurtarma güvenliği.
+- Veri şema sürümleme/migration.
+- Restore öncesi semantik doğrulama.
+- Yedek manifest/SHA-256 ve PDF bütünlük doğrulaması.
+- Tek örnek/yazma güvenliği fail-closed.
 
-GitHub Actions runner sorunu nedeniyle CI doğrulaması halen ayrı olarak bekliyor.
-
-### Ek kullanıcı arayüzü düzeltmeleri
-
-- Sağ üst pencere simgeleri eşitlendi.
-- Splash yaklaşık 5,5 saniye görünür ve ana pencere yükünden bağımsız akıcı hale getirildi.
-- Yerel build/çalıştırma akışı `DERLE_CALISTIR.bat` üzerinden ve `--no-incremental` tam analizle yapılıyor.
+GitHub Actions runner sorunu nedeniyle CI doğrulaması ayrı olarak bekliyor.
 
 ### Aşama 2 — Mimari Temizlik
 
 Tamamlananlar:
 
-- Merkezi `InvoiceRulesEngine` oluşturuldu.
-- `InvoiceValidationService` ve Kontrol Merkezi aynı motoru kullanıyor.
-- Dependency Injection ilk dilimi tamamlandı.
+- Merkezi `InvoiceRulesEngine`.
+- `InvoiceValidationService` ve Kontrol Merkezi ortak kural motoru.
+- Dependency Injection ilk dilimi.
 - Son doğrulanan DI commit'i: `427fb23d309b53db9366056ea27730e546d9eba2`.
 
 Kalan ana işler:
@@ -47,9 +41,7 @@ Kalan ana işler:
 
 ## Aşama 4 — Warning temizliği
 
-### Başlangıç
-
-İlk tam analiz baseline:
+### Baseline
 
 - Core: 16 warning
 - WPF: 41 warning
@@ -62,10 +54,7 @@ Commit'ler:
 - `4b8979930b29fe08e2d76f8c440f407d2520cb02`
 - `1709dea16c4824eff1233bf5aaf44e3f9d2fe04a`
 
-Yerel doğrulama sonucu:
-
-- **57 → 53 warning**
-- **0 error**
+Yerel sonuç: **57 → 53 warning / 0 error**.
 
 ### Paket 2 — kontrollü warning temizliği
 
@@ -74,61 +63,60 @@ Kod aralığı:
 - `a4e60d5aa30151184e0f38dd5bd58ccb6768f7fa`
 - `a6461692baa761c3a9d901f537a8ca653515f77a`
 
+Yerel sonuç: **53 → 12 warning / 0 error**.
+
+### Paket 3 — CA1861
+
+Commit'ler:
+
+- `2f3216a2b1f42c663f3e8e9a8ddd49df8cd14688` — `MainWindow.xaml.cs`
+- `4d7eb4a097867c019bed7aeca0d714118d683226` — `HistoricalPdfImportService.cs`
+
 17.09.2026 yerel tam analiz sonucu:
 
 - Core: **2 warning**
-- WPF: **10 warning**
-- Toplam: **12 warning / 0 error**
+- WPF: **8 warning**
+- Toplam: **10 warning / 0 error**
 - Program `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
-- Böylece toplam warning sayısı **53 → 12** düştü.
+- İki `CA1861` uyarısı temizlendi.
 
-## Kalan 12 warning
+## Kalan 10 warning
 
 ### Core — 2
 
 - `CA1822` — `TaxCalculationService.Calculate`
 - `CA1309` — `ControlCenterService` dize karşılaştırması
 
-### WPF — 10
+### WPF — 8
 
 - `CA1822` — `DiagnosticPackageService.Create`
 - `CA1822` — `FinalReportDocumentService.Build`
-- `CA1822` — `ApplicationSafetyService.RuntimeDescription`
-- `CA1859` — `ApplicationSafetyService.CollectBackupFiles`
 - `CA1822` — `FinalReportPdfService.Save`
 - `CA1822` — `HistoricalPdfImportService.Read`
+- `CA1822` — `ApplicationSafetyService.RuntimeDescription`
+- `CA1859` — `ApplicationSafetyService.CollectBackupFiles`
 - `CA1309` — `HistoricalPdfImportService` kurum adı karşılaştırması
-- `CA1861` — `HistoricalPdfImportService` tarih formatı dizisi
 - `CA1859` — `HistoricalPdfImportService.BuildLines`
-- `CA1861` — `MainWindow` kurum filtresi `"Tümü"` dizisi
 
-## Kodlanan fakat yerel doğrulaması bekleyen paket
+## Kodlanan fakat yerel doğrulaması bekleyen parça
 
-İki düşük riskli `CA1861` düzeltmesi yapıldı:
+İlk `CA1859` tek başına ele alındı:
 
-- `2f3216a2b1f42c663f3e8e9a8ddd49df8cd14688`
-  - `MainWindow.xaml.cs`
-  - `"Tümü"` önek dizisi `static readonly` alana taşındı.
-- `4d7eb4a097867c019bed7aeca0d714118d683226`
-  - `HistoricalPdfImportService.cs`
-  - Tarih formatı dizisi `static readonly` alana taşındı.
+- Commit: `7410e73bee7a35ea597f0fca823cb1964fe5ff2d`
+- Dosya: `HistoricalPdfImportService.cs`
+- `BuildLines` zaten dizi döndürdüğü için private dönüş tipi `IReadOnlyList<PdfLineData>` yerine `PdfLineData[]` yapıldı.
+- İş kuralı ve kullanıcı davranışı değişmedi.
 
-Beklenen sonraki yerel sonuç:
-
-- **12 → yaklaşık 10 warning**
-- **0 error**
-
-Bu iki değişiklik iş kuralını veya kullanıcı davranışını değiştirmiyor; yalnız tekrarlanan sabit dizi tahsisini kaldırıyor.
+Beklenen sonraki sonuç: **9 warning / 0 error**.
 
 ## Sıradaki iş
 
 1. GitHub Desktop → **Fetch origin → Pull origin**.
 2. `hardening/1.1-data-safety` branch'inde `DERLE_CALISTIR.bat` çalıştır.
-3. Sonuçta toplam warning ve error sayısını kontrol et.
-4. Beklenen: yaklaşık **10 warning / 0 error**.
-5. Sonuç doğrulanırsa sıradaki küçük paket olarak iki `CA1859` ele alınacak.
-6. `CA1822` grubu daha sonra kontrollü biçimde temizlenecek.
-7. `CA1309` en sona bırakılacak; Türkçe kültür/string davranışı test edilmeden değiştirilmemeli.
+3. Beklenen: **9 warning / 0 error**.
+4. Doğrulanırsa kalan `CA1859` olan `ApplicationSafetyService.CollectBackupFiles` tek başına ele alınacak.
+5. Sonrasında `CA1822` grubu kontrollü biçimde temizlenecek.
+6. İki `CA1309` en sona bırakılacak; Türkçe kültür/string davranışı test edilmeden değiştirilmemeli.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
@@ -136,7 +124,7 @@ Warning temizliği sonrasında:
 
 - Vergi kural sürümü/yürürlük tarihi modeli.
 - Append-only audit trail.
-- Çok dosyalı işlemler için transaction journal.
+- Transaction journal.
 - Kapalı HYS arşivini değişmez belge modeliyle güçlendirme.
 
 ## Aşama 5 — Kullanıcı Deneyimi
@@ -148,7 +136,7 @@ Daha sonra:
 - Tanılama paketinde daha güçlü kişisel veri temizleme.
 - PDF metadata formatı.
 
-## Yerel doğrulama yöntemi
+## Yerel doğrulama
 
 Visual Studio kullanılmıyor.
 
@@ -158,17 +146,13 @@ Visual Studio kullanılmıyor.
 4. **Repository > Show in Explorer**
 5. `DERLE_CALISTIR.bat`
 
-BAT `--no-incremental` tam analiz yaptığı için warning envanteri her build'de yeniden görünür.
-
-Başarılı Debug EXE:
-
-`DogruFatura.Wpf\bin\Debug\net8.0-windows\DogruFatura.exe`
+BAT `--no-incremental` tam analiz yapar.
 
 ## Kritik notlar
 
 - Warning'ler suppress edilerek gizlenmeyecek; mümkün olduğunda nedeni düzeltilecek.
 - Kullanıcı verisini otomatik silen veya geri döndürülemez dönüştüren değişiklik yapılmayacak.
 - Restore/hash/manifest güvenliği zayıflatılmayacak.
-- Yerel build doğrulaması ile GitHub Actions CI doğrulaması ayrı statülerdir.
+- Yerel build ve GitHub Actions CI statüleri ayrı tutulacak.
 - CI runner sorunu çözülmeden “CI doğrulandı” denmeyecek.
 - Her tamamlanan paketten sonra bu MD güncellenecek.
