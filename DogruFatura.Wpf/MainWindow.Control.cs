@@ -208,7 +208,10 @@ public partial class MainWindow
         {
             var school = AllSchools.FirstOrDefault(candidate =>
                 string.Equals(candidate.InstitutionType, issue.SchoolInstitutionType, StringComparison.Ordinal)
-                && string.Equals(candidate.Name, issue.SchoolName, StringComparison.CurrentCultureIgnoreCase));
+                && CultureInfo.CurrentCulture.CompareInfo.Compare(
+                    candidate.Name,
+                    issue.SchoolName,
+                    CompareOptions.IgnoreCase) == 0);
             if (school is null)
             {
                 RefreshControlCenter();
