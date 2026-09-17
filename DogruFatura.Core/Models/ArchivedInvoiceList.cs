@@ -12,7 +12,8 @@ public sealed record ArchivedInvoiceList(
     string HysPaymentOrderDocumentNumber = "",
     bool IsClosed = false,
     DateTime? ClosedAt = null,
-    string PdfFileName = "")
+    string PdfFileName = "",
+    string PdfSha256 = "")
 {
     [JsonIgnore]
     public int InvoiceCount => Invoices.Count;
@@ -59,6 +60,7 @@ public sealed record ArchivedInvoiceList(
         InvoiceType = (InvoiceType ?? string.Empty).Trim(),
         HysPaymentOrderDocumentNumber = (HysPaymentOrderDocumentNumber ?? string.Empty).Trim().ToUpperInvariant(),
         PdfFileName = (PdfFileName ?? string.Empty).Trim(),
+        PdfSha256 = (PdfSha256 ?? string.Empty).Trim().ToUpperInvariant(),
         Invoices = Invoices?.ToList() ?? new List<InvoiceRecord>(),
         AuthorityProfile = (AuthorityProfile ?? AuthorityProfileDefaults.Create()).Normalize()
     };
