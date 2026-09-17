@@ -198,7 +198,7 @@ public sealed class HistoricalPdfImportService
             BuildLines(words));
     }
 
-    private static IReadOnlyList<PdfLineData> BuildLines(IEnumerable<PdfWordData> words)
+    private static PdfLineData[] BuildLines(IEnumerable<PdfWordData> words)
     {
         var lines = new List<List<PdfWordData>>();
         foreach (var word in words)
