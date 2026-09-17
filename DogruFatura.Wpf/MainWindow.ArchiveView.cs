@@ -117,7 +117,7 @@ public partial class MainWindow
         ArchiveSelectedPaymentText.Text = NumberParser.Money(archive.PaymentTotal);
         ArchiveSelectedInfoText.Text = $"{archive.InvoiceType} • {archive.InvoiceCount} fatura"
             + (string.IsNullOrWhiteSpace(archive.PdfFileName) ? string.Empty : " • PDF kayıtlı");
-        ArchiveSelectedDateText.Text = archive.ArchivedAt.ToString("dd.MM.yyyy HH:mm");
+        ArchiveSelectedDateText.Text = archive.ArchivedAt.ToString("dd.MM.yyyy HH:mm", CultureInfo.CurrentCulture);
         ArchiveSelectedClosureStateText.Text = archive.IsClosed ? "KAPALI" : "AÇIK";
         ArchiveSelectedClosureStateText.Foreground = new SolidColorBrush(archive.IsClosed
             ? Color.FromRgb(67, 199, 122)
