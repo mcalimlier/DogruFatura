@@ -371,7 +371,7 @@ public sealed class ApplicationSafetyService
         }
     }
 
-    private IReadOnlyList<BackupSourceFile> CollectBackupFiles()
+    private BackupSourceFile[] CollectBackupFiles()
     {
         var files = new List<BackupSourceFile>();
         AddBackupFiles(files, DataFolder, "Veri", _ => true);
