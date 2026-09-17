@@ -37,6 +37,7 @@ public sealed class HistoricalPdfImportService
     private static readonly double[] ColumnWeights =
         { 4.43, 24.86, 22.57, 17.86, 13.29, 18.29, 16.57, 22.14, 14.86, 14.29 };
     private static readonly string[] InvoiceTypes = { "Elektrik", "Telefon", "İnternet", "Su" };
+    private static readonly string[] DateFormats = { "dd.MM.yyyy", "d.M.yyyy" };
     private static readonly CultureInfo Tr = CultureInfo.GetCultureInfo("tr-TR");
 
     public HistoricalPdfImportPreview Read(
@@ -431,7 +432,7 @@ public sealed class HistoricalPdfImportService
     private static bool TryDate(string text, out DateTime date) =>
         DateTime.TryParseExact(
             text.Trim(),
-            new[] { "dd.MM.yyyy", "d.M.yyyy" },
+            DateFormats,
             Tr,
             DateTimeStyles.AllowWhiteSpaces,
             out date);
