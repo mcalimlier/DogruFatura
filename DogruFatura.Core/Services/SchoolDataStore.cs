@@ -38,11 +38,27 @@ public sealed class SchoolDataStore
         try
         {
             var json = File.ReadAllText(DataFilePath, Encoding.UTF8);
-            var schools = JsonSerializer.Deserialize<List<SchoolRecord>>(json, _jsonOptions)
+            var schema = DataFileSchemaService.Read(json, DataFileKinds.Schools);
+            var schools = schema.Data.Deserialize<List<SchoolRecord>>(_jsonOptions)
                           ?? new List<SchoolRecord>();
             if (schools.Any(IsStructurallyInvalid))
                 throw new JsonException("Okul/kurum veri dosyasında eksik alanlar var.");
-            return new SchoolLoadResult(schools, null, DataFilePath);
+
+            string? warning = null;
+            if (schema.RequiresUpgrade)
+            {
+                try
+                {
+                    Save(schools);
+                    warning = $"Okul/kurum veri dosyası şema {DataFileSchemaService.CurrentSchemaVersion} biçimine güvenle yükseltildi.";
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    warning = $"Okul/kurum veri dosyasının şema yükseltmesi uygulanamadı; mevcut dosya korunuyor: {ex.Message}";
+                }
+            }
+
+            return new SchoolLoadResult(schools, warning, DataFilePath);
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
@@ -63,9 +79,10 @@ public sealed class SchoolDataStore
         var recovered = new List<SchoolRecord>();
         try
         {
-            using var document = JsonDocument.Parse(File.ReadAllText(DataFilePath, Encoding.UTF8));
-            if (document.RootElement.ValueKind != JsonValueKind.Array) return recovered;
-            foreach (var element in document.RootElement.EnumerateArray())
+            var json = File.ReadAllText(DataFilePath, Encoding.UTF8);
+            var schema = DataFileSchemaService.Read(json, DataFileKinds.Schools);
+            if (schema.Data.ValueKind != JsonValueKind.Array) return recovered;
+            foreach (var element in schema.Data.EnumerateArray())
             {
                 try
                 {
@@ -96,7 +113,11 @@ public sealed class SchoolDataStore
         var folder = Path.GetDirectoryName(DataFilePath) ?? throw new InvalidOperationException("Okul/kurum veri klasörü belirlenemedi.");
         Directory.CreateDirectory(folder);
         var temporaryPath = DataFilePath + ".tmp";
-        File.WriteAllText(temporaryPath, JsonSerializer.Serialize(schools.ToList(), _jsonOptions), new UTF8Encoding(false));
+        var json = DataFileSchemaService.SerializeCurrent(
+            DataFileKinds.Schools,
+            schools.ToList(),
+            _jsonOptions);
+        File.WriteAllText(temporaryPath, json, new UTF8Encoding(false));
         File.Move(temporaryPath, DataFilePath, true);
     }
 
