@@ -5,6 +5,7 @@ namespace DogruFatura.Core.Services;
 public sealed class TaxCalculationService
 {
     public const decimal StampDutyRate = 0.00948m;
+    private readonly decimal _activeStampDutyRate = StampDutyRate;
 
     public TaxCalculationResult Calculate(
         decimal payableAmount,
@@ -31,7 +32,7 @@ public sealed class TaxCalculationService
         // İki ondalık gösterim/yuvarlama yalnız kullanıcı görünümünde ve nihai çıktıda yapılır.
         var vatBase = adjustedVatAmountLimit - vatAmount;
         var stampDutyExempt = IsStampDutyExempt(invoiceType);
-        var stampDuty = stampDutyExempt ? 0m : vatBase * StampDutyRate;
+        var stampDuty = stampDutyExempt ? 0m : vatBase * _activeStampDutyRate;
         var paymentAmount = payableAmount - stampDuty;
         if (paymentAmount < 0m)
             return TaxCalculationResult.Empty("Hesaplanan damga vergisi fatura tutarından büyük olamaz.");
