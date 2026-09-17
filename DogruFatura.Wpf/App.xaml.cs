@@ -66,7 +66,16 @@ public partial class App : Application
                 ApplicationCrashLogger.Write(ex, "RecoverySession.Begin");
             }
 
-            try { SetCurrentProcessExplicitAppUserModelID("DogruFatura.Wpf.App"); } catch { }
+            try
+            {
+                var appUserModelIdResult = SetCurrentProcessExplicitAppUserModelID("DogruFatura.Wpf.App");
+                if (appUserModelIdResult < 0)
+                    Marshal.ThrowExceptionForHR(appUserModelIdResult);
+            }
+            catch
+            {
+                // Taskbar kimliği uygulanamasa da uygulama güvenle çalışmaya devam edebilir.
+            }
 
             // Splash ayrı STA/Dispatcher thread'inde çalışır. Böylece MainWindow kurulumu
             // ana UI thread'ini meşgul etse bile karşılama animasyonu akıcı kalır.
