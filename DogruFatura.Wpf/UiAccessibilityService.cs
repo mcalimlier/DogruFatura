@@ -13,8 +13,8 @@ internal static class UiAccessibilityService
     private static readonly Brush Gold = BrushFrom("#FFB41F");
     private static readonly ConditionalWeakTable<Control, FocusSnapshot> FocusSnapshots = new();
 
-    private static readonly IReadOnlyDictionary<string, string> AccessibleNames =
-        new Dictionary<string, string>(StringComparer.Ordinal)
+    private static readonly Dictionary<string, string> AccessibleNames =
+        new(StringComparer.Ordinal)
         {
             ["InstitutionTypeBox"] = "Kurum türü",
             ["InstitutionBox"] = "Okul veya kurum",
@@ -242,8 +242,8 @@ internal static class UiAccessibilityService
     private static void RaiseClick(Button button) =>
         button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent, button));
 
-    private static Brush BrushFrom(string value) =>
-        new SolidColorBrush((Color)ColorConverter.ConvertFromString(value));
+    private static SolidColorBrush BrushFrom(string value) =>
+        new((Color)ColorConverter.ConvertFromString(value));
 
     private sealed record FocusSnapshot(Brush? BorderBrush, Thickness BorderThickness);
 }
