@@ -185,7 +185,11 @@ public partial class MainWindow
                 if (!sourceIsDestination && !destinationExisted)
                     createdFiles.Add(destinationPath);
 
-                var storedArchive = archive with { PdfFileName = pdfFileName };
+                var storedArchive = archive with
+                {
+                    PdfFileName = pdfFileName,
+                    PdfSha256 = FileIntegrityService.ComputeSha256(destinationPath)
+                };
                 ArchivedLists.Add(storedArchive);
                 addedArchives.Add(storedArchive);
             }
