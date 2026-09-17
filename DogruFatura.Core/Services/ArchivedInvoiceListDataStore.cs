@@ -38,14 +38,30 @@ public sealed class ArchivedInvoiceListDataStore
         try
         {
             var json = File.ReadAllText(DataFilePath, Encoding.UTF8);
-            var archives = JsonSerializer.Deserialize<List<ArchivedInvoiceList>>(json, _jsonOptions)
+            var schema = DataFileSchemaService.Read(json, DataFileKinds.InvoiceArchive);
+            var archives = schema.Data.Deserialize<List<ArchivedInvoiceList>>(_jsonOptions)
                            ?? new List<ArchivedInvoiceList>();
             if (archives.Any(archive => archive is null))
                 throw new JsonException("İşlem arşivinde boş kayıt var.");
 
             var normalized = archives.Select(archive => archive.Normalize()).ToList();
             ValidateArchiveSet(normalized);
-            return new ArchivedInvoiceListLoadResult(normalized, null, DataFilePath);
+
+            string? warning = null;
+            if (schema.RequiresUpgrade)
+            {
+                try
+                {
+                    Save(normalized);
+                    warning = $"İşlem arşivi veri dosyası şema {DataFileSchemaService.CurrentSchemaVersion} biçimine güvenle yükseltildi.";
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    warning = $"İşlem arşivi veri dosyasının şema yükseltmesi uygulanamadı; mevcut dosya korunuyor: {ex.Message}";
+                }
+            }
+
+            return new ArchivedInvoiceListLoadResult(normalized, warning, DataFilePath);
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
@@ -67,9 +83,10 @@ public sealed class ArchivedInvoiceListDataStore
         var knownHys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            using var document = JsonDocument.Parse(File.ReadAllText(DataFilePath, Encoding.UTF8));
-            if (document.RootElement.ValueKind != JsonValueKind.Array) return recovered;
-            foreach (var element in document.RootElement.EnumerateArray())
+            var json = File.ReadAllText(DataFilePath, Encoding.UTF8);
+            var schema = DataFileSchemaService.Read(json, DataFileKinds.InvoiceArchive);
+            if (schema.Data.ValueKind != JsonValueKind.Array) return recovered;
+            foreach (var element in schema.Data.EnumerateArray())
             {
                 try
                 {
@@ -101,7 +118,11 @@ public sealed class ArchivedInvoiceListDataStore
         var folder = Path.GetDirectoryName(DataFilePath) ?? throw new InvalidOperationException("İşlem arşivi veri klasörü belirlenemedi.");
         Directory.CreateDirectory(folder);
         var temporaryPath = DataFilePath + ".tmp";
-        File.WriteAllText(temporaryPath, JsonSerializer.Serialize(normalized, _jsonOptions), new UTF8Encoding(false));
+        var json = DataFileSchemaService.SerializeCurrent(
+            DataFileKinds.InvoiceArchive,
+            normalized,
+            _jsonOptions);
+        File.WriteAllText(temporaryPath, json, new UTF8Encoding(false));
         File.Move(temporaryPath, DataFilePath, true);
     }
 
