@@ -20,6 +20,9 @@ public static class ArchivedInvoiceListValidationService
             && (!string.Equals(Path.GetFileName(archive.PdfFileName), archive.PdfFileName, StringComparison.Ordinal)
                 || !string.Equals(Path.GetExtension(archive.PdfFileName), ".pdf", StringComparison.OrdinalIgnoreCase)))
             return Invalid("Arşiv PDF dosya adı geçersiz.");
+        if (!string.IsNullOrWhiteSpace(archive.PdfSha256)
+            && !FileIntegrityService.IsValidSha256(archive.PdfSha256))
+            return Invalid("Arşiv PDF SHA-256 bilgisi geçersiz.");
 
         var reportValidation = FinalReportValidationService.Validate(archive.Invoices);
         if (!reportValidation.IsValid || reportValidation.InvoiceType is null)
