@@ -25,6 +25,9 @@ public sealed class FinalReportPdfService
     private static readonly XColor Muted = XColor.FromArgb(82, 98, 119);
     private static readonly XColor Light = XColor.FromArgb(216, 228, 239);
 
+    private readonly PageSize _pageSize = PageSize.A4;
+    private readonly PageOrientation _pageOrientation = PageOrientation.Landscape;
+
     public void Save(FinalReportData data, string filePath)
     {
         ArgumentNullException.ThrowIfNull(data);
@@ -44,8 +47,8 @@ public sealed class FinalReportPdfService
         for (var pageIndex = 0; pageIndex < slices.Count; pageIndex++)
         {
             var page = document.AddPage();
-            page.Size = PageSize.A4;
-            page.Orientation = PageOrientation.Landscape;
+            page.Size = _pageSize;
+            page.Orientation = _pageOrientation;
             using var graphics = XGraphics.FromPdfPage(page);
             DrawPage(graphics, page.Width.Point, page.Height.Point, data,
                 slices[pageIndex], pageIndex + 1, slices.Count);
