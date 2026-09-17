@@ -21,9 +21,7 @@ public sealed class AuthorityProfileDataStore
     {
         DataFilePath = dataFilePath ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-            "DoğruFatura",
-            "Veri",
-            "YetkiliProfili.json");
+            "DoğruFatura", "Veri", "YetkiliProfili.json");
     }
 
     public string DataFilePath { get; }
@@ -55,9 +53,9 @@ public sealed class AuthorityProfileDataStore
         {
             var backupPath = CreateCorruptFileBackup();
             var defaultProfile = AuthorityProfileDefaults.Create();
-            Save(defaultProfile);
-            var warning = "Yetkili/imza profili okunamadı; varsayılan bilgiler yeniden yüklendi."
-                          + (backupPath is null ? string.Empty : $" Bozuk dosya korundu: {backupPath}");
+            var warning = "Yetkili/imza profili okunamadı. Ana veri dosyasının üzerine varsayılan profil yazılmadı; bu oturumda yalnız geçici olarak varsayılan bilgiler kullanılıyor.";
+            if (backupPath is not null) warning += $" Sorunlu dosyanın koruma kopyası: {backupPath}";
+            warning += " Profili kaydetmeden önce mevcut sorunlu dosyayı inceleyin veya güvenli bir yedekten geri yükleyin.";
             return new AuthorityProfileLoadResult(defaultProfile, warning, DataFilePath);
         }
     }
@@ -68,13 +66,10 @@ public sealed class AuthorityProfileDataStore
         if (!normalized.IsComplete)
             throw new InvalidOperationException("Yetkili profilindeki bütün alanlar zorunludur.");
 
-        var folder = Path.GetDirectoryName(DataFilePath)
-                     ?? throw new InvalidOperationException("Yetkili profil klasörü belirlenemedi.");
+        var folder = Path.GetDirectoryName(DataFilePath) ?? throw new InvalidOperationException("Yetkili profil klasörü belirlenemedi.");
         Directory.CreateDirectory(folder);
-
-        var json = JsonSerializer.Serialize(normalized, _jsonOptions);
         var temporaryPath = DataFilePath + ".tmp";
-        File.WriteAllText(temporaryPath, json, new UTF8Encoding(false));
+        File.WriteAllText(temporaryPath, JsonSerializer.Serialize(normalized, _jsonOptions), new UTF8Encoding(false));
         File.Move(temporaryPath, DataFilePath, true);
     }
 
@@ -82,15 +77,10 @@ public sealed class AuthorityProfileDataStore
     {
         try
         {
-            var backupPath = Path.Combine(
-                Path.GetDirectoryName(DataFilePath)!,
-                $"YetkiliProfili_Bozuk_{DateTime.Now:yyyyMMdd_HHmmss}.json");
+            var backupPath = Path.Combine(Path.GetDirectoryName(DataFilePath)!, $"YetkiliProfili_Bozuk_{DateTime.Now:yyyyMMdd_HHmmss_fff}.json");
             File.Copy(DataFilePath, backupPath, false);
             return backupPath;
         }
-        catch
-        {
-            return null;
-        }
+        catch { return null; }
     }
 }
