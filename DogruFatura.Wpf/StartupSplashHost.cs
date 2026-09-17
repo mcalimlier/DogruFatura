@@ -50,21 +50,10 @@ internal sealed class StartupSplashHost : IDisposable
         var window = _window;
         if (window is null) return;
 
-        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        window.Dispatcher.BeginInvoke(new Action(async () =>
-        {
-            try
-            {
-                await window.CompleteAndCloseAsync();
-                completion.TrySetResult(true);
-            }
-            catch (Exception ex)
-            {
-                completion.TrySetException(ex);
-            }
-        }));
-
-        await completion.Task;
+        var closeTask = await window.Dispatcher.InvokeAsync(
+            window.CompleteAndCloseAsync,
+            DispatcherPriority.Normal);
+        await closeTask;
     }
 
     public void CloseImmediately()
@@ -73,7 +62,7 @@ internal sealed class StartupSplashHost : IDisposable
         if (window is null) return;
         try
         {
-            window.Dispatcher.BeginInvoke(new Action(window.Close));
+            _ = window.Dispatcher.BeginInvoke(new Action(window.Close));
         }
         catch
         {
