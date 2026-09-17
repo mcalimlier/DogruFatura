@@ -68,25 +68,27 @@ Kalan ana işler:
 - `TaxCalculationService.Calculate` CA1822: **7 → 6** warning.
   - `afbf23eadae45da6a1a3cb976a9c7a982824c723`
   - DI yapısı korunarak aktif damga vergisi oranı servis örneği durumuna bağlandı.
+- `FinalReportDocumentService.Build` CA1822: **6 → 5** warning.
+  - `f984e834d36827d7a03da2132a23318cdf0fbe50`
+  - Rapor sayfa ölçüsü servis örneği durumuna bağlandı; çıktı ölçüsü değişmedi.
 
 ### 17.09.2026 son başarılı yerel build
 
 - SDK: `.NET 10.0.400`
 - Core: **1 warning**
-- WPF: **5 warning**
-- Toplam: **6 warning / 0 error**
+- WPF: **4 warning**
+- Toplam: **5 warning / 0 error**
 - Program `[3/3] DogruFatura baslatiliyor...` aşamasına ulaştı.
-- `TaxCalculationService.Calculate` CA1822 uyarısı doğrulanarak kapandı.
+- `FinalReportDocumentService.Build` CA1822 uyarısı doğrulanarak kapandı.
 
-## Kalan 6 warning
+## Kalan 5 warning
 
 ### Core — 1
 
 - `CA1309` — `ControlCenterService` dize karşılaştırması
 
-### WPF — 5
+### WPF — 4
 
-- `CA1822` — `FinalReportDocumentService.Build`
 - `CA1822` — `FinalReportPdfService.Save`
 - `CA1822` — `HistoricalPdfImportService.Read`
 - `CA1822` — `ApplicationSafetyService.RuntimeDescription`
@@ -94,14 +96,14 @@ Kalan ana işler:
 
 ## Kodlanan fakat yerel doğrulaması bekleyen parça
 
-`FinalReportDocumentService.Build` servis örneği korunarak ele alındı:
+`FinalReportPdfService.Save` servis örneği korunarak ele alındı:
 
-- Commit: `f984e834d36827d7a03da2132a23318cdf0fbe50`
-- Mevcut `1122.24 × 793.92` sayfa ölçüsü `_pageSize` örnek durumuna bağlandı.
-- `Build` bu servis durumunu kullanıyor.
-- Sabit sayfa ölçüleri, tablo yerleşimi, çıktı görünümü ve çağrı biçimi değişmedi.
+- Commit: `014df5f68752205ed0201e97015a620036ca1d0f`
+- PDF sayfa boyutu `PageSize.A4` ve yönü `PageOrientation.Landscape` servis örneği durumuna bağlandı.
+- `Save` bu örnek ayarları kullanıyor.
+- A4 yatay çıktı, sayfa planlama, metin yerleşimi, PDF içeriği ve çağrı biçimi değişmedi.
 
-Beklenen sonraki yerel sonuç: **5 warning / 0 error**.
+Beklenen sonraki yerel sonuç: **4 warning / 0 error**.
 
 ## CA1822 yaklaşımı
 
@@ -116,8 +118,8 @@ Beklenen sonraki yerel sonuç: **5 warning / 0 error**.
 
 1. GitHub Desktop → **Fetch origin → Pull origin**.
 2. `hardening/1.1-data-safety` branch'inde `DERLE_CALISTIR.bat` çalıştır.
-3. Beklenen: **5 warning / 0 error**.
-4. Doğrulanırsa sıradaki `CA1822` küçük ve izole bir paket olarak ele alınacak.
+3. Beklenen: **4 warning / 0 error**.
+4. Doğrulanırsa kalan `CA1822` uyarıları kontrollü ele alınacak.
 5. İki `CA1309` en sona bırakılacak; Türkçe kültür/string davranışı test edilmeden değiştirilmeyecek.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
