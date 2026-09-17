@@ -75,12 +75,15 @@ public partial class App : Application
             var main = new MainWindow();
             UiPolishService.Apply(main);
 
+            // Performans metriği yalnız gerçek hazırlık süresini ölçer; kullanıcı isteğiyle
+            // eklenen 5,5 saniyelik görsel splash süresi performans gerilemesi sayılmaz.
+            StartupPerformanceService.Complete();
+
             // Splash en az yaklaşık 5,5 saniye görünür kalır ve son %100 geçişini tamamlar.
             await splashHost.CompleteAsync();
 
             MainWindow = main;
             main.Show();
-            StartupPerformanceService.Complete();
             ShutdownMode = ShutdownMode.OnMainWindowClose;
 
             splashHost.Dispose();
