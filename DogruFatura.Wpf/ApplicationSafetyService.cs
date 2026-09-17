@@ -46,6 +46,7 @@ public sealed class ApplicationSafetyService
 
     private readonly Func<string> _informationalVersionProvider;
     private readonly string _legacyRootFolder;
+    private readonly string _runtimeDescription;
 
     public ApplicationSafetyService(
         string? documentsRoot = null,
@@ -69,6 +70,8 @@ public sealed class ApplicationSafetyService
         ArchivedPdfFolder = documentStorage.ArchivedOutputDirectory;
 
         _informationalVersionProvider = informationalVersionProvider ?? ReadInformationalVersion;
+        _runtimeDescription =
+            $".NET {Environment.Version} • {(Environment.Is64BitProcess ? "64-bit" : "32-bit")} • {Environment.OSVersion.VersionString}";
     }
 
     public string RootFolder { get; }
@@ -81,8 +84,7 @@ public sealed class ApplicationSafetyService
 
     public string InformationalVersion => _informationalVersionProvider();
 
-    public string RuntimeDescription =>
-        $".NET {Environment.Version} • {(Environment.Is64BitProcess ? "64-bit" : "32-bit")} • {Environment.OSVersion.VersionString}";
+    public string RuntimeDescription => _runtimeDescription;
 
     public SafetyCheckResult InitializeAndCheck()
     {
