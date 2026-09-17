@@ -21,9 +21,7 @@ public sealed class SchoolDataStore
     {
         DataFilePath = dataFilePath ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-            "DoğruFatura",
-            "Veri",
-            "Okullar.json");
+            "DoğruFatura", "Veri", "Okullar.json");
     }
 
     public string DataFilePath { get; }
@@ -42,37 +40,63 @@ public sealed class SchoolDataStore
             var json = File.ReadAllText(DataFilePath, Encoding.UTF8);
             var schools = JsonSerializer.Deserialize<List<SchoolRecord>>(json, _jsonOptions)
                           ?? new List<SchoolRecord>();
-            if (schools.Any(s => s is null
-                                 || s.InstitutionType is null
-                                 || s.Name is null
-                                 || s.Vkn is null
-                                 || s.ElectricityServiceNumber is null
-                                 || s.TelephoneServiceNumber is null
-                                 || s.InternetServiceNumber is null
-                                 || s.WaterServiceNumber is null))
+            if (schools.Any(IsStructurallyInvalid))
                 throw new JsonException("Okul/kurum veri dosyasında eksik alanlar var.");
             return new SchoolLoadResult(schools, null, DataFilePath);
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
+            var recovered = TryRecoverSchools(out var rejectedCount);
             var backupPath = CreateCorruptFileBackup();
-            var seedSchools = SchoolSeedData.Create();
-            Save(seedSchools);
-            var warning = "Okul/kurum veri dosyası okunamadı. 27 başlangıç kaydı yeniden yüklendi."
-                          + (backupPath is null ? string.Empty : $" Bozuk dosya korundu: {backupPath}");
-            return new SchoolLoadResult(seedSchools, warning, DataFilePath);
+            IReadOnlyList<SchoolRecord> sessionSchools = recovered.Count > 0 ? recovered : SchoolSeedData.Create();
+            var warning = recovered.Count > 0
+                ? $"Okul/kurum veri dosyasında sorun bulundu. {recovered.Count} sağlam kayıt geçici kurtarma modunda açıldı; {rejectedCount} kayıt kullanılamadı. Ana dosyanın üzerine yazılmadı."
+                : "Okul/kurum veri dosyası okunamadı. Ana dosya korunarak bu oturumda başlangıç kayıtları kullanılıyor; bozuk dosyanın üzerine yazılmadı.";
+            if (backupPath is not null) warning += $" Sorunlu dosyanın koruma kopyası: {backupPath}";
+            return new SchoolLoadResult(sessionSchools, warning, DataFilePath);
         }
     }
 
+    private IReadOnlyList<SchoolRecord> TryRecoverSchools(out int rejectedCount)
+    {
+        rejectedCount = 0;
+        var recovered = new List<SchoolRecord>();
+        try
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(DataFilePath, Encoding.UTF8));
+            if (document.RootElement.ValueKind != JsonValueKind.Array) return recovered;
+            foreach (var element in document.RootElement.EnumerateArray())
+            {
+                try
+                {
+                    var school = element.Deserialize<SchoolRecord>(_jsonOptions);
+                    if (school is null || IsStructurallyInvalid(school)) { rejectedCount++; continue; }
+                    var normalized = SchoolValidationService.Normalize(school);
+                    if (!SchoolValidationService.Validate(normalized, recovered).IsValid) { rejectedCount++; continue; }
+                    recovered.Add(normalized);
+                }
+                catch (JsonException) { rejectedCount++; }
+            }
+        }
+        catch { }
+        return recovered;
+    }
+
+    private static bool IsStructurallyInvalid(SchoolRecord? school) => school is null
+        || school.InstitutionType is null
+        || school.Name is null
+        || school.Vkn is null
+        || school.ElectricityServiceNumber is null
+        || school.TelephoneServiceNumber is null
+        || school.InternetServiceNumber is null
+        || school.WaterServiceNumber is null;
+
     public void Save(IEnumerable<SchoolRecord> schools)
     {
-        var folder = Path.GetDirectoryName(DataFilePath)
-                     ?? throw new InvalidOperationException("Okul/kurum veri klasörü belirlenemedi.");
+        var folder = Path.GetDirectoryName(DataFilePath) ?? throw new InvalidOperationException("Okul/kurum veri klasörü belirlenemedi.");
         Directory.CreateDirectory(folder);
-
-        var json = JsonSerializer.Serialize(schools.ToList(), _jsonOptions);
         var temporaryPath = DataFilePath + ".tmp";
-        File.WriteAllText(temporaryPath, json, new UTF8Encoding(false));
+        File.WriteAllText(temporaryPath, JsonSerializer.Serialize(schools.ToList(), _jsonOptions), new UTF8Encoding(false));
         File.Move(temporaryPath, DataFilePath, true);
     }
 
@@ -80,15 +104,10 @@ public sealed class SchoolDataStore
     {
         try
         {
-            var backupPath = Path.Combine(
-                Path.GetDirectoryName(DataFilePath)!,
-                $"Okullar_Bozuk_{DateTime.Now:yyyyMMdd_HHmmss}.json");
+            var backupPath = Path.Combine(Path.GetDirectoryName(DataFilePath)!, $"Okullar_Bozuk_{DateTime.Now:yyyyMMdd_HHmmss_fff}.json");
             File.Copy(DataFilePath, backupPath, false);
             return backupPath;
         }
-        catch
-        {
-            return null;
-        }
+        catch { return null; }
     }
 }
