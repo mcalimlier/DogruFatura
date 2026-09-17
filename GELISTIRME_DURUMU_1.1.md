@@ -24,11 +24,14 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 
 ### 1.1 Bozuk veri kurtarma davranışı
 
-- [ ] Bozuk ana veri dosyasının otomatik olarak boş/varsayılan dosyayla ezilmesini kaldır.
-- [ ] Bozuk dosyayı güvenli karantinaya al.
-- [ ] Uygulamayı kullanılabilir veriyle açarken kullanıcıya kurtarma durumunu açıkça bildir.
-- [ ] Arşivde mümkünse sağlam kayıtları kurtar, yalnız hatalı kayıtları dışarıda bırak.
-- [ ] Yeni davranışı otomatik testlerle koru.
+- [x] Bozuk ana veri dosyasının otomatik olarak boş/varsayılan dosyayla ezilmesi kaldırıldı.
+- [x] Sorunlu dosya zaman damgalı koruma kopyasıyla saklanıyor.
+- [x] Uygulama kullanılabilir geçici veriyle açılırken kurtarma durumu kullanıcıya açıkça bildiriliyor.
+- [x] İşlem arşivinde sağlam kayıtlar kayıt bazında kurtarılıyor; hatalı/çakışan kayıtlar dışarıda bırakılıyor.
+- [x] Aktif fatura ve kurum verisinde mümkün olan sağlam kayıtlar kayıt bazında kurtarılıyor.
+- [x] Yetkili profili bozulduğunda varsayılan profil yalnız oturum içinde kullanılıyor; ana dosya otomatik ezilmiyor.
+- [x] Yeni kurtarma davranışı için otomatik testler eklendi (`RecoveryModeTests.cs`).
+- [ ] GitHub Actions ile derleme/test doğrulaması — **altyapı engeli nedeniyle beklemede**. Workflow job'ları runner atanamadan (`runner_id=0`) ve hiçbir step başlamadan birkaç saniyede failure oluyor; bu nedenle şu an kod/test sonucu üretilemiyor.
 
 ### 1.2 Veri şema sürümleme
 
@@ -84,14 +87,25 @@ DoğruFatura'nın mevcut işlevlerini ve kullanıcı akışını koruyarak veri 
 
 ## Tamamlanan son parça
 
-**Başlangıç kurulumu:** geliştirme dalı ve bu takip dosyası oluşturuldu.
+**Aşama 1.1 — Bozuk veri kurtarma davranışı:**
+
+- `InvoiceDataStore`, `SchoolDataStore`, `AuthorityProfileDataStore` ve `ArchivedInvoiceListDataStore` güvenli kurtarma davranışına geçirildi.
+- Bozuk ana JSON dosyaları artık otomatik boş/varsayılan içerikle değiştirilmiyor.
+- Sorunlu dosyanın zaman damgalı koruma kopyası oluşturuluyor.
+- Aktif fatura, kurum ve işlem arşivinde mümkün olan sağlam kayıtlar oturum için kurtarılıyor.
+- `RecoveryModeTests.cs` ile ana dosyanın değişmeden kaldığı ve sağlam kayıtların kurtarıldığı senaryolar eklendi.
+
+### Doğrulama notu
+
+17.09.2026 tarihindeki branch workflow denemeleri build adımlarına ulaşmadan başarısız oldu. GitHub Actions job kaydında runner atanmadığı ve `steps` listesinin boş olduğu görüldü. Bu nedenle Aşama 1.1'in otomatik CI doğrulaması henüz tamamlanmış sayılmıyor; kod ve test değişiklikleri hazır durumda.
 
 ## Sıradaki iş
 
-**Aşama 1.1 — Bozuk veri kurtarma davranışı.** Önce `InvoiceDataStore`, `SchoolDataStore`, `AuthorityProfileDataStore` ve özellikle `ArchivedInvoiceListDataStore` üzerinde güvenli kurtarma davranışı uygulanacak; ardından ilgili otomatik testler eklenecek.
+**Aşama 1.2 — Veri şema sürümleme.** Kalıcı JSON verilerine açık bir schema/version yapısı eklenecek; geçişler merkezi migration katmanına taşınacak ve mevcut 1.0.x dosyalarının geriye uyumlu biçimde açılması testlerle korunacak.
 
 ## Notlar
 
 - Mevcut kullanıcı verisini otomatik silen veya geri döndürülemez biçimde dönüştüren değişiklik yapılmayacak.
 - Her parça bağımsız ve geri alınabilir commit olarak tutulacak.
 - Her tamamlanan parçadan sonra bu dosya mutlaka güncellenecek.
+- CI runner sorunu çözülmeden hiçbir aşama için "CI doğrulandı" ifadesi kullanılmayacak.
