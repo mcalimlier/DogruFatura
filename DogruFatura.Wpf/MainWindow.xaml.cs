@@ -38,10 +38,10 @@ public partial class MainWindow : Window
     private readonly InvoiceDataStore _invoiceDataStore;
     private readonly AuthorityProfileDataStore _authorityProfileDataStore;
     private readonly ArchivedInvoiceListDataStore _archiveDataStore;
-    private readonly FinalReportDocumentService _finalReportDocumentService = new();
-    private readonly FinalReportPdfService _finalReportPdfService = new();
-    private readonly DocumentArchiveStorageService _documentArchiveStorageService = new();
-    private readonly HistoricalPdfImportService _historicalPdfImportService = new();
+    private readonly FinalReportDocumentService _finalReportDocumentService;
+    private readonly FinalReportPdfService _finalReportPdfService;
+    private readonly DocumentArchiveStorageService _documentArchiveStorageService;
+    private readonly HistoricalPdfImportService _historicalPdfImportService;
     private readonly ArchivePdfSynchronizationService _archivePdfSynchronizationService;
     private readonly ApplicationSafetyService _safetyService;
     private readonly SafetyCheckResult _startupSafetyResult;
@@ -77,7 +77,11 @@ public partial class MainWindow : Window
         InvoiceDataStore invoiceDataStore,
         AuthorityProfileDataStore authorityProfileDataStore,
         ArchivedInvoiceListDataStore archiveDataStore,
-        ApplicationSafetyService safetyService)
+        ApplicationSafetyService safetyService,
+        FinalReportDocumentService finalReportDocumentService,
+        FinalReportPdfService finalReportPdfService,
+        DocumentArchiveStorageService documentArchiveStorageService,
+        HistoricalPdfImportService historicalPdfImportService)
     {
         ArgumentNullException.ThrowIfNull(taxService);
         ArgumentNullException.ThrowIfNull(schoolDataStore);
@@ -85,6 +89,10 @@ public partial class MainWindow : Window
         ArgumentNullException.ThrowIfNull(authorityProfileDataStore);
         ArgumentNullException.ThrowIfNull(archiveDataStore);
         ArgumentNullException.ThrowIfNull(safetyService);
+        ArgumentNullException.ThrowIfNull(finalReportDocumentService);
+        ArgumentNullException.ThrowIfNull(finalReportPdfService);
+        ArgumentNullException.ThrowIfNull(documentArchiveStorageService);
+        ArgumentNullException.ThrowIfNull(historicalPdfImportService);
 
         _taxService = taxService;
         _schoolDataStore = schoolDataStore;
@@ -92,6 +100,10 @@ public partial class MainWindow : Window
         _authorityProfileDataStore = authorityProfileDataStore;
         _archiveDataStore = archiveDataStore;
         _safetyService = safetyService;
+        _finalReportDocumentService = finalReportDocumentService;
+        _finalReportPdfService = finalReportPdfService;
+        _documentArchiveStorageService = documentArchiveStorageService;
+        _historicalPdfImportService = historicalPdfImportService;
 
         _startupSafetyResult = _safetyService.InitializeAndCheck();
         _lastSafetyBackupPath = _startupSafetyResult.BackupPath;
