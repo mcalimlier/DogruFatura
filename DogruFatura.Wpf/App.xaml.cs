@@ -20,10 +20,12 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
     }
 
-    private void Application_Startup(object sender, StartupEventArgs e)
+    private async void Application_Startup(object sender, StartupEventArgs e)
     {
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
         StartupPerformanceService.Begin();
+        StartupSplashHost? splashHost = null;
+
         try
         {
             var singleInstance = SingleInstanceGuard.TryAcquire(SingleInstanceMutexName);
@@ -64,10 +66,30 @@ public partial class App : Application
             }
 
             try { SetCurrentProcessExplicitAppUserModelID("DogruFatura.Wpf.App"); } catch { }
-            new SplashWindow().Show();
+
+            // Splash ayrı STA/Dispatcher thread'inde çalışır. Böylece MainWindow kurulumu
+            // ana UI thread'ini meşgul etse bile karşılama animasyonu akıcı kalır.
+            splashHost = new StartupSplashHost();
+            splashHost.Show();
+
+            var main = new MainWindow();
+            UiPolishService.Apply(main);
+
+            // Splash en az yaklaşık 5,5 saniye görünür kalır ve son %100 geçişini tamamlar.
+            await splashHost.CompleteAsync();
+
+            MainWindow = main;
+            main.Show();
+            StartupPerformanceService.Complete();
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
+
+            splashHost.Dispose();
+            splashHost = null;
         }
         catch (Exception ex)
         {
+            splashHost?.CloseImmediately();
+            splashHost?.Dispose();
             _fatalShutdown = true;
             ShowFatalError("Program açılışı sırasında hata oluştu.", ex);
             Shutdown(-1);
