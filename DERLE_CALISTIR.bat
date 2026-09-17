@@ -41,10 +41,10 @@ if not exist "DogruFatura.Wpf\DogruFatura.Wpf.csproj" goto missing_source
 if not exist "DogruFatura.Core\DogruFatura.Core.csproj" goto missing_source
 if not exist "DogruFatura.Wpf\Assets\AppIcon.ico" goto missing_source
 
-echo [2/3] Proje derleniyor...
+echo [2/3] Proje tam analizle derleniyor...
 dotnet restore "DogruFatura.Wpf\DogruFatura.Wpf.csproj"
 if errorlevel 1 goto build_failed
-dotnet build "DogruFatura.Wpf\DogruFatura.Wpf.csproj" -c Debug --no-restore
+dotnet build "DogruFatura.Wpf\DogruFatura.Wpf.csproj" -c Debug --no-restore --no-incremental
 if errorlevel 1 goto build_failed
 
 echo [3/3] DogruFatura baslatiliyor...
