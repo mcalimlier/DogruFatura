@@ -32,17 +32,17 @@ public partial class MainWindow : Window
     public ObservableCollection<DashboardBarItem> HomeInvoiceTypeBars { get; } = new();
     public ObservableCollection<DashboardBarItem> HomeMonthlyTrendBars { get; } = new();
 
-    private readonly TaxCalculationService _taxService = new();
-    private readonly SchoolDataStore _schoolDataStore = new();
-    private readonly InvoiceDataStore _invoiceDataStore = new();
-    private readonly AuthorityProfileDataStore _authorityProfileDataStore = new();
-    private readonly ArchivedInvoiceListDataStore _archiveDataStore = new();
+    private readonly TaxCalculationService _taxService;
+    private readonly SchoolDataStore _schoolDataStore;
+    private readonly InvoiceDataStore _invoiceDataStore;
+    private readonly AuthorityProfileDataStore _authorityProfileDataStore;
+    private readonly ArchivedInvoiceListDataStore _archiveDataStore;
     private readonly FinalReportDocumentService _finalReportDocumentService = new();
     private readonly FinalReportPdfService _finalReportPdfService = new();
     private readonly DocumentArchiveStorageService _documentArchiveStorageService = new();
     private readonly HistoricalPdfImportService _historicalPdfImportService = new();
     private readonly ArchivePdfSynchronizationService _archivePdfSynchronizationService;
-    private readonly ApplicationSafetyService _safetyService = new();
+    private readonly ApplicationSafetyService _safetyService;
     private readonly SafetyCheckResult _startupSafetyResult;
     private readonly ICollectionView _schoolView;
     private readonly ICollectionView _archiveView;
@@ -70,8 +70,28 @@ public partial class MainWindow : Window
     private const uint MonitorDefaultToNearest = 0x00000002;
     private HwndSource? _windowSource;
 
-    public MainWindow()
+    internal MainWindow(
+        TaxCalculationService taxService,
+        SchoolDataStore schoolDataStore,
+        InvoiceDataStore invoiceDataStore,
+        AuthorityProfileDataStore authorityProfileDataStore,
+        ArchivedInvoiceListDataStore archiveDataStore,
+        ApplicationSafetyService safetyService)
     {
+        ArgumentNullException.ThrowIfNull(taxService);
+        ArgumentNullException.ThrowIfNull(schoolDataStore);
+        ArgumentNullException.ThrowIfNull(invoiceDataStore);
+        ArgumentNullException.ThrowIfNull(authorityProfileDataStore);
+        ArgumentNullException.ThrowIfNull(archiveDataStore);
+        ArgumentNullException.ThrowIfNull(safetyService);
+
+        _taxService = taxService;
+        _schoolDataStore = schoolDataStore;
+        _invoiceDataStore = invoiceDataStore;
+        _authorityProfileDataStore = authorityProfileDataStore;
+        _archiveDataStore = archiveDataStore;
+        _safetyService = safetyService;
+
         _startupSafetyResult = _safetyService.InitializeAndCheck();
         _lastSafetyBackupPath = _startupSafetyResult.BackupPath;
         _archivePdfSynchronizationService = new ArchivePdfSynchronizationService(

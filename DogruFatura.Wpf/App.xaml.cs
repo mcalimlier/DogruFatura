@@ -1,3 +1,4 @@
+using DogruFatura.Core.Services;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Threading;
@@ -72,7 +73,13 @@ public partial class App : Application
             splashHost = new StartupSplashHost();
             splashHost.Show();
 
-            var main = new MainWindow();
+            var main = new MainWindow(
+                new TaxCalculationService(),
+                new SchoolDataStore(),
+                new InvoiceDataStore(),
+                new AuthorityProfileDataStore(),
+                new ArchivedInvoiceListDataStore(),
+                new ApplicationSafetyService());
             UiPolishService.Apply(main);
 
             // Performans metriği yalnız gerçek hazırlık süresini ölçer; kullanıcı isteğiyle
