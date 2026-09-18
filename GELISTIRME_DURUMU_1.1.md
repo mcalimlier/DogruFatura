@@ -279,7 +279,7 @@ Mevcut durum:
 
 Henüz kod değişikliği yapılmadı; önce önerilen yerleşim kullanıcı kararıyla netleştirilecek.
 
-### Kod temizliği / sadeleştirme paketi 6 — KODLANDI, YEREL BUILD VE GÖRSEL KONTROL BEKLİYOR
+### Kod temizliği / sadeleştirme paketi 6 — TAMAMLANDI, KULLANICI TARAFINDAN MÜKEMMEL OLARAK DOĞRULANDI
 
 Kullanıcının onayladığı orta seviye Veri Güvenliği sadeleştirmesi uygulandı:
 
@@ -327,14 +327,100 @@ Sıradaki doğrulama:
    - `KONTROL ET`, `YEDEK OLUŞTUR`, `GERİ YÜKLE` akışlarının korunması
    hızlıca doğrulanmalı.
 
+Kullanıcı 18.09.2026 tarihinde paket 6 sonucunu **mükemmel** olarak bildirdi; görsel sadeleştirme onaylandı.
+
+### Kod temizliği / sadeleştirme paketi 7 — KODLANDI, YEREL BUILD VE GÖRSEL KONTROL BEKLİYOR
+
+Header ve Ana Ekran için runtime görsel-ağaç düzeltmeleri XAML'e taşındı:
+
+- `UiVisualPolishService.SimplifyHeader` tamamen kaldırıldı.
+- Header'da runtime gizlenen `SÜRÜM` kutusu XAML'de doğrudan `Visibility="Collapsed"` oldu.
+- Header orta kolon genişliği runtime'daki son değer olan `220` olarak XAML'e taşındı.
+- Runtime gizlenen `DAMGA ORANI` kutusu XAML'de doğrudan gizlendi.
+- Damga kutusuna ayrılan header kolonları doğrudan `0` genişliğe indirildi.
+- `UiVisualPolishService.ImproveHomeLayout` tamamen kaldırıldı.
+- Ana Ekran'daki eski `AŞAMA 10 • R2` rozeti XAML'de doğrudan gizlendi.
+- Akıllı Özet kartının runtime kaldırılan gölgesi XAML'den çıkarıldı.
+- Akıllı Özet kartının `CornerRadius=10`, `SnapsToDevicePixels=True` ve `UseLayoutRounding=True` son hali XAML'e taşındı.
+- HomeView metin keskinliği:
+  - `TextOptions.TextFormattingMode="Display"`
+  - `TextOptions.TextRenderingMode="ClearType"`
+  - `SnapsToDevicePixels="True"`
+  olarak üst kapsayıcıda tanımlandı; 42 TextBlock'ı runtime dolaşma ihtiyacı kaldırıldı.
+- Ana Ekran'daki runtime `CornerRadius 11/12 → 10` normalizasyonu yalnız Home kapsamındaki kartlara deklaratif olarak taşındı.
+- Koruma kontrolünde Home dışına taşan 2 köşe değeri tespit edilip eski `11` değerlerine geri alındı; diğer ekranların görünümü korunuyor.
+
+Commitler:
+- Ana paket: `553a169984d8251084895135b4f7ee4dbb2054e7`
+- Home dışı iki kartın koruma düzeltmesi: `590352d5d4d7dbb740f80afcf9f3dc37ff951b29`
+
+Statik kontrol:
+- `SimplifyHeader`: **0**
+- `ImproveHomeLayout`: **0**
+- Home dışındaki `CornerRadius=11` öğeleri önceki sürümle aynı: **2 / 2**
+- `UiVisualPolishService` içindeki `UiTree.Descendants` çağrıları artık yalnız **3** yerde:
+  - DatePicker normalizasyonu
+  - Button normalizasyonu
+  - Border/panel normalizasyonu
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**.
+2. `DERLE_CALISTIR.bat`.
+3. Beklenen: **0 warning / 0 error** ve normal başlatma.
+4. Hızlı görsel kontrol:
+   - üst bar önceki gibi kompakt,
+   - Sürüm ve Damga kutuları görünmüyor,
+   - Ana Ekran Akıllı Özet kartında gölge yok,
+   - eski `AŞAMA 10 • R2` rozeti görünmüyor,
+   - kart yuvarlaklıkları önceki temiz görünümle aynı.
+
 ## Sonraki sadeleştirme adayları
 
-Düşük riskten yükseğe:
+Düşük riskten yükseğe yeni öneri sırası:
 
-1. Veri Güvenliği paket 6 görsel/build doğrulaması sonrası `SimplifyHeader` / `ImproveHomeLayout` içindeki kalan runtime visual-tree taramalarını kontrollü azaltmak.
-2. `ConfigureFixedWindowForCurrentScreen` ile `ResponsiveLayoutService.Apply/FitToCurrentWorkArea` arasındaki çift boyutlandırma sorumluluğunu görsel regresyonla tekleştirmek.
-3. Üretim kullanımı olmadığı doğrulanırsa test-odaklı yardımcıları test katmanına taşımak.
-4. Daha sonra `MainWindow` constructor bootstrap/store yükleme sorumluluklarını küçük application-service'e ayırmak.
+1. **Hakkında ekranındaki uzun özellik listesini sadeleştir.**
+   - Alt bölümde onlarca `✓` satırı var.
+   - 5–6 başlık altında kısa özet veya kapalı `ÖZELLİKLER / TEKNİK BİLGİLER` Expander daha temiz olur.
+   - Günlük kullanıcı için gereksiz teknik ayrıntı görünür alandan kalkar; bilgi silinmez.
+
+2. **Kalıcı olarak gizlenen header öğelerini XAML'den tamamen kaldır.**
+   - Paket 7 doğrulanırsa `SÜRÜM` ve `DAMGA ORANI` kutuları artık yalnız `Collapsed` değil, tamamen kaldırılabilir.
+   - Gizli `HeaderVersionText` kalkınca `ApplyVersionText` yalnız Hakkında sürümünü günceller ve daha da sadeleşir.
+
+3. **Kalan `UiVisualPolishService` taramalarını XAML stillerine taşı.**
+   - `NormalizeButtons`: ortak `MinHeight=42`, renk ve foreground davranışları `StandardButtonBase/ModernButton` stillerine.
+   - `NormalizePanels`: `SnapsToDevicePixels` ilgili panel stillerine.
+   - `PolishDatePickers`: `PremiumDatePicker` stil/template içine.
+   - Hedef: `UiTree.Descendants` kullanımını mümkün olduğunca sıfırlamak.
+
+4. **Sürüm bilgilerindeki tekrarları azalt.**
+   - Header sürümü zaten gizli.
+   - Hakkında ekranında hem `AboutVersionText` hem `AboutProductVersionText` bulunuyor.
+   - Tek bir net sürüm alanı yeterli olabilir.
+
+5. **Pencere boyutlandırma sorumluluğunu tekleştir — orta risk.**
+   - `ConfigureFixedWindowForCurrentScreen`
+   - `ResponsiveLayoutService.Apply/FitToCurrentWorkArea`
+   aynı alanın iki katmanını yönetiyor.
+   - Responsive test + manuel 1366×768 / Full HD / yüksek DPI kontrolü gerektirir.
+
+6. **MainWindow başlangıç yükünü application-service/state-loader'a ayır — orta risk.**
+   - store load/fallback
+   - startup safety state
+   - initial collection/view setup
+   constructor'dan çıkarılabilir.
+   - Tek seferde MVVM dönüşümü yapılmamalı.
+
+7. **Tür/status alanlarını kontrollü enum/value object yapısına taşı — daha sonra.**
+   - `InvoiceType`
+   - `InstitutionType`
+   - archive status
+   - legacy JSON uyumluluğu korunmalı.
+
+8. **SchoolId bağı güçlendirmesi — en son.**
+   - `SchoolRecord` için değişmez kimlik.
+   - Fatura-kurum ilişkisini metin yerine ID ile güçlendirme.
+   - Migration tasarımı olmadan başlanmamalı.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
