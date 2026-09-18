@@ -281,6 +281,16 @@
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
+        <Style TargetType="{x:Type DatePickerTextBox}">
+            <Setter Property="Background" Value="{StaticResource PremiumInputBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PremiumInputBorderBrush}"/>
+            <Setter Property="CaretBrush" Value="{StaticResource Gold500Brush}"/>
+            <Setter Property="SelectionBrush" Value="#2D6593"/>
+            <Setter Property="Padding" Value="9,0,5,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
         <Style x:Key="NavButton" TargetType="Button" BasedOn="{StaticResource StandardButtonBase}">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Background" Value="Transparent"/>
