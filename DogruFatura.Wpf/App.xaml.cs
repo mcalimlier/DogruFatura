@@ -87,6 +87,9 @@ public partial class App : Application
             var finalReportPdfService = new FinalReportPdfService();
             var documentArchiveStorageService = new DocumentArchiveStorageService();
             var historicalPdfImportService = new HistoricalPdfImportService(taxService);
+            var archivePdfSynchronizationService = new ArchivePdfSynchronizationService(
+                documentArchiveStorageService,
+                finalReportPdfService.Save);
 
             var main = new MainWindow(
                 taxService,
@@ -98,7 +101,8 @@ public partial class App : Application
                 finalReportDocumentService,
                 finalReportPdfService,
                 documentArchiveStorageService,
-                historicalPdfImportService);
+                historicalPdfImportService,
+                archivePdfSynchronizationService);
             UiPolishService.Apply(main);
 
             // Performans metriği yalnız gerçek hazırlık süresini ölçer; kullanıcı isteğiyle
