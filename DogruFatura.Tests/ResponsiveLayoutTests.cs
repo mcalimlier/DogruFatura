@@ -11,7 +11,7 @@ public sealed class ResponsiveLayoutTests
     [InlineData(1920, 1080, 150)]
     [InlineData(2560, 1440, 175)]
     [InlineData(3840, 2160, 200)]
-    public void SupportedScreenProfiles_StayInsideWorkArea(int width, int height, int dpiPercent)
+    public void SupportedScreenProfilesStayInsideWorkArea(int width, int height, int dpiPercent)
     {
         var profile = ResponsiveLayoutService.CalculateForPixels(width, height, dpiPercent);
 
@@ -23,7 +23,7 @@ public sealed class ResponsiveLayoutTests
     }
 
     [Fact]
-    public void LargeScreen_DoesNotBitmapUpscaleDesign()
+    public void LargeScreenDoesNotBitmapUpscaleDesign()
     {
         var profile = ResponsiveLayoutService.CalculateForPixels(3840, 2160, 100);
 
@@ -34,7 +34,7 @@ public sealed class ResponsiveLayoutTests
     }
 
     [Fact]
-    public void FullHdAt150Percent_UsesControlledDownscale()
+    public void FullHdAt150PercentUsesControlledDownscale()
     {
         var profile = ResponsiveLayoutService.CalculateForPixels(1920, 1080, 150);
 

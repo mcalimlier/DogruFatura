@@ -9,7 +9,7 @@ namespace DogruFatura.Tests;
 public sealed class PdfRegressionTests
 {
     [Fact]
-    public void ThirtyTwoInvoices_CreateThreeLandscapeA4Pages_InsideSideMargins()
+    public void ThirtyTwoInvoicesCreateThreeLandscapeA4PagesInsideSideMargins()
     {
         using var temp = new TempFile("report.pdf");
         var data = ReportData(32);
@@ -38,7 +38,7 @@ public sealed class PdfRegressionTests
     }
 
     [Fact]
-    public void GeneratedPdf_CanBeReadBackByHistoricalArchiveImporter()
+    public void GeneratedPdfCanBeReadBackByHistoricalArchiveImporter()
     {
         using var temp = new TempFile("48) HYS-2026-34546180.pdf");
         var data = ReportData(3);
@@ -66,7 +66,7 @@ public sealed class PdfRegressionTests
     [InlineData(31, 2)]
     [InlineData(32, 3)]
     [InlineData(100, 6)]
-    public void ActualPdfPageCount_MatchesPlanner(int invoiceCount, int expectedPages)
+    public void ActualPdfPageCountMatchesPlanner(int invoiceCount, int expectedPages)
     {
         using var temp = new TempFile($"page-{invoiceCount}.pdf");
         new FinalReportPdfService().Save(ReportData(invoiceCount), temp.Path);

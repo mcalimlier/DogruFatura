@@ -6,7 +6,7 @@ namespace DogruFatura.Tests;
 public sealed class SingleInstanceGuardTests
 {
     [Fact]
-    public void TryAcquire_WhenMutexIsNew_ReturnsAcquiredLease()
+    public void TryAcquireWhenMutexIsNewReturnsAcquiredLease()
     {
         var result = SingleInstanceGuard.TryAcquire(
             "DogruFatura.Tests.Acquired",
@@ -21,7 +21,7 @@ public sealed class SingleInstanceGuardTests
     }
 
     [Fact]
-    public void TryAcquire_WhenAnotherInstanceOwnsMutex_ReturnsAlreadyRunning()
+    public void TryAcquireWhenAnotherInstanceOwnsMutexReturnsAlreadyRunning()
     {
         var result = SingleInstanceGuard.TryAcquire(
             "DogruFatura.Tests.AlreadyRunning",
@@ -33,7 +33,7 @@ public sealed class SingleInstanceGuardTests
     }
 
     [Fact]
-    public void TryAcquire_WhenMutexInfrastructureFails_FailsClosed()
+    public void TryAcquireWhenMutexInfrastructureFailsFailsClosed()
     {
         var result = SingleInstanceGuard.TryAcquire(
             "DogruFatura.Tests.Unavailable",

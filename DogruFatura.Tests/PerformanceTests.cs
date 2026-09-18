@@ -7,7 +7,7 @@ namespace DogruFatura.Tests;
 public sealed class PerformanceTests
 {
     [Fact]
-    public void ControlCenter_HandlesOneThousandInvoicesWithinReasonableTime()
+    public void ControlCenterHandlesOneThousandInvoicesWithinReasonableTime()
     {
         var school = School();
         var invoices = Enumerable.Range(1, 1000).Select(index => Invoice(index, school.Name)).ToArray();
@@ -21,7 +21,7 @@ public sealed class PerformanceTests
     }
 
     [Fact]
-    public void Dashboard_HandlesOneThousandArchivedInvoicesWithinReasonableTime()
+    public void DashboardHandlesOneThousandArchivedInvoicesWithinReasonableTime()
     {
         var school = School();
         var archives = Enumerable.Range(0, 200)

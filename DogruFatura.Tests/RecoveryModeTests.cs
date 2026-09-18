@@ -8,7 +8,7 @@ namespace DogruFatura.Tests;
 public sealed class RecoveryModeTests
 {
     [Fact]
-    public void CorruptInvoiceFile_IsNeverOverwritten_AndValidRecordIsRecovered()
+    public void CorruptInvoiceFileIsNeverOverwrittenAndValidRecordIsRecovered()
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "AktifFaturalar.json");
@@ -26,7 +26,7 @@ public sealed class RecoveryModeTests
     }
 
     [Fact]
-    public void CorruptSchoolFile_IsNeverOverwritten_AndValidSchoolIsRecovered()
+    public void CorruptSchoolFileIsNeverOverwrittenAndValidSchoolIsRecovered()
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "Okullar.json");
@@ -45,7 +45,7 @@ public sealed class RecoveryModeTests
     }
 
     [Fact]
-    public void InvalidAuthorityProfile_IsNeverReplacedByDefaultsAutomatically()
+    public void InvalidAuthorityProfileIsNeverReplacedByDefaultsAutomatically()
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "YetkiliProfili.json");
@@ -61,7 +61,7 @@ public sealed class RecoveryModeTests
     }
 
     [Fact]
-    public void ArchiveRecovery_KeepsValidRecord_AndRejectsInvalidRecordWithoutOverwritingSource()
+    public void ArchiveRecoveryKeepsValidRecordAndRejectsInvalidRecordWithoutOverwritingSource()
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "IslemArsivi.json");
