@@ -21,12 +21,12 @@
                         <Border Background="#092746" CornerRadius="9" BorderBrush="#24496B" BorderThickness="1" Padding="14,8" Width="198">
                             <StackPanel>
                                 <TextBlock Text="SÜRÜM" Foreground="#8FA8C0" FontSize="13" FontWeight="SemiBold"/>
-                                <TextBlock Text="v1.0  •  Aşama 10 R2" Foreground="White" FontSize="14.5" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                                <TextBlock x:Name="HeaderVersionText" Text="v1.0" Foreground="White" FontSize="14.5" FontWeight="SemiBold" Margin="0,2,0,0"/>
                             </StackPanel>
                         </Border>
                         <Border Background="#092746" CornerRadius="9" BorderBrush="#24496B" BorderThickness="1" Padding="13,8" Margin="10,0,0,0" Width="196">
                             <StackPanel>
-                                <TextBlock Text="HESAP MOTORU" Foreground="#8FA8C0" FontSize="13" FontWeight="SemiBold"/>
+                                <TextBlock Text="HESAPLAMA" Foreground="#8FA8C0" FontSize="13" FontWeight="SemiBold"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
                                     <Ellipse x:Name="EngineStatusDot" Width="9" Height="9" Fill="#43C77A" Margin="0,0,7,0"/>
                                     <TextBlock x:Name="EngineStatusText" Text="Doğrulandı" Foreground="#DDF6E7" FontSize="14.5" FontWeight="SemiBold"/>
@@ -127,7 +127,7 @@
                         <ScrollViewer x:Name="HomeView" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                             <StackPanel Margin="0,0,8,16">
                                 <TextBlock Text="DOĞRUFATURA YÖNETİM PANELİ" Style="{StaticResource PageTitle}"/>
-                                <TextBlock Text="HYS numarasıyla kapatılmış ödeme listelerini gerçek verilerle tek bakışta izleyin." Style="{StaticResource PageSubtitle}"/>
+                                <TextBlock Text="HYS ile kapanmış ödeme listelerinin mali durumunu tek bakışta izleyin." Style="{StaticResource PageSubtitle}"/>
 
                                 <Border Style="{StaticResource PremiumPanel}" Padding="20,16" Margin="0,0,0,12">
                                     <Border.Effect><DropShadowEffect BlurRadius="18" ShadowDepth="3" Opacity="0.18"/></Border.Effect>
@@ -584,7 +584,7 @@
                             </Grid.RowDefinitions>
                             <StackPanel>
                                 <TextBlock Text="RAPORLAR / ÇIKTILAR" Style="{StaticResource PageTitle}"/>
-                                <TextBlock Text="Aktif listeyi Excel'deki FaturaSonHali düzeninde önizleyin, PDF kaydedin veya yazdırın." Style="{StaticResource PageSubtitle}"/>
+                                <TextBlock Text="Aktif listeyi resmî ödeme düzeninde önizleyin, PDF olarak kaydedin veya yazdırın." Style="{StaticResource PageSubtitle}"/>
                             </StackPanel>
 
                             <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,9">
@@ -639,9 +639,9 @@
                                     <TextBlock Text="Listeleri saklayın, HYS Ödeme Emri Belge No ile kesin kapatın ve gerektiğinde yeniden açın." Style="{StaticResource PageSubtitle}"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
-                                    <Button x:Name="ArchivePdfSyncButton" Style="{StaticResource ModernButton}" Content="EŞİTLE" Width="112"
+                                    <Button x:Name="ArchivePdfSyncButton" Style="{StaticResource ModernButton}" Content="PDF KONTROL" Width="112"
                                             Background="#B7791F" Margin="0,0,10,0" Click="SynchronizeArchivePdfs_Click"
-                                            ToolTip="Arşiv kayıtlarında eksik olan PDF belgelerini güvenli biçimde oluştur ve dosya bağlantılarını yenile"/>
+                                            ToolTip="Arşiv kayıtları ile PDF belgelerinin uyumunu kontrol eder ve eksik belgeleri güvenli biçimde tamamlar."/>
                                     <Button Style="{StaticResource ModernButton}" Content="ARŞİV EKLE" Width="148"
                                             Background="#315371" Margin="0,0,10,0" Click="ImportHistoricalPdf_Click"
                                             ToolTip="HYS kodu içeren bir veya birden fazla eski DoğruFatura PDF'sini arşive ekle; baştaki sıra numaraları otomatik göz ardı edilir"/>
@@ -985,7 +985,7 @@
                                                 <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                                 <StackPanel>
                                                     <TextBlock Text="VERİ GÜVENLİĞİ" Style="{StaticResource PremiumSectionTitle}"/>
-                                                    <TextBlock Text="JSON kayıtları ile aktif/arşiv PDF belgeleri birlikte korunur." Foreground="{StaticResource PremiumMutedTextBrush}" FontSize="13.5" Margin="0,4,12,0" TextWrapping="Wrap"/>
+                                                    <TextBlock Text="Kayıtlar ile aktif ve arşiv PDF belgeleri birlikte korunur." Foreground="{StaticResource PremiumMutedTextBrush}" FontSize="13.5" Margin="0,4,12,0" TextWrapping="Wrap"/>
                                                 </StackPanel>
                                                 <Button Grid.Column="1" Style="{StaticResource ModernButton}" Content="KONTROL ET" Width="132" Background="#425B76" Click="RunIntegrityCheck_Click"/>
                                             </Grid>
@@ -1009,7 +1009,7 @@
 
                                 <Border Style="{StaticResource PremiumPanel}" Padding="22" Margin="0,8,0,0">
                                     <StackPanel>
-                                        <TextBlock Text="DoğruFatura v1.0 • Aşama 10 R2" Style="{StaticResource PremiumSectionTitle}"/>
+                                        <TextBlock x:Name="AboutProductVersionText" Text="DoğruFatura v1.0" Style="{StaticResource PremiumSectionTitle}"/>
                                         <TextBlock Text="DoğruTemin 4.1.0'ın onaylanmış lacivert, sarı ve beyaz ürün dili temel alınmıştır." Foreground="White" FontSize="16.5" Margin="0,9,0,0"/>
                                         <Border Height="1" Background="#365874" Margin="0,15"/>
                                         <TextBlock Text="✓ Tek örnek çalışma koruması" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>

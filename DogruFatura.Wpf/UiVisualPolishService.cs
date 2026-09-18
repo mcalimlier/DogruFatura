@@ -19,7 +19,7 @@ internal static class UiVisualPolishService
         ArgumentNullException.ThrowIfNull(window);
         ArgumentNullException.ThrowIfNull(safetyService);
 
-        ApplyVersionAndCopy(window);
+        ApplyVersionText(window);
         SimplifyHeader(window);
         ImproveHomeLayout(window);
         PolishDatePickers(window);
@@ -28,30 +28,10 @@ internal static class UiVisualPolishService
         AddDiagnosticButton(window, safetyService);
     }
 
-    private static void ApplyVersionAndCopy(MainWindow window)
+    private static void ApplyVersionText(MainWindow window)
     {
-        foreach (var text in UiTree.Descendants<TextBlock>(window))
-        {
-            text.Text = text.Text switch
-            {
-                "v1.0  •  Aşama 10 R2" => AppVersionInfo.DisplayVersion,
-                "DoğruFatura v1.0 • Aşama 10 R2" => $"DoğruFatura {AppVersionInfo.DisplayVersion}",
-                "HESAP MOTORU" => "HESAPLAMA",
-                "HYS numarasıyla kapatılmış ödeme listelerini gerçek verilerle tek bakışta izleyin." =>
-                    "HYS ile kapanmış ödeme listelerinin mali durumunu tek bakışta izleyin.",
-                "Aktif listeyi Excel'deki FaturaSonHali düzeninde önizleyin, PDF kaydedin veya yazdırın." =>
-                    "Aktif listeyi resmî ödeme düzeninde önizleyin, PDF olarak kaydedin veya yazdırın.",
-                "JSON kayıtları ile aktif/arşiv PDF belgeleri birlikte korunur." =>
-                    "Kayıtlar ile aktif ve arşiv PDF belgeleri birlikte korunur.",
-                _ => text.Text
-            };
-        }
-
-        if (window.FindName("ArchivePdfSyncButton") is Button syncButton)
-        {
-            syncButton.Content = "PDF KONTROL";
-            syncButton.ToolTip = "Arşiv kayıtları ile PDF belgelerinin uyumunu kontrol eder ve eksik belgeleri güvenli biçimde tamamlar.";
-        }
+        window.HeaderVersionText.Text = AppVersionInfo.DisplayVersion;
+        window.AboutProductVersionText.Text = $"DoğruFatura {AppVersionInfo.DisplayVersion}";
     }
 
     private static void SimplifyHeader(MainWindow window)
