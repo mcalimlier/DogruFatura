@@ -955,7 +955,7 @@
                         <ScrollViewer x:Name="AboutView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                             <StackPanel Margin="0,0,8,16">
                                 <TextBlock Text="HAKKINDA / GÜVENLİK" Style="{StaticResource PageTitle}"/>
-                                <TextBlock Text="Sürüm, veri bütünlüğü, tam yedekleme ve güvenli geri yükleme merkezi." Style="{StaticResource PageSubtitle}"/>
+                                <TextBlock Text="Sürüm, veri sağlığı, yedekleme ve destek araçları." Style="{StaticResource PageSubtitle}"/>
 
                                 <Grid Margin="0,8,0,12">
                                     <Grid.ColumnDefinitions>
@@ -969,45 +969,66 @@
                                             <TextBlock Text="SÜRÜM / ÇALIŞMA ORTAMI" Style="{StaticResource PremiumSectionTitle}"/>
                                             <TextBlock x:Name="AboutVersionText" Foreground="White" FontSize="17" FontWeight="SemiBold" Margin="0,10,0,3"/>
                                             <TextBlock x:Name="AboutRuntimeText" Foreground="{StaticResource PremiumMutedTextBrush}" FontSize="13.5" TextWrapping="Wrap"/>
-                                            <Border Height="1" Background="#365874" Margin="0,12"/>
-                                            <TextBlock Text="VERİ KLASÖRÜ" Style="{StaticResource PremiumFieldLabel}"/>
-                                            <TextBlock x:Name="AboutDataFolderText" Foreground="White" FontSize="13" TextWrapping="Wrap" Margin="0,3,0,9"/>
-                                            <TextBlock Text="PDF BELGE KLASÖRÜ" Style="{StaticResource PremiumFieldLabel}"/>
-                                            <TextBlock x:Name="AboutDocumentFolderText" Foreground="White" FontSize="13" TextWrapping="Wrap" Margin="0,3,0,9"/>
-                                            <TextBlock Text="YEDEK KLASÖRÜ" Style="{StaticResource PremiumFieldLabel}"/>
-                                            <TextBlock x:Name="AboutBackupFolderText" Foreground="White" FontSize="13" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                            <TextBlock Text="Teknik klasörler ve destek araçları Gelişmiş / Destek bölümündedir."
+                                                       Foreground="{StaticResource PremiumMutedTextBrush}" FontSize="12.5"
+                                                       TextWrapping="Wrap" Margin="0,12,0,0"/>
                                         </StackPanel>
                                     </Border>
 
                                     <Border Grid.Column="2" Style="{StaticResource PremiumPanel}" Padding="18">
                                         <StackPanel>
-                                            <Grid>
-                                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <TextBlock Text="VERİ GÜVENLİĞİ" Style="{StaticResource PremiumSectionTitle}"/>
+                                            <TextBlock Text="Kayıtlar ile aktif ve arşiv PDF belgeleri birlikte korunur."
+                                                       Foreground="{StaticResource PremiumMutedTextBrush}" FontSize="13.5"
+                                                       Margin="0,4,0,0" TextWrapping="Wrap"/>
+
+                                            <Border Background="#123D5F" BorderBrush="#365874" BorderThickness="1"
+                                                    CornerRadius="8" Padding="12,9" Margin="0,13,0,10">
                                                 <StackPanel>
-                                                    <TextBlock Text="VERİ GÜVENLİĞİ" Style="{StaticResource PremiumSectionTitle}"/>
-                                                    <TextBlock Text="Kayıtlar ile aktif ve arşiv PDF belgeleri birlikte korunur." Foreground="{StaticResource PremiumMutedTextBrush}" FontSize="13.5" Margin="0,4,12,0" TextWrapping="Wrap"/>
-                                                </StackPanel>
-                                                <Button Grid.Column="1" Style="{StaticResource ModernButton}" Content="KONTROL ET" Width="132" Background="#425B76" Click="RunIntegrityCheck_Click"/>
-                                            </Grid>
-                                            <Border Background="#123D5F" BorderBrush="#365874" BorderThickness="1" CornerRadius="8" Padding="12,9" Margin="0,13,0,10">
-                                                <StackPanel>
-                                                    <TextBlock x:Name="DataIntegrityText" Foreground="#62D99B" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"/>
-                                                    <TextBlock x:Name="LastSafetyBackupText" Foreground="#B9CBDA" FontSize="12.5" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                                    <TextBlock x:Name="DataIntegrityText" Foreground="#62D99B" FontSize="14"
+                                                               FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                    <TextBlock x:Name="LastSafetyBackupText" Foreground="#B9CBDA" FontSize="12.5"
+                                                               TextWrapping="Wrap" Margin="0,4,0,0"/>
                                                 </StackPanel>
                                             </Border>
-                                            <WrapPanel>
-                                                <Button Style="{StaticResource ModernButton}" Content="GÜVENLİK YEDEĞİ" Width="178" Margin="0,0,8,8" Click="CreateSafetyBackup_Click"/>
-                                                <Button Style="{StaticResource ModernButton}" Content="YEDEKTEN GERİ YÜKLE" Width="220" Margin="0,0,8,8" Background="#B7791F" Click="RestoreSafetyBackup_Click"/>
-                                                <Button Style="{StaticResource ModernButton}" Content="VERİ KLASÖRÜ" Width="158" Margin="0,0,8,8" Background="#315371" Click="OpenDataFolder_Click"/>
-                                                <Button Style="{StaticResource ModernButton}" Content="PDF KLASÖRÜ" Width="158" Margin="0,0,8,8" Background="#315371" Click="OpenDocumentFolder_Click"/>
-                                                <Button Style="{StaticResource ModernButton}" Content="YEDEK KLASÖRÜ" Width="178" Margin="0,0,8,8" Background="#315371" Click="OpenBackupFolder_Click"/>
-                                                <Button Style="{StaticResource ModernButton}" Content="LOG KLASÖRÜ" Width="158" Margin="0,0,8,8" Background="#315371" Click="OpenLogFolder_Click"/>
-                                                <Button Style="{StaticResource ModernButton}" Content="TANILAMA PAKETİ" Width="190" Margin="0,0,8,8"
-                                                        Background="#315371" Click="CreateDiagnosticPackage_Click"
-                                                        ToolTip="Destek için tanılama ZIP'i oluşturur. Fatura verileri ve PDF belgeleri pakete eklenmez."
-                                                        AutomationProperties.Name="Tanılama paketi oluştur"
-                                                        AutomationProperties.HelpText="Fatura kayıtlarını ve PDF belgelerini içermeyen destek paketi oluşturur."/>
-                                            </WrapPanel>
+
+                                            <UniformGrid Columns="3" Margin="0,0,0,6">
+                                                <Button Style="{StaticResource ModernButton}" Content="KONTROL ET"
+                                                        Margin="0,0,6,0" Background="#425B76"
+                                                        Click="RunIntegrityCheck_Click"/>
+                                                <Button Style="{StaticResource ModernButton}" Content="YEDEK OLUŞTUR"
+                                                        Margin="3,0" Click="CreateSafetyBackup_Click"/>
+                                                <Button Style="{StaticResource ModernButton}" Content="GERİ YÜKLE"
+                                                        Margin="6,0,0,0" Background="#B7791F"
+                                                        Click="RestoreSafetyBackup_Click"/>
+                                            </UniformGrid>
+
+                                            <Expander Margin="0,8,0,0" Foreground="White">
+                                                <Expander.Header>
+                                                    <TextBlock Text="GELİŞMİŞ / DESTEK" Foreground="#B9CBDA"
+                                                               FontSize="13.5" FontWeight="SemiBold"/>
+                                                </Expander.Header>
+                                                <WrapPanel Margin="0,10,0,0">
+                                                    <Button Style="{StaticResource ModernButton}" Content="VERİ KLASÖRÜ"
+                                                            Width="158" Margin="0,0,8,8" Background="#315371"
+                                                            Click="OpenDataFolder_Click"/>
+                                                    <Button Style="{StaticResource ModernButton}" Content="PDF KLASÖRÜ"
+                                                            Width="158" Margin="0,0,8,8" Background="#315371"
+                                                            Click="OpenDocumentFolder_Click"/>
+                                                    <Button Style="{StaticResource ModernButton}" Content="YEDEK KLASÖRÜ"
+                                                            Width="178" Margin="0,0,8,8" Background="#315371"
+                                                            Click="OpenBackupFolder_Click"/>
+                                                    <Button Style="{StaticResource ModernButton}" Content="LOG KLASÖRÜ"
+                                                            Width="158" Margin="0,0,8,8" Background="#315371"
+                                                            Click="OpenLogFolder_Click"/>
+                                                    <Button Style="{StaticResource ModernButton}" Content="TANILAMA PAKETİ"
+                                                            Width="190" Margin="0,0,8,8" Background="#315371"
+                                                            Click="CreateDiagnosticPackage_Click"
+                                                            ToolTip="Destek için tanılama ZIP'i oluşturur. Fatura verileri ve PDF belgeleri pakete eklenmez."
+                                                            AutomationProperties.Name="Tanılama paketi oluştur"
+                                                            AutomationProperties.HelpText="Fatura kayıtlarını ve PDF belgelerini içermeyen destek paketi oluşturur."/>
+                                                </WrapPanel>
+                                            </Expander>
                                         </StackPanel>
                                     </Border>
                                 </Grid>

@@ -12,9 +12,6 @@ public partial class MainWindow
     {
         AboutVersionText.Text = "DoğruFatura " + _safetyService.InformationalVersion;
         AboutRuntimeText.Text = _safetyService.RuntimeDescription;
-        AboutDataFolderText.Text = _safetyService.DataFolder;
-        AboutDocumentFolderText.Text = _safetyService.DocumentRootFolder;
-        AboutBackupFolderText.Text = _safetyService.BackupFolder;
 
         SafetyCheckResult result;
         try
@@ -32,13 +29,14 @@ public partial class MainWindow
                 0);
         }
 
-        DataIntegrityText.Text = result.Message;
+        DataIntegrityText.Text = result.IsHealthy
+            ? "✓ Veriler ve PDF belgeleri sağlıklı"
+            : "⚠ Veri bütünlüğü kontrolü dikkat gerektiriyor";
+        DataIntegrityText.ToolTip = result.Message;
         DataIntegrityText.Foreground = new SolidColorBrush(result.IsHealthy
             ? Color.FromRgb(98, 217, 155)
             : Color.FromRgb(255, 180, 31));
-        LastSafetyBackupText.Text = string.IsNullOrWhiteSpace(_lastSafetyBackupPath)
-            ? "Bu sürümde henüz yeni güvenlik yedeği oluşturulmadı."
-            : "Son güvenlik yedeği: " + _lastSafetyBackupPath;
+        LastSafetyBackupText.Text = FormatLastSafetyBackupText(_lastSafetyBackupPath);
         return result;
     }
 
@@ -48,7 +46,7 @@ public partial class MainWindow
         if (result.IsHealthy) return;
 
         MessageBox.Show(this,
-            DataIntegrityText.Text,
+            result.Message,
             "DoğruFatura - Veri Bütünlüğü",
             MessageBoxButton.OK,
             MessageBoxImage.Warning);
@@ -156,6 +154,24 @@ public partial class MainWindow
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    private static string FormatLastSafetyBackupText(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return "Bu oturumda yeni güvenlik yedeği oluşturulmadı.";
+
+        try
+        {
+            if (File.Exists(path))
+                return $"Son yedek: {File.GetLastWriteTime(path):dd.MM.yyyy HH:mm}";
+        }
+        catch
+        {
+            // Yedek var; zaman bilgisi okunamazsa kullanıcıya teknik yol göstermeden sade durum sunulur.
+        }
+
+        return "Son güvenlik yedeği oluşturuldu.";
     }
 
     private void OpenDataFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(_safetyService.DataFolder);
