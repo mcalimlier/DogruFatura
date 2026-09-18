@@ -1,26 +1,13 @@
-using DogruFatura.Core.Models;
-using DogruFatura.Core.Services;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
-using Microsoft.Win32;
 
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private void ApplyTaskbarIcon()
+{
+private void ApplyTaskbarIcon()
     {
         try
         {
@@ -35,11 +22,13 @@ public partial class MainWindow
     private void ConfigureFixedWindowForCurrentScreen()
     {
         var workArea = SystemParameters.WorkArea;
-        var maxWidth = Math.Min(DesignWidth * PreferredNormalScale, workArea.Width * 0.94);
-        var maxHeight = Math.Min(DesignHeight * PreferredNormalScale, workArea.Height * 0.92);
-        var scale = Math.Min(maxWidth / DesignWidth, maxHeight / DesignHeight);
-        Width = Math.Round(DesignWidth * scale);
-        Height = Math.Round(DesignHeight * scale);
+        var designWidth = ResponsiveLayoutService.DesignWidth;
+        var designHeight = ResponsiveLayoutService.DesignHeight;
+        var maxWidth = Math.Min(designWidth * PreferredNormalScale, workArea.Width * 0.94);
+        var maxHeight = Math.Min(designHeight * PreferredNormalScale, workArea.Height * 0.92);
+        var scale = Math.Min(maxWidth / designWidth, maxHeight / designHeight);
+        Width = Math.Round(designWidth * scale);
+        Height = Math.Round(designHeight * scale);
         Left = workArea.Left + (workArea.Width - Width) / 2.0;
         Top = workArea.Top + (workArea.Height - Height) / 2.0;
     }
