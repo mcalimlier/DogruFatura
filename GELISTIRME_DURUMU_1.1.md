@@ -216,7 +216,7 @@ Sıradaki işlem:
 3. Beklenen: **0 warning / 0 error** ve normal başlatma.
 4. Uygulamada özellikle üst bar, Ana Ekran, Raporlar/Çıktılar, İşlem Arşivi ve Hakkında ekranındaki metinlerin doğru göründüğü hızlıca kontrol edilmeli.
 
-### Kod temizliği / sadeleştirme paketi 5 — KODLANDI, YEREL BUILD BEKLİYOR
+### Kod temizliği / sadeleştirme paketi 5 — TAMAMLANDI, KULLANICI TARAFINDAN ÇALIŞIR OLARAK DOĞRULANDI
 
 Runtime'da oluşturulan `TANILAMA PAKETİ` düğmesi XAML'e taşındı:
 
@@ -244,7 +244,40 @@ Sıradaki işlem:
 1. GitHub Desktop → **Fetch origin → Pull origin**.
 2. `DERLE_CALISTIR.bat`.
 3. Beklenen: **0 warning / 0 error** ve normal başlatma.
-4. Hakkında / Veri Güvenliği ekranında `TANILAMA PAKETİ` düğmesinin görünür olduğunu ve tıklanınca tanılama ZIP'i oluşturduğunu hızlıca doğrula.
+4. Kullanıcı 18.09.2026 tarihinde paket 5'in çalıştığını doğruladı; `TANILAMA PAKETİ` düğmesi ve ilgili akış çalışır durumda bildirildi.
+
+### Veri Güvenliği alanı için sadeleştirme kararı — ÖNERİ AŞAMASI
+
+Kullanıcı mevcut Veri Güvenliği bölümünü görsel olarak kalabalık ve gereksiz buldu.
+
+Mevcut durum:
+- Üstte bütünlük durumu + son yedek bilgisi.
+- `KONTROL ET`.
+- `GÜVENLİK YEDEĞİ`.
+- `YEDEKTEN GERİ YÜKLE`.
+- `VERİ KLASÖRÜ`.
+- `PDF KLASÖRÜ`.
+- `YEDEK KLASÖRÜ`.
+- `LOG KLASÖRÜ`.
+- `TANILAMA PAKETİ`.
+- Ayrıca sol taraftaki `SÜRÜM / ÇALIŞMA ORTAMI` kartında veri/PDF/yedek klasör yolları tekrar gösteriliyor.
+
+Önerilen sadeleştirme yönü:
+- Veri Güvenliği kartında yalnız 3 ana eylem görünür tutulsun:
+  1. `KONTROL ET`
+  2. `YEDEK OLUŞTUR`
+  3. `GERİ YÜKLE`
+- İkincil araçlar `GELİŞMİŞ / DESTEK` altında toplanmalı:
+  - Veri Klasörü
+  - PDF Klasörü
+  - Yedek Klasörü
+  - Log Klasörü
+  - Tanılama Paketi
+- Sol taraftaki çalışma ortamı kartında tam klasör yolları sürekli gösterilmek yerine yalnız sürüm/runtime bilgisi tutulmalı; klasör yolları gerekirse gelişmiş alana taşınmalı.
+- Veri bütünlüğü durumu tek satırlık kompakt durum bandı şeklinde gösterilmeli.
+- İşlevlerin kendisi silinmemeli; yalnız görünürlük ve gruplanma sadeleştirilmeli.
+
+Henüz kod değişikliği yapılmadı; önce önerilen yerleşim kullanıcı kararıyla netleştirilecek.
 
 ## Sonraki sadeleştirme adayları
 
