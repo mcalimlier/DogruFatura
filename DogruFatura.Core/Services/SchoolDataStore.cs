@@ -117,9 +117,12 @@ public sealed class SchoolDataStore
         var folder = Path.GetDirectoryName(DataFilePath) ?? throw new InvalidOperationException("Okul/kurum veri klasörü belirlenemedi.");
         Directory.CreateDirectory(folder);
         var temporaryPath = DataFilePath + ".tmp";
+        var normalizedSchools = schools
+            .Select(SchoolValidationService.Normalize)
+            .ToList();
         var json = DataFileSchemaService.SerializeCurrent(
             DataFileKinds.Schools,
-            schools.ToList(),
+            normalizedSchools,
             _jsonOptions);
         File.WriteAllText(temporaryPath, json, new UTF8Encoding(false));
         File.Move(temporaryPath, DataFilePath, true);
