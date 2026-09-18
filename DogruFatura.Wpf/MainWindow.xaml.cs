@@ -64,8 +64,6 @@ public partial class MainWindow : Window
     private string _currentView = "Home";
     private string? _lastSafetyBackupPath;
 
-    private const double DesignWidth = 1450.0;
-    private const double DesignHeight = 945.0;
     private const double PreferredNormalScale = 0.90;
     private const int WmGetMinMaxInfo = 0x0024;
     private const uint MonitorDefaultToNearest = 0x00000002;
