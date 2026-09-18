@@ -71,7 +71,8 @@ public partial class MainWindow : Window
         FinalReportPdfService finalReportPdfService,
         DocumentArchiveStorageService documentArchiveStorageService,
         HistoricalPdfImportService historicalPdfImportService,
-        ArchivePdfSynchronizationService archivePdfSynchronizationService)
+        ArchivePdfSynchronizationService archivePdfSynchronizationService,
+        MainWindowStartupState startupState)
     {
         ArgumentNullException.ThrowIfNull(taxService);
         ArgumentNullException.ThrowIfNull(schoolDataStore);
@@ -84,6 +85,7 @@ public partial class MainWindow : Window
         ArgumentNullException.ThrowIfNull(documentArchiveStorageService);
         ArgumentNullException.ThrowIfNull(historicalPdfImportService);
         ArgumentNullException.ThrowIfNull(archivePdfSynchronizationService);
+        ArgumentNullException.ThrowIfNull(startupState);
 
         _taxService = taxService;
         _schoolDataStore = schoolDataStore;
@@ -97,63 +99,17 @@ public partial class MainWindow : Window
         _historicalPdfImportService = historicalPdfImportService;
         _archivePdfSynchronizationService = archivePdfSynchronizationService;
 
-        _startupSafetyResult = _safetyService.InitializeAndCheck();
+        _startupSafetyResult = startupState.SafetyResult;
         _lastSafetyBackupPath = _startupSafetyResult.BackupPath;
 
-        SchoolLoadResult schoolLoadResult;
-        try
-        {
-            schoolLoadResult = _schoolDataStore.LoadOrCreate();
-        }
-        catch (Exception ex)
-        {
-            schoolLoadResult = new SchoolLoadResult(
-                SchoolSeedData.Create(),
-                "Kalıcı okul/kurum verisi açılamadı; bu oturumda başlangıç kayıtları kullanılıyor. " + ex.Message,
-                _schoolDataStore.DataFilePath);
-        }
+        var schoolLoadResult = startupState.SchoolLoadResult;
+        var invoiceLoadResult = startupState.InvoiceLoadResult;
+        var authorityProfileLoadResult = startupState.AuthorityProfileLoadResult;
+        var archiveLoadResult = startupState.ArchiveLoadResult;
+
         AllSchools = new ObservableCollection<SchoolRecord>(schoolLoadResult.Schools);
-
-        InvoiceLoadResult invoiceLoadResult;
-        try
-        {
-            invoiceLoadResult = _invoiceDataStore.LoadOrCreate();
-        }
-        catch (Exception ex)
-        {
-            invoiceLoadResult = new InvoiceLoadResult(
-                Array.Empty<InvoiceRecord>(),
-                "Kalıcı aktif fatura verisi açılamadı; bu oturumda boş liste kullanılıyor. " + ex.Message,
-                _invoiceDataStore.DataFilePath);
-        }
         ActiveInvoices = new ObservableCollection<InvoiceRecord>(invoiceLoadResult.Invoices);
-
-        AuthorityProfileLoadResult authorityProfileLoadResult;
-        try
-        {
-            authorityProfileLoadResult = _authorityProfileDataStore.LoadOrCreate();
-        }
-        catch (Exception ex)
-        {
-            authorityProfileLoadResult = new AuthorityProfileLoadResult(
-                AuthorityProfileDefaults.Create(),
-                "Kalıcı yetkili/imza profili açılamadı; bu oturumda varsayılan bilgiler kullanılıyor. " + ex.Message,
-                _authorityProfileDataStore.DataFilePath);
-        }
         _authorityProfile = authorityProfileLoadResult.Profile;
-
-        ArchivedInvoiceListLoadResult archiveLoadResult;
-        try
-        {
-            archiveLoadResult = _archiveDataStore.LoadOrCreate();
-        }
-        catch (Exception ex)
-        {
-            archiveLoadResult = new ArchivedInvoiceListLoadResult(
-                Array.Empty<ArchivedInvoiceList>(),
-                "Kalıcı işlem arşivi açılamadı; bu oturumda boş arşiv kullanılıyor. " + ex.Message,
-                _archiveDataStore.DataFilePath);
-        }
         ArchivedLists = new ObservableCollection<ArchivedInvoiceList>(archiveLoadResult.Archives);
 
         InitializeComponent();

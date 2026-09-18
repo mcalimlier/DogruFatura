@@ -88,22 +88,33 @@ public partial class App : Application
             var documentArchiveStorageService = new DocumentArchiveStorageService();
             var historicalPdfImportService = new HistoricalPdfImportService(taxService);
             var safetyService = new ApplicationSafetyService();
+            var schoolDataStore = new SchoolDataStore();
+            var invoiceDataStore = new InvoiceDataStore();
+            var authorityProfileDataStore = new AuthorityProfileDataStore();
+            var archiveDataStore = new ArchivedInvoiceListDataStore();
             var archivePdfSynchronizationService = new ArchivePdfSynchronizationService(
                 documentArchiveStorageService,
                 finalReportPdfService.Save);
+            var startupState = MainWindowStartupStateLoader.Load(
+                safetyService,
+                schoolDataStore,
+                invoiceDataStore,
+                authorityProfileDataStore,
+                archiveDataStore);
 
             var main = new MainWindow(
                 taxService,
-                new SchoolDataStore(),
-                new InvoiceDataStore(),
-                new AuthorityProfileDataStore(),
-                new ArchivedInvoiceListDataStore(),
+                schoolDataStore,
+                invoiceDataStore,
+                authorityProfileDataStore,
+                archiveDataStore,
                 safetyService,
                 finalReportDocumentService,
                 finalReportPdfService,
                 documentArchiveStorageService,
                 historicalPdfImportService,
-                archivePdfSynchronizationService);
+                archivePdfSynchronizationService,
+                startupState);
             UiPolishService.Apply(main);
 
             // Performans metriği yalnız gerçek hazırlık süresini ölçer; kullanıcı isteğiyle
