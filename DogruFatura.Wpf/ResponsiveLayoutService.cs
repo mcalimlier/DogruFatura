@@ -47,6 +47,24 @@ public static class ResponsiveLayoutService
         return Calculate(pixelWidth / dpiScale, pixelHeight / dpiScale);
     }
 
+    public static WindowLayoutProfile CalculateStartup(double workWidthDip, double workHeightDip)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(workWidthDip);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(workHeightDip);
+
+        var maxWidth = Math.Min(DesignWidth * PreferredNormalScale, workWidthDip * StartupWorkAreaWidthUsage);
+        var maxHeight = Math.Min(DesignHeight * PreferredNormalScale, workHeightDip * StartupWorkAreaHeightUsage);
+        var scale = Math.Min(maxWidth / DesignWidth, maxHeight / DesignHeight);
+
+        return new WindowLayoutProfile(
+            workWidthDip,
+            workHeightDip,
+            Math.Round(DesignWidth * scale),
+            Math.Round(DesignHeight * scale),
+            scale,
+            scale < 0.999);
+    }
+
     public static void Apply(MainWindow window)
     {
         ArgumentNullException.ThrowIfNull(window);
@@ -79,12 +97,10 @@ public static class ResponsiveLayoutService
     private static void FitStartupWindowToCurrentWorkArea(Window window)
     {
         var workArea = SystemParameters.WorkArea;
-        var maxWidth = Math.Min(DesignWidth * PreferredNormalScale, workArea.Width * StartupWorkAreaWidthUsage);
-        var maxHeight = Math.Min(DesignHeight * PreferredNormalScale, workArea.Height * StartupWorkAreaHeightUsage);
-        var scale = Math.Min(maxWidth / DesignWidth, maxHeight / DesignHeight);
+        var profile = CalculateStartup(workArea.Width, workArea.Height);
 
-        window.Width = Math.Round(DesignWidth * scale);
-        window.Height = Math.Round(DesignHeight * scale);
+        window.Width = profile.WindowWidthDip;
+        window.Height = profile.WindowHeightDip;
         window.Left = workArea.Left + Math.Max(0, (workArea.Width - window.Width) / 2.0);
         window.Top = workArea.Top + Math.Max(0, (workArea.Height - window.Height) / 2.0);
     }
