@@ -19,20 +19,6 @@ private void ApplyTaskbarIcon()
         }
     }
 
-    private void ConfigureFixedWindowForCurrentScreen()
-    {
-        var workArea = SystemParameters.WorkArea;
-        var designWidth = ResponsiveLayoutService.DesignWidth;
-        var designHeight = ResponsiveLayoutService.DesignHeight;
-        var maxWidth = Math.Min(designWidth * PreferredNormalScale, workArea.Width * 0.94);
-        var maxHeight = Math.Min(designHeight * PreferredNormalScale, workArea.Height * 0.92);
-        var scale = Math.Min(maxWidth / designWidth, maxHeight / designHeight);
-        Width = Math.Round(designWidth * scale);
-        Height = Math.Round(designHeight * scale);
-        Left = workArea.Left + (workArea.Width - Width) / 2.0;
-        Top = workArea.Top + (workArea.Height - Height) / 2.0;
-    }
-
     private void MainWindow_SourceInitialized(object? sender, EventArgs e)
     {
         _windowSource = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);

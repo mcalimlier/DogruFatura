@@ -56,7 +56,6 @@ public partial class MainWindow : Window
     private string _currentView = "Home";
     private string? _lastSafetyBackupPath;
 
-    private const double PreferredNormalScale = 0.90;
     private const int WmGetMinMaxInfo = 0x0024;
     private const uint MonitorDefaultToNearest = 0x00000002;
     private HwndSource? _windowSource;
@@ -173,7 +172,6 @@ public partial class MainWindow : Window
         SourceInitialized += MainWindow_SourceInitialized;
         DataContext = this;
         ApplyTaskbarIcon();
-        ConfigureFixedWindowForCurrentScreen();
         UpdateMaximizeRestoreButton();
 
         _suppressFormEvents = true;
