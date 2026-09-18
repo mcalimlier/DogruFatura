@@ -581,6 +581,41 @@ Bu toplu paket UI + startup + domain model davranışı içerdiği için yeni mi
    - discovery değişmediyse yaklaşık **117 / 117**
 6. Bu iki kapı yeşil olmadan sonraki Aşama 3 davranışsal geliştirmelerine geçilmeyecek.
 
+## Toplu sadeleştirme sonrası ilk xUnit denemesi — TESTLER BAŞLAMADAN SYNTAX HATASINDA DURDU
+
+18.09.2026 tarihinde `TESTLERI_CALISTIR.bat` çalıştırıldı.
+
+Sonuç:
+- SDK: `.NET 10.0.400`
+- restore: başarılı
+- `DogruFatura.Core`: başarılı
+- `DogruFatura.Wpf`: başarılı
+- `DogruFatura.Tests`: **derleme aşamasında 2 hata ile durdu**
+- xUnit testleri gerçek anlamda başlamadı; bu nedenle bu koşu bir assertion/test sonucu değildir.
+
+Hatalar:
+- `DomainIdentityTests.cs(57,27): CS1003 ',' bekleniyor`
+- `DomainIdentityTests.cs(57,35): CS1003 ',' bekleniyor`
+
+Kök neden:
+- Yeni legacy JSON testindeki beklenen JSON property adı yanlış C# string kaçışıyla yazılmıştı:
+  - hatalı: `Assert.Contains(""SchoolId"", ...)`
+  - doğru: `Assert.Contains("\\"SchoolId\\"", ...)`
+
+Düzeltme:
+- `DomainIdentityTests.cs` satır 57 geçerli string literal olacak şekilde düzeltildi.
+- Aynı dosyada benzer yanlış çift tırnak kalıbı ayrıca tarandı; başka syntax adayı bulunmadı.
+
+Fix commit:
+- `cb50d23fbc9f31735792c34210fe041f2e977f5e`
+
+Sıradaki tek doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `TESTLERI_CALISTIR.bat`
+3. Test assembly artık derlenirse gerçek xUnit sonucu alınacak.
+4. Önceki 107 teste 10 yeni vaka eklendiği için discovery aynı kalırsa beklenen toplam yaklaşık **117**.
+5. Bu rerun yeşil olmadan yeni mimari/işlevsel pakete geçilmeyecek.
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
