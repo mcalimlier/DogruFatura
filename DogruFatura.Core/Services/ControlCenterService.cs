@@ -214,9 +214,11 @@ public static class ControlCenterService
         InvoiceRecord invoice,
         List<ControlIssue> issues)
     {
-        var school = schools.FirstOrDefault(candidate =>
-            string.Equals(candidate.InstitutionType, invoice.InstitutionType, StringComparison.Ordinal)
-            && TurkishTextComparison.EqualsIgnoreCase(candidate.Name, invoice.InstitutionName));
+        var school = invoice.SchoolId != Guid.Empty
+            ? schools.FirstOrDefault(candidate => candidate.SchoolId == invoice.SchoolId)
+            : schools.FirstOrDefault(candidate =>
+                string.Equals(candidate.InstitutionType, invoice.InstitutionType, StringComparison.Ordinal)
+                && TurkishTextComparison.EqualsIgnoreCase(candidate.Name, invoice.InstitutionName));
         if (school is null)
         {
             issues.Add(InvoiceIssue(
