@@ -57,7 +57,7 @@ Tamamlananlar:
   - Window startup using/sabit temizliği: `8a714549a4a979c159df2cd7f89edf4c7bea8deb`
   - Window chrome using temizliği: `a89f9676bb5e54b11eef023fc14c97561c94a82f`
   - 18.09.2026 kullanıcı yerel doğrulaması: .NET SDK `10.0.400`, **0 warning / 0 error**, `[3/3] DogruFatura baslatiliyor...`.
-- Kod temizliği / sadeleştirme paketi 2 kodlandı; yeni yerel doğrulama bekliyor:
+- Kod temizliği / sadeleştirme paketi 2 tamamlandı ve yerel build ile doğrulandı:
   - Monolitik `MainWindow.xaml.cs` döneminden kalan geniş using blokları, gerçek bağımlılıklara indirildi.
   - Temizlenen partial dosyalar: `Navigation`, `Dashboard`, `ArchiveView`, `Control`, `InvoiceList`, `ArchiveCommands`, `SchoolsOfficials`, `InvoiceEntry`, `Reports`, `Safety`.
   - İş kuralları, event handler davranışı, veri yazma akışı ve UI mantığı değiştirilmedi.
@@ -72,6 +72,7 @@ Tamamlananlar:
     - `7ab43eea5e15219655c9491e1c0f8a13fbc4b031`
     - `a08a3b1379c9275a53ce40ea2a04272b36aa2c28`
     - `12ea28faa306f8a1de50948e1c4e8e650496c556`
+  - 18.09.2026 kullanıcı yerel doğrulaması: .NET SDK `10.0.400`, **0 warning / 0 error**, `[3/3] DogruFatura baslatiliyor...`.
 
 Kalan ana işler:
 
@@ -139,17 +140,17 @@ Not: Türkçe regresyon testleri repoya eklendi ancak `DERLE_CALISTIR.bat` test 
 
 ## Şu an doğrulama bekleyen adım
 
-### Kod temizliği / sadeleştirme paketi 2 + tam xUnit test paketi
+### Tam xUnit test paketi
 
-Kullanıcının son paylaştığı build sonucu kod temizliği paketi 1'i doğruladı. Paket 2 bu build sonucundan sonra commit edildiği için ayrıca doğrulanmalıdır.
+Kod temizliği / sadeleştirme paketi 2 de yerel build açısından doğrulandı.
 
-Yerel doğrulama sırası:
+Sıradaki tek doğrulama kapısı:
 
 1. GitHub Desktop → **Fetch origin → Pull origin**.
-2. `DERLE_CALISTIR.bat`.
-3. Beklenen: **0 warning / 0 error** ve uygulamanın normal başlaması.
-4. Ardından `TESTLERI_CALISTIR.bat`.
-5. Beklenen: tüm xUnit testlerinin başarılı olması.
+2. `TESTLERI_CALISTIR.bat`.
+3. Beklenen: tüm xUnit testlerinin başarılı olması.
+
+Tam test paketi yeşil olmadan yeni mimari veya davranışsal sadeleştirme paketine geçilmeyecek.
 
 Testlerde özellikle:
 
