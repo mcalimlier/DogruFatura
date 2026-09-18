@@ -148,8 +148,8 @@ public sealed class DomainIdentityTests
 
     private sealed class TempFolder : IDisposable
     {
-        private readonly string _path = Path.Combine(
-            Path.GetTempPath(),
+        private readonly string _path = System.IO.Path.Combine(
+            System.IO.Path.GetTempPath(),
             "DogruFatura_DomainIdentityTests_" + Guid.NewGuid().ToString("N"));
 
         public TempFolder() => Directory.CreateDirectory(_path);
