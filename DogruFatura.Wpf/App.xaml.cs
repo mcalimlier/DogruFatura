@@ -104,7 +104,7 @@ public partial class App : Application
                 documentArchiveStorageService,
                 historicalPdfImportService,
                 archivePdfSynchronizationService);
-            UiPolishService.Apply(main, safetyService);
+            UiPolishService.Apply(main);
 
             // Performans metriği yalnız gerçek hazırlık süresini ölçer; kullanıcı isteğiyle
             // eklenen 5,5 saniyelik görsel splash süresi performans gerilemesi sayılmaz.

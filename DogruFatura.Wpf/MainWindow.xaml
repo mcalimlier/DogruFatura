@@ -1002,6 +1002,11 @@
                                                 <Button Style="{StaticResource ModernButton}" Content="PDF KLASÖRÜ" Width="158" Margin="0,0,8,8" Background="#315371" Click="OpenDocumentFolder_Click"/>
                                                 <Button Style="{StaticResource ModernButton}" Content="YEDEK KLASÖRÜ" Width="178" Margin="0,0,8,8" Background="#315371" Click="OpenBackupFolder_Click"/>
                                                 <Button Style="{StaticResource ModernButton}" Content="LOG KLASÖRÜ" Width="158" Margin="0,0,8,8" Background="#315371" Click="OpenLogFolder_Click"/>
+                                                <Button Style="{StaticResource ModernButton}" Content="TANILAMA PAKETİ" Width="190" Margin="0,0,8,8"
+                                                        Background="#315371" Click="CreateDiagnosticPackage_Click"
+                                                        ToolTip="Destek için tanılama ZIP'i oluşturur. Fatura verileri ve PDF belgeleri pakete eklenmez."
+                                                        AutomationProperties.Name="Tanılama paketi oluştur"
+                                                        AutomationProperties.HelpText="Fatura kayıtlarını ve PDF belgelerini içermeyen destek paketi oluşturur."/>
                                             </WrapPanel>
                                         </StackPanel>
                                     </Border>

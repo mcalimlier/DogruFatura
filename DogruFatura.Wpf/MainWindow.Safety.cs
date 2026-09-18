@@ -137,6 +137,27 @@ public partial class MainWindow
         RestartApplication();
     }
 
+    private void CreateDiagnosticPackage_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var path = DiagnosticPackageService.Create(_safetyService);
+            UiNotificationService.Show(
+                this,
+                "Tanılama paketi oluşturuldu:\n" + path,
+                TimeSpan.FromSeconds(6));
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                "Tanılama paketi oluşturulamadı:\n\n" + ex.Message,
+                "DoğruFatura - Tanılama",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
     private void OpenDataFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(_safetyService.DataFolder);
     private void OpenDocumentFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(_safetyService.DocumentRootFolder);
     private void OpenBackupFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(_safetyService.BackupFolder);

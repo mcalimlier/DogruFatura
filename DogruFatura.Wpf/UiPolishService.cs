@@ -6,10 +6,9 @@ namespace DogruFatura.Wpf;
 /// </summary>
 internal static class UiPolishService
 {
-    public static void Apply(MainWindow window, ApplicationSafetyService safetyService)
+    public static void Apply(MainWindow window)
     {
         ArgumentNullException.ThrowIfNull(window);
-        ArgumentNullException.ThrowIfNull(safetyService);
 
         ResponsiveLayoutService.Apply(window);
         TextSharpnessService.Apply(window);
@@ -17,7 +16,7 @@ internal static class UiPolishService
         window.Loaded += (_, _) =>
         {
             WindowControlPolishService.Apply(window);
-            UiVisualPolishService.Apply(window, safetyService);
+            UiVisualPolishService.Apply(window);
             UiPerformanceService.Apply(window);
             UiAccessibilityService.Apply(window);
             UnsavedChangesGuard.Attach(window);
