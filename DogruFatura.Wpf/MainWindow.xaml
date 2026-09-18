@@ -18,12 +18,6 @@
                     <Image Grid.Column="0" Source="Assets/Logo.png" Width="220" Stretch="Uniform" Margin="22,0,0,0" HorizontalAlignment="Left"/>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
-                        <Border Background="#092746" CornerRadius="9" BorderBrush="#24496B" BorderThickness="1" Padding="14,8" Width="198" Visibility="Collapsed">
-                            <StackPanel>
-                                <TextBlock Text="SÜRÜM" Foreground="#8FA8C0" FontSize="13" FontWeight="SemiBold"/>
-                                <TextBlock x:Name="HeaderVersionText" Text="v1.0" Foreground="White" FontSize="14.5" FontWeight="SemiBold" Margin="0,2,0,0"/>
-                            </StackPanel>
-                        </Border>
                         <Border Background="#092746" CornerRadius="9" BorderBrush="#24496B" BorderThickness="1" Padding="13,8" Margin="10,0,0,0" Width="196">
                             <StackPanel>
                                 <TextBlock Text="HESAPLAMA" Foreground="#8FA8C0" FontSize="13" FontWeight="SemiBold"/>
@@ -37,9 +31,8 @@
 
                     <Grid Grid.Column="2" VerticalAlignment="Center" Margin="8,0,14,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="0"/><ColumnDefinition Width="0"/>
-                            <ColumnDefinition Width="120"/><ColumnDefinition Width="10"/><ColumnDefinition Width="132"/>
-                            <ColumnDefinition Width="44"/><ColumnDefinition Width="44"/><ColumnDefinition Width="44"/>
+                            <ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="120"/><ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="132"/><ColumnDefinition Width="44"/><ColumnDefinition Width="44"/><ColumnDefinition Width="44"/>
                         </Grid.ColumnDefinitions>
                         <Border Grid.Column="0" Background="#082744" BorderBrush="#24496B" BorderThickness="1" CornerRadius="9" Padding="12,7" MinWidth="210">
                             <StackPanel>
@@ -47,13 +40,7 @@
                                 <TextBlock x:Name="ActiveInstitutionText" Text="Henüz seçilmedi" Foreground="White" FontSize="14.5" FontWeight="SemiBold" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
                         </Border>
-                        <Border Grid.Column="2" Background="#092746" BorderBrush="#24496B" BorderThickness="1" CornerRadius="9" Padding="12,7" Visibility="Collapsed">
-                            <StackPanel>
-                                <TextBlock Text="DAMGA ORANI" Foreground="#8FA8C0" FontSize="12.5" FontWeight="SemiBold" ToolTip="Su faturalarında uygulanmaz"/>
-                                <TextBlock Text="0,00948" Foreground="#FFB41F" FontSize="16.5" FontWeight="Bold" Margin="0,2,0,0"/>
-                            </StackPanel>
-                        </Border>
-                        <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center"
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center"
                                     ToolTip="Kurum, VKN, fatura türü, hizmet no, fatura no, tarihler, tutar ve geçerli vergi hesabına göre canlı form hazırlığı">
                             <StackPanel VerticalAlignment="Center" Margin="0,0,8,0">
                                 <TextBlock Text="FORM" Foreground="#8FA8C0" FontSize="12.5" FontWeight="SemiBold" HorizontalAlignment="Right"/>
@@ -67,13 +54,13 @@
                                            FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
                         </StackPanel>
-                        <Button Grid.Column="6" Style="{StaticResource ModernButton}" Content="TEMİZLE" Width="116" Height="42"
-                                Padding="8,8" Background="#B7791F" Click="ClearInvoiceForm_Click"/>
-                        <Button Grid.Column="7" Style="{StaticResource StandardButtonBase}" Content="—" ToolTip="Küçült" FontSize="23.5" FontWeight="SemiBold" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="Minimize_Click"/>
-                        <Button x:Name="MaximizeRestoreButton" Grid.Column="8" Style="{StaticResource StandardButtonBase}" ToolTip="Tam ekran" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="MaximizeRestore_Click">
+                        <Button Grid.Column="4" Style="{StaticResource ModernButton}" Content="TEMİZLE" Width="116" Height="42"
+                                Padding="8,8" Background="#8A5A12" Click="ClearInvoiceForm_Click"/>
+                        <Button Grid.Column="5" Style="{StaticResource StandardButtonBase}" Content="—" ToolTip="Küçült" FontSize="23.5" FontWeight="SemiBold" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="Minimize_Click"/>
+                        <Button x:Name="MaximizeRestoreButton" Grid.Column="6" Style="{StaticResource StandardButtonBase}" ToolTip="Tam ekran" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="MaximizeRestore_Click">
                             <TextBlock x:Name="MaximizeRestoreIcon" FontFamily="Segoe MDL2 Assets" Text="&#xE922;" FontSize="16.5" FontWeight="SemiBold"/>
                         </Button>
-                        <Button Grid.Column="9" Style="{StaticResource StandardButtonBase}" Content="×" ToolTip="Kapat" FontSize="27.5" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="Close_Click"/>
+                        <Button Grid.Column="7" Style="{StaticResource StandardButtonBase}" Content="×" ToolTip="Kapat" FontSize="27.5" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="Close_Click"/>
                     </Grid>
                 </Grid>
 
@@ -641,7 +628,7 @@
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
                                     <Button x:Name="ArchivePdfSyncButton" Style="{StaticResource ModernButton}" Content="PDF KONTROL" Width="112"
-                                            Background="#B7791F" Margin="0,0,10,0" Click="SynchronizeArchivePdfs_Click"
+                                            Background="#8A5A12" Margin="0,0,10,0" Click="SynchronizeArchivePdfs_Click"
                                             ToolTip="Arşiv kayıtları ile PDF belgelerinin uyumunu kontrol eder ve eksik belgeleri güvenli biçimde tamamlar."/>
                                     <Button Style="{StaticResource ModernButton}" Content="ARŞİV EKLE" Width="148"
                                             Background="#315371" Margin="0,0,10,0" Click="ImportHistoricalPdf_Click"
@@ -1000,7 +987,7 @@
                                                 <Button Style="{StaticResource ModernButton}" Content="YEDEK OLUŞTUR"
                                                         Margin="3,0" Click="CreateSafetyBackup_Click"/>
                                                 <Button Style="{StaticResource ModernButton}" Content="GERİ YÜKLE"
-                                                        Margin="6,0,0,0" Background="#B7791F"
+                                                        Margin="6,0,0,0" Background="#8A5A12"
                                                         Click="RestoreSafetyBackup_Click"/>
                                             </UniformGrid>
 
@@ -1036,36 +1023,41 @@
 
                                 <Border Style="{StaticResource PremiumPanel}" Padding="22" Margin="0,8,0,0">
                                     <StackPanel>
-                                        <TextBlock x:Name="AboutProductVersionText" Text="DoğruFatura v1.0" Style="{StaticResource PremiumSectionTitle}"/>
-                                        <TextBlock Text="DoğruTemin 4.1.0'ın onaylanmış lacivert, sarı ve beyaz ürün dili temel alınmıştır." Foreground="White" FontSize="16.5" Margin="0,9,0,0"/>
-                                        <Border Height="1" Background="#365874" Margin="0,15"/>
-                                        <TextBlock Text="✓ Tek örnek çalışma koruması" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Bağımsız C# vergi hesap motoru ve açılış öz testi" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Kalıcı okul/kurum ekleme, düzenleme ve silme" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Doğrulanmış gerçek fatura kaydı oluşturma" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Su faturalarında damga vergisi 0,00 TL ve ödeme tutarı faturaya eşittir" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Elektrik faturalarında isteğe bağlı kesinti tazminatı hesabı" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ VKN ve fatura numarası gerekli olmadığında boş bırakılabilir" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Aktif faturaları düzenleme, onaylı silme ve kalıcı sıra yönetimi" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Aynı hizmet ve fatura numarasına göre mükerrer kayıt engeli" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Aktif ödeme listesinde yalnız tek fatura türüne izin verilir" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Yatay A4 nihai çıktı, canlı önizleme, doğrudan PDF ve Windows yazdırma" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Çok sayfalı listelerde başlık tekrarı; toplam ve imzalar son sayfada" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Kalıcı yetkili/imza profili ve nihai çıktıya otomatik aktarım" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Kalıcı işlem arşivi, gelişmiş arama/filtreleme ve eski çıktıyı açma" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Hizmet no, tarih, mükerrer fatura ve tutar/KDV için Kontrol Merkezi" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ HYS numarasıyla açık/kapalı arşiv yönetimi ve yalnız kapalı kayıt istatistikleri" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Masaüstü DoğruFatura klasöründe Aktif Çıktılar ve Arşivlenenler PDF düzeni" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ HYS kapanışında PDF'yi arşive taşıma ve HYS koduyla adlandırma" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Sıra numaralı dosya adları dahil geçmiş DoğruFatura PDF'lerini ARŞİV EKLE ile toplu alma" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Açılışta otomatik ve isteğe bağlı manuel arşiv–PDF belge eşitleme" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ JSON verileri ile aktif/arşiv PDF'lerini birlikte koruyan tam güvenlik yedeği" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Geri yükleme öncesi otomatik emniyet kopyası ve yeniden başlatmalı kurtarma" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Sürüm geçişi öncesi otomatik yedek ve gelişmiş ayrı hata kayıtları" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Başta sıfır bulunan VKN ve hizmet numaraları metin olarak saklanır" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Excel veya Office çalışma bağımlılığı yoktur" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Veriler Masaüstü\DoğruFatura\Veri altında kalıcı saklanır" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
-                                        <TextBlock Text="✓ Beklenmeyen hatalar Masaüstü\DoğruFatura\Loglar altında kaydedilir" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
+                                        <TextBlock Text="ÖZELLİKLER" Style="{StaticResource PremiumSectionTitle}"/>
+                                        <TextBlock Text="DoğruFatura'nın günlük kullanım ve güvenlik yetenekleri kısa özetle aşağıdadır."
+                                                   Foreground="{StaticResource PremiumMutedTextBrush}" FontSize="14"
+                                                   TextWrapping="Wrap" Margin="0,6,0,14"/>
+
+                                        <UniformGrid Columns="2">
+                                            <TextBlock Text="✓ Veri güvenliği ve bütünlük" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
+                                            <TextBlock Text="✓ Fatura giriş ve doğrulama" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
+                                            <TextBlock Text="✓ HYS ve işlem arşivi" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
+                                            <TextBlock Text="✓ Rapor, PDF ve yazdırma" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
+                                            <TextBlock Text="✓ Kontrol Merkezi ve denetim" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
+                                            <TextBlock Text="✓ Yedekleme, kurtarma ve destek" Foreground="#D8E4EF" FontSize="15.5" Margin="0,4"/>
+                                        </UniformGrid>
+
+                                        <Expander Margin="0,14,0,0" Foreground="White">
+                                            <Expander.Header>
+                                                <TextBlock Text="ÖZELLİKLER / TEKNİK BİLGİLER" Foreground="#B9CBDA"
+                                                           FontSize="13.5" FontWeight="SemiBold"/>
+                                            </Expander.Header>
+                                            <StackPanel Margin="0,10,0,0">
+                                                <TextBlock Text="✓ Tek örnek çalışma koruması ve açılış öz testi" Foreground="#D8E4EF" FontSize="14.5" Margin="0,3"/>
+                                                <TextBlock Text="✓ Kalıcı okul/kurum, yetkili ve aktif fatura kayıtları" Foreground="#D8E4EF" FontSize="14.5" Margin="0,3"/>
+                                                <TextBlock Text="✓ VKN, hizmet no, tarih, mükerrer kayıt ve vergi kontrolleri" Foreground="#D8E4EF" FontSize="14.5" Margin="0,3"/>
+                                                <TextBlock Text="✓ Tek fatura türü politikası ve kontrollü düzenleme/silme" Foreground="#D8E4EF" FontSize="14.5" Margin="0,3"/>
+                                                <TextBlock Text="✓ Elektrik kesinti tazminatı ve su damga vergisi istisnası" Foreground="#D8E4EF" FontSize="14.5" Margin="0,3"/>
+                                                <TextBlock Text="✓ Yatay A4 rapor, çok sayfalı çıktı, PDF ve Windows yazdırma" Foreground="#D8E4EF" FontSize="14.5" Margin="0,3"/>
+                                                <TextBlock Text="✓ HYS kapanışı, kalıcı arşiv ve geçmiş PDF içe aktarma" Foreground="#D8E4EF" FontSize="14.5" Margin="0,3"/>
+                                                <TextBlock Text="✓ Arşiv–PDF eşitleme ve SHA-256 bütünlük kontrolü" Foreground="#D8E4EF" FontSize="14.5" Margin="0,3"/>
+                                                <TextBlock Text="✓ Tam güvenlik yedeği, güvenli geri yükleme ve kurtarma" Foreground="#D8E4EF" FontSize="14.5" Margin="0,3"/>
+                                                <TextBlock Text="✓ Veri, PDF, yedek, log ve tanılama destek araçları" Foreground="#D8E4EF" FontSize="14.5" Margin="0,3"/>
+                                                <TextBlock Text="✓ Başta sıfır bulunan VKN ve hizmet numaraları metin olarak korunur" Foreground="#D8E4EF" FontSize="14.5" Margin="0,3"/>
+                                                <TextBlock Text="✓ Excel / Office çalışma bağımlılığı yoktur" Foreground="#D8E4EF" FontSize="14.5" Margin="0,3"/>
+                                            </StackPanel>
+                                        </Expander>
+
                                         <Border Height="1" Background="#365874" Margin="0,15"/>
                                         <TextBlock Text="Created by Murat ÇALIMLIER" Foreground="#FFB41F" FontSize="18" FontWeight="Bold"/>
                                     </StackPanel>
