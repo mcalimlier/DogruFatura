@@ -59,14 +59,16 @@ public partial class MainWindow
         if (InvoicesGrid.SelectedItem is not ActiveInvoiceRow row) return;
 
         var invoice = row.Invoice;
-        var school = AllSchools.FirstOrDefault(candidate =>
-            string.Equals(candidate.InstitutionType, invoice.InstitutionType, StringComparison.Ordinal)
-            && (CultureInfo.CurrentCulture.CompareInfo.Compare(
-                    candidate.Name,
-                    invoice.InstitutionName,
-                    CompareOptions.IgnoreCase) == 0
-                || (string.Equals(candidate.Vkn, invoice.Vkn, StringComparison.Ordinal)
-                    && string.Equals(candidate.GetServiceNumber(invoice.InvoiceType), invoice.ServiceNumber, StringComparison.Ordinal))));
+        var school = invoice.SchoolId != Guid.Empty
+            ? AllSchools.FirstOrDefault(candidate => candidate.SchoolId == invoice.SchoolId)
+            : AllSchools.FirstOrDefault(candidate =>
+                string.Equals(candidate.InstitutionType, invoice.InstitutionType, StringComparison.Ordinal)
+                && (CultureInfo.CurrentCulture.CompareInfo.Compare(
+                        candidate.Name,
+                        invoice.InstitutionName,
+                        CompareOptions.IgnoreCase) == 0
+                    || (string.Equals(candidate.Vkn, invoice.Vkn, StringComparison.Ordinal)
+                        && string.Equals(candidate.GetServiceNumber(invoice.InvoiceType), invoice.ServiceNumber, StringComparison.Ordinal))));
 
         if (school is null)
         {
