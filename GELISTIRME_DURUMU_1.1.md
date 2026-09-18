@@ -170,7 +170,7 @@ Bu test paketi şunları kapsayan mevcut regresyonları yeşil doğruladı:
 - `af418ec9d2bb0d21128139deefcfd3abd22b6cce`
 - `d31913ab73f0b42e6021805e75264e06298fc851`
 
-### Kod temizliği / sadeleştirme paketi 3 — KODLANDI, YEREL BUILD BEKLİYOR
+### Kod temizliği / sadeleştirme paketi 3 — TAMAMLANDI VE YEREL BUILD İLE DOĞRULANDI
 
 Tam test paketi yeşil olduktan sonra kalan düşük riskli using temizliği tamamlandı:
 
@@ -186,7 +186,35 @@ Sıradaki doğrulama:
 1. GitHub Desktop → **Fetch origin → Pull origin**.
 2. `DERLE_CALISTIR.bat`.
 3. Beklenen: **0 warning / 0 error** ve normal başlatma.
-4. Bu paket salt using temizliği olduğu için önce build kapısı yeterli; build temizse sonraki sadeleştirme paketine geçilebilir.
+4. 18.09.2026 kullanıcı yerel doğrulaması: .NET SDK `10.0.400`, **0 warning / 0 error**, `[3/3] DogruFatura baslatiliyor...`.
+
+### Kod temizliği / sadeleştirme paketi 4 — KODLANDI, YEREL BUILD BEKLİYOR
+
+Runtime sabit UI metin yamaları XAML'e taşındı:
+
+- `HESAP MOTORU` metni XAML'de doğrudan `HESAPLAMA` oldu.
+- Ana ekran HYS açıklaması güncel metinle doğrudan XAML'e taşındı.
+- Raporlar/Çıktılar açıklaması güncel metinle doğrudan XAML'e taşındı.
+- Veri Güvenliği açıklaması güncel metinle doğrudan XAML'e taşındı.
+- `ArchivePdfSyncButton` içeriği ve tooltip'i XAML'de doğrudan `PDF KONTROL` olarak tanımlandı.
+- Header ve Hakkında sürüm alanlarına `x:Name` eklendi.
+- `UiVisualPolishService.ApplyVersionAndCopy` kaldırıldı; yerine yalnız iki dinamik sürüm alanını doğrudan güncelleyen `ApplyVersionText` kaldı.
+- Sabit metinler için tüm `TextBlock` ağacını dolaşan runtime switch artık yok.
+
+Commit:
+- `17c2d27694929f2c499d87e7fa856bce11f4e699`
+
+Doğrulama durumu:
+- Kod statik olarak kontrol edildi.
+- Eski sabit metin yamaları XAML'de: **0**
+- Eski `ApplyVersionAndCopy` / `text.Text switch`: **0**
+- Bu commit henüz kullanıcı yerel build'i ile doğrulanmadı.
+
+Sıradaki işlem:
+1. GitHub Desktop → **Fetch origin → Pull origin**.
+2. `DERLE_CALISTIR.bat`.
+3. Beklenen: **0 warning / 0 error** ve normal başlatma.
+4. Uygulamada özellikle üst bar, Ana Ekran, Raporlar/Çıktılar, İşlem Arşivi ve Hakkında ekranındaki metinlerin doğru göründüğü hızlıca kontrol edilmeli.
 
 ## Sonraki sadeleştirme adayları
 
