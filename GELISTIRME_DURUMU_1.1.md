@@ -374,53 +374,212 @@ Sıradaki doğrulama:
    - eski `AŞAMA 10 • R2` rozeti görünmüyor,
    - kart yuvarlaklıkları önceki temiz görünümle aynı.
 
-## Sonraki sadeleştirme adayları
+## Sadeleştirme önerileri — TAMAMI KODLANDI, YEREL BUILD + TAM xUNIT BEKLİYOR
 
-Düşük riskten yükseğe yeni öneri sırası:
+Kullanıcının “hepsini uygula” talebiyle önceki 8 sadeleştirme önerisinin tamamı küçük, geri alınabilir commitler halinde uygulandı.
 
-1. **Hakkında ekranındaki uzun özellik listesini sadeleştir.**
-   - Alt bölümde onlarca `✓` satırı var.
-   - 5–6 başlık altında kısa özet veya kapalı `ÖZELLİKLER / TEKNİK BİLGİLER` Expander daha temiz olur.
-   - Günlük kullanıcı için gereksiz teknik ayrıntı görünür alandan kalkar; bilgi silinmez.
+### 1. Hakkında ekranı kompaktlaştırıldı
 
-2. **Kalıcı olarak gizlenen header öğelerini XAML'den tamamen kaldır.**
-   - Paket 7 doğrulanırsa `SÜRÜM` ve `DAMGA ORANI` kutuları artık yalnız `Collapsed` değil, tamamen kaldırılabilir.
-   - Gizli `HeaderVersionText` kalkınca `ApplyVersionText` yalnız Hakkında sürümünü günceller ve daha da sadeleşir.
+- Uzun ve sürekli görünür `✓` özellik listesi kaldırıldı.
+- Günlük görünümde 6 kısa başlık kaldı:
+  - Veri güvenliği ve bütünlük
+  - Fatura giriş ve doğrulama
+  - HYS ve işlem arşivi
+  - Rapor, PDF ve yazdırma
+  - Kontrol Merkezi ve denetim
+  - Yedekleme, kurtarma ve destek
+- Ayrıntılar kapalı `ÖZELLİKLER / TEKNİK BİLGİLER` Expander altında korunuyor.
+- Bilgi silinmedi; yalnız görünür yoğunluk azaltıldı.
 
-3. **Kalan `UiVisualPolishService` taramalarını XAML stillerine taşı.**
-   - `NormalizeButtons`: ortak `MinHeight=42`, renk ve foreground davranışları `StandardButtonBase/ModernButton` stillerine.
-   - `NormalizePanels`: `SnapsToDevicePixels` ilgili panel stillerine.
-   - `PolishDatePickers`: `PremiumDatePicker` stil/template içine.
-   - Hedef: `UiTree.Descendants` kullanımını mümkün olduğunca sıfırlamak.
+Ana commit:
+- `2361c9c769a6770754a4c3802c0db212a439eaea`
 
-4. **Sürüm bilgilerindeki tekrarları azalt.**
-   - Header sürümü zaten gizli.
-   - Hakkında ekranında hem `AboutVersionText` hem `AboutProductVersionText` bulunuyor.
-   - Tek bir net sürüm alanı yeterli olabilir.
+### 2. Kalıcı gizli Header öğeleri tamamen kaldırıldı
 
-5. **Pencere boyutlandırma sorumluluğunu tekleştir — orta risk.**
-   - `ConfigureFixedWindowForCurrentScreen`
-   - `ResponsiveLayoutService.Apply/FitToCurrentWorkArea`
-   aynı alanın iki katmanını yönetiyor.
-   - Responsive test + manuel 1366×768 / Full HD / yüksek DPI kontrolü gerektirir.
+- Daha önce `Collapsed` duran `SÜRÜM` kartı XAML'den kaldırıldı.
+- Daha önce `Collapsed` duran `DAMGA ORANI` kartı XAML'den kaldırıldı.
+- Header kolonları yeniden sadeleştirildi; sıfır genişlikli eski kolonlar kaldırıldı.
+- `HeaderVersionText` referansı artık yok.
 
-6. **MainWindow başlangıç yükünü application-service/state-loader'a ayır — orta risk.**
-   - store load/fallback
-   - startup safety state
-   - initial collection/view setup
-   constructor'dan çıkarılabilir.
-   - Tek seferde MVVM dönüşümü yapılmamalı.
+### 3. UiVisualPolishService tamamen kaldırıldı
 
-7. **Tür/status alanlarını kontrollü enum/value object yapısına taşı — daha sonra.**
-   - `InvoiceType`
-   - `InstitutionType`
-   - archive status
-   - legacy JSON uyumluluğu korunmalı.
+- `NormalizeButtons`, `NormalizePanels`, `PolishDatePickers` için runtime visual-tree taraması kaldırıldı.
+- Ortak buton minimum yüksekliği `StandardButtonBase` stiline taşındı.
+- Premium panel piksel hizalaması stile taşındı.
+- DatePicker ve iç `DatePickerTextBox` renk/caret/selection/padding davranışları XAML stillerine taşındı.
+- Automation adlandırması zaten `UiAccessibilityService` tarafından sağlandığı için ikinci kez tarama yapılmıyor.
+- Panel/text piksel hizalaması `TextSharpnessService` tarafından zaten merkezi uygulanıyor.
+- `UiVisualPolishService.cs` dosyası silindi.
 
-8. **SchoolId bağı güçlendirmesi — en son.**
-   - `SchoolRecord` için değişmez kimlik.
-   - Fatura-kurum ilişkisini metin yerine ID ile güçlendirme.
-   - Migration tasarımı olmadan başlanmamalı.
+Commitler:
+- `a74a4b68315fb957d49eb1d4e76ee4896661d862`
+- `a793125890a0777e7198c46160749cfc68595a11`
+- `ba060de325d1f518dd2a42e2f1b55b24b98a4b5e`
+
+### 4. Sürüm sunumu tekleştirildi
+
+- Gizli Header sürümü kaldırıldı.
+- Alt Hakkında kartındaki yinelenen `AboutProductVersionText` kaldırıldı.
+- Görünür dinamik sürüm için `AboutVersionText` tek kaynak olarak kaldı.
+- Bu alan zaten `ApplicationSafetyService.InformationalVersion` ile dolduruluyor.
+
+### 5. Pencere başlangıç boyutlandırması tek serviste toplandı
+
+- `MainWindow.ConfigureFixedWindowForCurrentScreen` kaldırıldı.
+- Eski davranışın matematiği `ResponsiveLayoutService` içine taşındı:
+  - tercih edilen normal ölçek: yaklaşık %90
+  - başlangıç çalışma alanı sınırları: genişlik %94, yükseklik %92
+- Büyük ekrandaki yaklaşık `1305 × 850.5` davranışı ve küçük ekrandaki kontrollü küçültme korunuyor.
+- Saf/test edilebilir `ResponsiveLayoutService.CalculateStartup` eklendi.
+- Yeni responsive regresyon testleri eklendi.
+
+Commitler:
+- `d205478c02984524677f10ffee35e4296178a7aa`
+- `b6c0185e2f5dd7f0872506dcd28b70110ef76467`
+- `217808f600ff8cf219874050ed9fe60ee80d3116`
+
+### 6. MainWindow startup/bootstrap yükü ayrıldı
+
+Yeni:
+- `MainWindowStartupState`
+- `MainWindowStartupStateLoader`
+
+Loader artık:
+- startup safety check,
+- SchoolDataStore load/fallback,
+- InvoiceDataStore load/fallback,
+- AuthorityProfileDataStore load/fallback,
+- ArchivedInvoiceListDataStore load/fallback
+
+işlerini yapıyor.
+
+`MainWindow` constructor:
+- hazır startup state'i tüketiyor,
+- doğrudan store load/fallback try/catch bloklarını artık taşımıyor.
+
+Composition root:
+- store örneklerini tek kez oluşturuyor,
+- startup state'i bu aynı store örnekleriyle hazırlıyor,
+- aynı store örneklerini `MainWindow`a veriyor.
+
+Commit:
+- `0a83c3bfebe903b98a0949c748bd87557c5779cd`
+
+### 7. Tür/status için geriye uyumlu typed domain katmanı eklendi
+
+Yeni typed değerler:
+- `InvoiceKind`
+- `InstitutionKind`
+- `ArchiveState`
+- `DomainValueText`
+
+Önemli uyumluluk kararı:
+- Kalıcı JSON'daki mevcut `InvoiceType` / `InstitutionType` string alanları **değiştirilmedi**.
+- Typed görünümler model üzerinde `[JsonIgnore]` olarak sunuluyor.
+- Böylece mevcut kullanıcı JSON'u, restore/backuplar ve historical PDF akışı kırılmadan typed koda kontrollü geçiş başladı.
+- `SchoolRecord.GetServiceNumber` artık typed `InvoiceKind` overload'u üzerinden çalışabiliyor.
+
+İlk commitler:
+- `29731301d5f446e4e099a398747bc917864ed5bb`
+- `e2a0ea4326f22470b68892fa7c3ffa4b0ad4527e`
+- `f5f80c39f4fd063d298c65d91a0ea5fa62190462`
+- `184d898ae0fa08f7c3faf30bb814868143311daa`
+
+### 8. Değişmez SchoolId bağı eklendi — legacy uyumlu
+
+Model:
+- `SchoolRecord` sonuna opsiyonel `Guid SchoolId = default`.
+- `InvoiceRecord` sonuna opsiyonel `Guid SchoolId = default`.
+- Eski constructor çağrıları bozulmuyor.
+- Eski JSON'da alan yoksa `Guid.Empty` olarak okunabiliyor.
+
+Legacy kimlik:
+- `SchoolIdentityService` eklendi.
+- Eski kurum kaydında ID yoksa kurumun mevcut alanlarından SHA-256 tabanlı deterministik Guid üretiliyor.
+- Aynı eski kayıt her açılışta aynı ID'yi alıyor.
+- Yeni kurumlar `Guid.NewGuid()` ile gerçek kalıcı kimlik alıyor.
+- Kurum düzenlenirken mevcut `SchoolId` korunuyor.
+
+Store:
+- `SchoolDataStore.LoadOrCreate` legacy/boş ID kayıtlarını bellekte normalize ediyor.
+- `SchoolDataStore.Save` her kaydı yazmadan önce normalize ederek boş `SchoolId` yazılmasını engelliyor.
+- Seed kurumlar da kimlikli üretiliyor.
+
+Fatura bağı:
+- Yeni/güncellenen faturalar seçili kurumun `SchoolId` değerini taşıyor.
+- Fatura düzenleme önce `SchoolId` ile kurum buluyor.
+- Kontrol Merkezi önce `SchoolId` ile bağ kuruyor.
+- `SchoolId == Guid.Empty` olan eski faturalar mevcut kurum türü/ad/VKN/hizmet legacy eşleşmesini kullanmaya devam ediyor.
+
+Commitler:
+- `d509569b9c28e447f05e602d37cf209750ba0fc1`
+- `2df0309e905181cdaf9b8e768bca3a170f1c4513`
+- `209a88dc4428b1d542f51510261d13b0d57ba64f`
+- `9347670417ba6a91b7b21d5cc31ed3a17eca879a`
+- `dd26950fd3d8013c3236130750532dc728ddee40`
+- `a7838bb127fa25c4b890e1757e03700d11b59199`
+- `e2464a58b431d7d004dca576d060d87f1a8948aa`
+- `7cbf084e5fbe00c5bfa17c406eca09b84a3124e9`
+- `40c1e3dc021fc9e44eeebe6a3c2e8b3cc330f114`
+
+### Yeni regresyon testleri
+
+Yeni `DomainIdentityTests.cs`:
+- legacy okul normalize edildiğinde stabil/non-empty SchoolId,
+- explicit ID'nin normalize sırasında korunması,
+- SchoolId içermeyen legacy JSON'un yüklenmesi,
+- typed domain görünümünün eski storage text ile uyumu,
+- Kontrol Merkezi'nin SchoolId önceliği,
+- SchoolId'siz legacy faturanın isim tabanlı fallback'i.
+
+Commitler:
+- `f08a5846617e06b88089974d7603572482d1bb71`
+- test düzeltmesi: `0661bbbb1257901db6662cfaf16aa9f04ffa3542`
+
+Responsive alana ayrıca 4 test vakası eklendi:
+- büyük ekranda %90 başlangıç profili,
+- 1366×768 / 1920×1080 / 2560×1440 startup çalışma alanı sınırları.
+
+Önceki tam xUnit sonucu **107/107** idi.
+Bu paket **10 yeni xUnit vakası** eklediği için, test discovery aynı kalırsa yeni beklenen toplam **117 test**tir.
+Bu sayı henüz yerel test çalıştırmasıyla doğrulanmadı.
+
+### Statik kapanış kontrolü
+
+18.09.2026 kod taramasında:
+- `UiVisualPolishService` dosyası: **silindi**
+- `HeaderVersionText`: **0 referans**
+- `AboutProductVersionText`: **0 referans**
+- `ConfigureFixedWindowForCurrentScreen`: **0 referans**
+- yeni testlerde alt çizgili public test adı: **0**
+- yeni testlerde `Assert.Single(...Where(...))`: **0**
+- `SchoolDataStore.Save` içinde save öncesi ID normalize: mevcut
+- DatePicker iç TextBox stili: mevcut
+- branch, paket 7 MD commit'ine göre **23 commit ileride** ve değişiklikler yalnız beklenen Core/WPF/Test dosyalarıyla sınırlı.
+
+### Şimdi zorunlu doğrulama kapısı
+
+Bu toplu paket UI + startup + domain model davranışı içerdiği için yeni mimari değişikliğe geçmeden önce **iki doğrulama birden** zorunlu:
+
+1. GitHub Desktop → **Fetch origin**
+2. **Pull origin**
+3. `DERLE_CALISTIR.bat`
+   - beklenen: Core **0 warning**
+   - WPF **0 warning**
+   - toplam **0 warning / 0 error**
+   - `[3/3] DogruFatura baslatiliyor...`
+4. Uygulamada kısa smoke test:
+   - Ana Ekran
+   - Fatura Girişi
+   - kurum ekleme/düzenleme
+   - aktif faturayı ekleme/düzenleme
+   - Hakkında / Güvenlik
+   - Gelişmiş / Destek
+   - pencere boyutlandırma / maximize-restore
+5. `TESTLERI_CALISTIR.bat`
+   - beklenen: tüm testler başarılı
+   - discovery değişmediyse yaklaşık **117 / 117**
+6. Bu iki kapı yeşil olmadan sonraki Aşama 3 davranışsal geliştirmelerine geçilmeyecek.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
