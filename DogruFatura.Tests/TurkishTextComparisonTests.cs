@@ -8,7 +8,7 @@ public sealed class TurkishTextComparisonTests
     [InlineData("İSTANBUL", "istanbul")]
     [InlineData("ISPARTA", "ısparta")]
     [InlineData("ÇAĞDAŞ", "çağdaş")]
-    public void EqualsIgnoreCase_UsesTurkishCasePairs(string left, string right)
+    public void EqualsIgnoreCaseUsesTurkishCasePairs(string left, string right)
     {
         Assert.True(TurkishTextComparison.EqualsIgnoreCase(left, right));
     }
@@ -16,13 +16,13 @@ public sealed class TurkishTextComparisonTests
     [Theory]
     [InlineData("ISPARTA", "isparta")]
     [InlineData("İSTANBUL", "ıstanbul")]
-    public void EqualsIgnoreCase_DoesNotMergeDifferentTurkishICharacters(string left, string right)
+    public void EqualsIgnoreCaseDoesNotMergeDifferentTurkishICharacters(string left, string right)
     {
         Assert.False(TurkishTextComparison.EqualsIgnoreCase(left, right));
     }
 
     [Fact]
-    public void EqualsIgnoreCase_HandlesNullDeterministically()
+    public void EqualsIgnoreCaseHandlesNullDeterministically()
     {
         Assert.True(TurkishTextComparison.EqualsIgnoreCase(null, null));
         Assert.False(TurkishTextComparison.EqualsIgnoreCase("Kurum", null));

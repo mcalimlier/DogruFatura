@@ -12,7 +12,7 @@ public sealed class BoundaryAndCultureTests
     [InlineData("1234,56 TL", 1234.56)]
     [InlineData("₺ 1 234,56", 1234.56)]
     [InlineData("1234.56", 1234.56)]
-    public void MoneyParser_AcceptsCommonTurkishAndInternationalForms(string text, double expected)
+    public void MoneyParserAcceptsCommonTurkishAndInternationalForms(string text, double expected)
     {
         Assert.True(NumberParser.TryNonNegativeDecimal(text, out var value));
         Assert.Equal((decimal)expected, value);
@@ -22,19 +22,19 @@ public sealed class BoundaryAndCultureTests
     [InlineData("-1")]
     [InlineData("")]
     [InlineData("abc")]
-    public void MoneyParser_RejectsInvalidOrNegativeValues(string text)
+    public void MoneyParserRejectsInvalidOrNegativeValues(string text)
     {
         Assert.False(NumberParser.TryNonNegativeDecimal(text, out _));
     }
 
     [Fact]
-    public void TurkishUppercase_PreservesTurkishLetters()
+    public void TurkishUppercasePreservesTurkishLetters()
     {
         Assert.Equal("İSTANBUL ŞEHİR ÇAĞDAŞ ÖĞRENCİ", FinalReportFormat.Upper("istanbul şehir çağdaş öğrenci"));
     }
 
     [Fact]
-    public void MaximumAllowedServiceAndInvoiceNumbers_AreAccepted()
+    public void MaximumAllowedServiceAndInvoiceNumbersAreAccepted()
     {
         var invoice = ValidInvoice(new string('7', 50), new string('F', 100));
 
@@ -44,7 +44,7 @@ public sealed class BoundaryAndCultureTests
     }
 
     [Fact]
-    public void OverlongServiceNumber_IsRejected()
+    public void OverlongServiceNumberIsRejected()
     {
         var invoice = ValidInvoice(new string('7', 51), "INV-1");
 
@@ -55,7 +55,7 @@ public sealed class BoundaryAndCultureTests
     }
 
     [Fact]
-    public void OverlongInvoiceNumber_IsRejected()
+    public void OverlongInvoiceNumberIsRejected()
     {
         var invoice = ValidInvoice("123456", new string('F', 101));
 
@@ -66,7 +66,7 @@ public sealed class BoundaryAndCultureTests
     }
 
     [Fact]
-    public void DueDateBeforeInvoiceDate_IsRejected()
+    public void DueDateBeforeInvoiceDateIsRejected()
     {
         var invoice = ValidInvoice("123456", "INV-1") with
         {
@@ -77,7 +77,7 @@ public sealed class BoundaryAndCultureTests
     }
 
     [Fact]
-    public void LargeButRealisticAmounts_RemainDeterministic()
+    public void LargeButRealisticAmountsRemainDeterministic()
     {
         const decimal payable = 999_999_999_999.99m;
         const decimal vat = 166_666_666_666.66m;

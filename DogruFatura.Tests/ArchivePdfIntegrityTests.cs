@@ -8,7 +8,7 @@ namespace DogruFatura.Tests;
 public sealed class ArchivePdfIntegrityTests
 {
     [Fact]
-    public void Synchronize_LegacyPdfWithoutHash_StoresInitialSha256()
+    public void SynchronizeLegacyPdfWithoutHashStoresInitialSha256()
     {
         using var temp = new TempFolder();
         var storage = new DocumentArchiveStorageService(temp.Path);
@@ -27,7 +27,7 @@ public sealed class ArchivePdfIntegrityTests
     }
 
     [Fact]
-    public void Synchronize_ExistingPdfWithDifferentHash_ReportsIntegrityErrorAndKeepsRecordedHash()
+    public void SynchronizeExistingPdfWithDifferentHashReportsIntegrityErrorAndKeepsRecordedHash()
     {
         using var temp = new TempFolder();
         var storage = new DocumentArchiveStorageService(temp.Path);

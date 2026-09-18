@@ -6,7 +6,7 @@ namespace DogruFatura.Tests;
 public sealed class InvoiceRulesEngineTests
 {
     [Fact]
-    public void Validation_UsesEngineFirstViolationWithoutChangingMessage()
+    public void ValidationUsesEngineFirstViolationWithoutChangingMessage()
     {
         var invoice = ValidInvoice() with { Vkn = "12A" };
 
@@ -20,7 +20,7 @@ public sealed class InvoiceRulesEngineTests
     }
 
     [Fact]
-    public void Validation_UsesEngineTaxMismatchRule()
+    public void ValidationUsesEngineTaxMismatchRule()
     {
         var invoice = ValidInvoice();
         invoice = invoice with { PaymentAmount = invoice.PaymentAmount + 1m };
@@ -34,7 +34,7 @@ public sealed class InvoiceRulesEngineTests
     }
 
     [Fact]
-    public void ControlCenter_UsesEngineVknRuleWithoutChangingIssueContract()
+    public void ControlCenterUsesEngineVknRuleWithoutChangingIssueContract()
     {
         var invoice = ValidInvoice() with { Vkn = "12A" };
 
@@ -43,14 +43,14 @@ public sealed class InvoiceRulesEngineTests
             new[] { invoice },
             new DateTime(2026, 9, 17));
 
-        var issue = Assert.Single(result.Issues.Where(item => item.Code == "INVOICE_VKN_INVALID"));
+        var issue = Assert.Single(result.Issues, item => item.Code == "INVOICE_VKN_INVALID");
         Assert.Equal(ControlIssueSeverity.Error, issue.Severity);
         Assert.Equal("Faturanın VKN bilgisi geçersiz", issue.Title);
         Assert.Equal("VKN girildiyse 10 haneli ve yalnızca rakamlardan oluşmalıdır.", issue.Detail);
     }
 
     [Fact]
-    public void ControlCenter_UsesEngineTaxMismatchWithoutChangingIssueContract()
+    public void ControlCenterUsesEngineTaxMismatchWithoutChangingIssueContract()
     {
         var invoice = ValidInvoice();
         invoice = invoice with { PaymentAmount = invoice.PaymentAmount + 1m };
@@ -60,7 +60,7 @@ public sealed class InvoiceRulesEngineTests
             new[] { invoice },
             new DateTime(2026, 9, 17));
 
-        var issue = Assert.Single(result.Issues.Where(item => item.Code == "INVOICE_TAX_MISMATCH"));
+        var issue = Assert.Single(result.Issues, item => item.Code == "INVOICE_TAX_MISMATCH");
         Assert.Equal(ControlIssueSeverity.Error, issue.Severity);
         Assert.Equal("Vergi hesabı güncel kuralla uyuşmuyor", issue.Title);
     }
@@ -70,13 +70,13 @@ public sealed class InvoiceRulesEngineTests
     [InlineData("Telefon")]
     [InlineData("İnternet")]
     [InlineData("Su")]
-    public void SupportedInvoiceTypes_AreAccepted(string invoiceType)
+    public void SupportedInvoiceTypesAreAccepted(string invoiceType)
     {
         Assert.True(InvoiceRulesEngine.IsSupportedInvoiceType(invoiceType));
     }
 
     [Fact]
-    public void UnknownInvoiceType_IsRejectedByEngineAndControlCenter()
+    public void UnknownInvoiceTypeIsRejectedByEngineAndControlCenter()
     {
         var invoice = ValidInvoice() with { InvoiceType = "Doğalgaz" };
 

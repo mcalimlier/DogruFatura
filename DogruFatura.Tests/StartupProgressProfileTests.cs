@@ -5,13 +5,13 @@ namespace DogruFatura.Tests;
 public sealed class StartupProgressProfileTests
 {
     [Fact]
-    public void MinimumSplashDuration_IsBetweenFiveAndSixSeconds()
+    public void MinimumSplashDurationIsBetweenFiveAndSixSeconds()
     {
         Assert.InRange(StartupProgressProfile.MinimumVisibleDurationMs, 5000, 6000);
     }
 
     [Fact]
-    public void ContinuousProgress_IsMonotonicAndStopsBelowCompletion()
+    public void ContinuousProgressIsMonotonicAndStopsBelowCompletion()
     {
         var samples = new[] { 0L, 250, 1000, 2000, 3500, 5000, 6000, 8000, 10000, 15000 }
             .Select(StartupProgressProfile.CalculateContinuousPercent)
