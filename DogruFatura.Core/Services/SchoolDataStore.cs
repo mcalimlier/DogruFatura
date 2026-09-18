@@ -44,6 +44,9 @@ public sealed class SchoolDataStore
             if (schools.Any(IsStructurallyInvalid))
                 throw new JsonException("Okul/kurum veri dosyasında eksik alanlar var.");
 
+            for (var index = 0; index < schools.Count; index++)
+                schools[index] = SchoolValidationService.Normalize(schools[index]);
+
             string? warning = null;
             if (schema.RequiresUpgrade)
             {
