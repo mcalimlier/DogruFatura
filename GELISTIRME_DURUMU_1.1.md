@@ -45,6 +45,17 @@ Tamamlananlar:
   - `MainWindow` DI commit'i: `7c3999cd07bc66daed5334d73e4a955b94906acb`
   - Kullanıcı davranışı, PDF üretimi, arşiv yolu ve hash doğrulama mantığında işlevsel değişiklik amaçlanmadı.
   - 18.09.2026 kullanıcı yerel doğrulaması: .NET SDK `10.0.400`, **0 warning / 0 error**, `[3/3] DogruFatura baslatiliyor...`.
+- Kod temizliği / sadeleştirme paketi 1 kodlandı; yeni yerel doğrulama bekliyor:
+  - MainWindow partial taramasında XAML'e bağlı event handler'lar dışında açıkça referanssız/ölü private metot bulunmadı.
+  - `UiVisualPolishService` içindeki ikinci `new ApplicationSafetyService()` kaldırıldı; tanılama paketi composition root'taki mevcut `ApplicationSafetyService` örneğini kullanıyor.
+  - `MainWindow` içindeki yinelenen `DesignWidth` / `DesignHeight` sabitleri kaldırıldı; `ResponsiveLayoutService.DesignWidth/DesignHeight` tek kaynak oldu.
+  - `MainWindow.WindowStartup.cs` ve `MainWindow.WindowChrome.cs` içindeki monolitik dosyadan kalmış kullanılmayan `using` blokları temizlendi.
+  - Composition root safety örneği: `c75f74b398fa75e996d5a188b5bd9ae24793f6a1`
+  - UI polish aktarımı: `15c8105c88158f768560195a4ed668b02dcfcb4c`
+  - Tanılama safety tekrarının kaldırılması: `f382c0acfc1443bebbec2a7dd8c56072f7ce29e9`
+  - Yinelenen boyut sabitleri: `fc82ec1b6cd6d820c2c1dbe48a8efebd9ea73235`
+  - Window startup using/sabit temizliği: `8a714549a4a979c159df2cd7f89edf4c7bea8deb`
+  - Window chrome using temizliği: `a89f9676bb5e54b11eef023fc14c97561c94a82f`
 
 Kalan ana işler:
 
@@ -112,11 +123,11 @@ Not: Türkçe regresyon testleri repoya eklendi ancak `DERLE_CALISTIR.bat` test 
 
 ## Şu an doğrulama bekleyen adım
 
-### Tam xUnit test paketi
+### Kod temizliği / sadeleştirme paketi 1 + tam xUnit test paketi
 
-DI genişletme 2 yerel build açısından doğrulandı. Sıradaki kapı tam test paketidir.
+Kullanıcının son paylaştığı `0 warning / 0 error` build sonucu DI genişletme 2'yi doğrulamaktadır. Ancak yukarıdaki kod temizliği paketi bu build sonucundan **sonra** commit edildiği için paket ayrıca doğrulanmalıdır.
 
-Kolay yerel doğrulama için yeni kök araç eklendi:
+Kolay yerel test doğrulaması için kök araç:
 
 - `TESTLERI_CALISTIR.bat`
 - Commit: `1756826fce79f86c156b19216814fd3eab1fd9f9`
@@ -131,13 +142,23 @@ Kolay yerel doğrulama için yeni kök araç eklendi:
 - Backup manifest ve PDF hash bütünlük testleri.
 - Single-instance testleri.
 
+## Sadeleştirme önerileri — sonraki güvenli sıra
+
+1. **Pencere boyutlandırmasını tekleştirme:** `ConfigureFixedWindowForCurrentScreen` ile `ResponsiveLayoutService.Apply/FitToCurrentWorkArea` aynı sorumluluğun iki katmanı. Görsel davranış testi yapıldıktan sonra tek mekanizmada birleştirilmeli.
+2. **Runtime UI metin yamalarını azaltma:** `UiVisualPolishService.ApplyVersionAndCopy` XAML içindeki eski metinleri açılışta tarayıp değiştiriyor. Kalıcı metinler doğrudan XAML'e taşınmalı; yalnız dinamik sürüm bilgisi kodda kalmalı.
+3. **Dinamik tanılama düğmesini XAML'e taşıma:** `AddDiagnosticButton` çalışma anında düğme üretiyor. Düğmenin XAML'de tanımlı olması görsel ağacı ve event akışını sadeleştirir.
+4. **Kalan MainWindow partial using temizliği:** Birçok partial dosyada monolitik `MainWindow.xaml.cs` döneminden kalan aynı geniş using listesi var. Küçük gruplar halinde temizlenip her grup sonrası build yapılmalı.
+5. **Test-only yardımcıyı üretim assembly'sinden ayırma:** `ColorContrastService` şu an esas olarak kontrast testleri için kullanılıyor. Başka üretim kullanımı olmadığı doğrulanırsa test yardımcı katmanına taşınabilir.
+6. **MainWindow constructor bootstrap'ını ayırma:** veri store yükleme/fallback, safety initialization ve ilk UI hazırlığı constructor'da yoğun. Büyük refactor yapmadan önce `ApplicationBootstrap/MainWindowStateLoader` benzeri küçük bir application-service ile yükleme sorumluluğu ayrılabilir.
+
 ## Sıradaki iş
 
 1. GitHub Desktop → **Fetch origin → Pull origin**.
-2. `hardening/1.1-data-safety` branch'inde `TESTLERI_CALISTIR.bat` çalıştır.
-3. Beklenen: tüm testlerin başarılı olması.
-4. Testler yeşilse sonuç bu MD'ye işlenecek.
-5. Ardından bir sonraki küçük Aşama 2 paketi seçilecek; ilk aday `MainWindow` sorumluluklarını davranış koruyarak application-service sınırlarına ayırmaktır.
+2. Önce `DERLE_CALISTIR.bat` çalıştır.
+3. Beklenen: **0 warning / 0 error** ve uygulamanın normal başlaması.
+4. Ardından `TESTLERI_CALISTIR.bat` çalıştır.
+5. Testler yeşilse build + test sonuçları bu MD'ye işlenecek.
+6. Sonraki sadeleştirme paketi olarak önce kalan partial `using` temizliği veya runtime UI metin yamalarının azaltılması seçilecek; pencere boyutlandırma tekleştirmesi görsel regresyon kontrolüyle daha sonra yapılacak.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
