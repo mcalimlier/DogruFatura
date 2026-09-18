@@ -87,6 +87,7 @@ public partial class App : Application
             var finalReportPdfService = new FinalReportPdfService();
             var documentArchiveStorageService = new DocumentArchiveStorageService();
             var historicalPdfImportService = new HistoricalPdfImportService(taxService);
+            var safetyService = new ApplicationSafetyService();
             var archivePdfSynchronizationService = new ArchivePdfSynchronizationService(
                 documentArchiveStorageService,
                 finalReportPdfService.Save);
@@ -97,13 +98,13 @@ public partial class App : Application
                 new InvoiceDataStore(),
                 new AuthorityProfileDataStore(),
                 new ArchivedInvoiceListDataStore(),
-                new ApplicationSafetyService(),
+                safetyService,
                 finalReportDocumentService,
                 finalReportPdfService,
                 documentArchiveStorageService,
                 historicalPdfImportService,
                 archivePdfSynchronizationService);
-            UiPolishService.Apply(main);
+            UiPolishService.Apply(main, safetyService);
 
             // Performans metriği yalnız gerçek hazırlık süresini ölçer; kullanıcı isteğiyle
             // eklenen 5,5 saniyelik görsel splash süresi performans gerilemesi sayılmaz.
