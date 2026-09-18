@@ -414,7 +414,8 @@ public partial class MainWindow
             calculation.VatBase,
             calculation.StampDuty,
             calculation.PaymentAmount,
-            compensation);
+            compensation,
+            school.SchoolId);
 
         var validation = InvoiceValidationService.Validate(invoice);
         if (!validation.IsValid)
