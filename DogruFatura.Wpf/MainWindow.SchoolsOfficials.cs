@@ -102,7 +102,8 @@ public partial class MainWindow
         SchoolElectricityEditorBox.Text,
         SchoolTelephoneEditorBox.Text,
         SchoolInternetEditorBox.Text,
-        SchoolWaterEditorBox.Text));
+        SchoolWaterEditorBox.Text,
+        _editedSchool?.SchoolId ?? Guid.NewGuid()));
 
     private void SaveSchool_Click(object sender, RoutedEventArgs e)
     {
