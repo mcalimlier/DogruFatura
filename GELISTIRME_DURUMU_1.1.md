@@ -279,11 +279,59 @@ Mevcut durum:
 
 Henüz kod değişikliği yapılmadı; önce önerilen yerleşim kullanıcı kararıyla netleştirilecek.
 
+### Kod temizliği / sadeleştirme paketi 6 — KODLANDI, YEREL BUILD VE GÖRSEL KONTROL BEKLİYOR
+
+Kullanıcının onayladığı orta seviye Veri Güvenliği sadeleştirmesi uygulandı:
+
+- Veri Güvenliği kartındaki birincil eylemler 3'e indirildi:
+  1. `KONTROL ET`
+  2. `YEDEK OLUŞTUR`
+  3. `GERİ YÜKLE`
+- Teknik/ikincil araçlar kapalı `GELİŞMİŞ / DESTEK` alanına taşındı:
+  - Veri Klasörü
+  - PDF Klasörü
+  - Yedek Klasörü
+  - Log Klasörü
+  - Tanılama Paketi
+- `SÜRÜM / ÇALIŞMA ORTAMI` kartındaki uzun veri/PDF/yedek klasör yolları kaldırıldı.
+- Sol kartta yalnız sürüm + runtime bilgisi ve teknik araçların Gelişmiş/Destek altında olduğu kısa not kaldı.
+- Veri bütünlüğü sonucu kompakt duruma çevrildi:
+  - sağlıklı: `✓ Veriler ve PDF belgeleri sağlıklı`
+  - sorunlu: `⚠ Veri bütünlüğü kontrolü dikkat gerektiriyor`
+- Tam teknik bütünlük mesajı kaybolmadı:
+  - durum satırının tooltip'inde korunuyor,
+  - `KONTROL ET` sorun bulursa dialog'da tam `result.Message` gösteriliyor.
+- Son yedek satırı artık tam dosya yolu yerine mümkünse yedek dosyasının tarih/saatini gösteriyor.
+- Restore, backup, SHA-256, manifest, diagnostic ve klasör açma davranışları değiştirilmedi.
+
+Commit:
+- `563b5653c5155c7e7b7a30a4c1aa4ecc30c47308`
+
+Statik kontrol:
+- 3 birincil eylem mevcut.
+- `GELİŞMİŞ / DESTEK` mevcut.
+- 5 ikincil araç gelişmiş alanda mevcut.
+- Kaldırılan klasör yolu TextBlock referansları: **0**.
+- Kompakt durum + ayrıntılı teknik mesaj korunuyor.
+- Son yedek zaman gösterimi mevcut.
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**.
+2. `DERLE_CALISTIR.bat`.
+3. Beklenen: **0 warning / 0 error** ve normal başlatma.
+4. Hakkında / Güvenlik ekranında:
+   - kartın daha ferah görünmesi,
+   - 3 ana eylemin tek satırda düzgün görünmesi,
+   - `GELİŞMİŞ / DESTEK` aç/kapa davranışı,
+   - klasör ve Tanılama düğmelerinin hâlâ çalışması,
+   - `KONTROL ET`, `YEDEK OLUŞTUR`, `GERİ YÜKLE` akışlarının korunması
+   hızlıca doğrulanmalı.
+
 ## Sonraki sadeleştirme adayları
 
 Düşük riskten yükseğe:
 
-1. `SimplifyHeader` / `ImproveHomeLayout` içindeki kalan runtime visual-tree taramalarını kontrollü azaltmak.
+1. Veri Güvenliği paket 6 görsel/build doğrulaması sonrası `SimplifyHeader` / `ImproveHomeLayout` içindeki kalan runtime visual-tree taramalarını kontrollü azaltmak.
 2. `ConfigureFixedWindowForCurrentScreen` ile `ResponsiveLayoutService.Apply/FitToCurrentWorkArea` arasındaki çift boyutlandırma sorumluluğunu görsel regresyonla tekleştirmek.
 3. Üretim kullanımı olmadığı doğrulanırsa test-odaklı yardımcıları test katmanına taşımak.
 4. Daha sonra `MainWindow` constructor bootstrap/store yükleme sorumluluklarını küçük application-service'e ayırmak.
