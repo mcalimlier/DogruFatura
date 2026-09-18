@@ -14,11 +14,11 @@
 
                 <!-- ÜST BAR -->
                 <Grid Grid.Row="0" Grid.ColumnSpan="2" Background="#031C38" MouseLeftButtonDown="Header_MouseLeftButtonDown">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="255"/><ColumnDefinition Width="430"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="255"/><ColumnDefinition Width="220"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                     <Image Grid.Column="0" Source="Assets/Logo.png" Width="220" Stretch="Uniform" Margin="22,0,0,0" HorizontalAlignment="Left"/>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
-                        <Border Background="#092746" CornerRadius="9" BorderBrush="#24496B" BorderThickness="1" Padding="14,8" Width="198">
+                        <Border Background="#092746" CornerRadius="9" BorderBrush="#24496B" BorderThickness="1" Padding="14,8" Width="198" Visibility="Collapsed">
                             <StackPanel>
                                 <TextBlock Text="SÜRÜM" Foreground="#8FA8C0" FontSize="13" FontWeight="SemiBold"/>
                                 <TextBlock x:Name="HeaderVersionText" Text="v1.0" Foreground="White" FontSize="14.5" FontWeight="SemiBold" Margin="0,2,0,0"/>
@@ -37,7 +37,7 @@
 
                     <Grid Grid.Column="2" VerticalAlignment="Center" Margin="8,0,14,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="120"/><ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="0"/><ColumnDefinition Width="0"/>
                             <ColumnDefinition Width="120"/><ColumnDefinition Width="10"/><ColumnDefinition Width="132"/>
                             <ColumnDefinition Width="44"/><ColumnDefinition Width="44"/><ColumnDefinition Width="44"/>
                         </Grid.ColumnDefinitions>
@@ -47,7 +47,7 @@
                                 <TextBlock x:Name="ActiveInstitutionText" Text="Henüz seçilmedi" Foreground="White" FontSize="14.5" FontWeight="SemiBold" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
                         </Border>
-                        <Border Grid.Column="2" Background="#092746" BorderBrush="#24496B" BorderThickness="1" CornerRadius="9" Padding="12,7">
+                        <Border Grid.Column="2" Background="#092746" BorderBrush="#24496B" BorderThickness="1" CornerRadius="9" Padding="12,7" Visibility="Collapsed">
                             <StackPanel>
                                 <TextBlock Text="DAMGA ORANI" Foreground="#8FA8C0" FontSize="12.5" FontWeight="SemiBold" ToolTip="Su faturalarında uygulanmaz"/>
                                 <TextBlock Text="0,00948" Foreground="#FFB41F" FontSize="16.5" FontWeight="Bold" Margin="0,2,0,0"/>
@@ -124,18 +124,19 @@
                 <Border Grid.Row="1" Grid.Column="1" Background="White" CornerRadius="13,0,13,0" Padding="20">
                     <Grid>
                         <!-- ANA EKRAN -->
-                        <ScrollViewer x:Name="HomeView" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ScrollViewer x:Name="HomeView" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                      SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType">
                             <StackPanel Margin="0,0,8,16">
                                 <TextBlock Text="DOĞRUFATURA YÖNETİM PANELİ" Style="{StaticResource PageTitle}"/>
                                 <TextBlock Text="HYS ile kapanmış ödeme listelerinin mali durumunu tek bakışta izleyin." Style="{StaticResource PageSubtitle}"/>
 
-                                <Border Style="{StaticResource PremiumPanel}" Padding="20,16" Margin="0,0,0,12">
-                                    <Border.Effect><DropShadowEffect BlurRadius="18" ShadowDepth="3" Opacity="0.18"/></Border.Effect>
+                                <Border Style="{StaticResource PremiumPanel}" CornerRadius="10" Padding="20,16" Margin="0,0,0,12"
+                                        SnapsToDevicePixels="True" UseLayoutRounding="True">
                                     <Grid>
                                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="315"/></Grid.ColumnDefinitions>
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal">
-                                                <Border Background="#1D4B70" CornerRadius="11" Padding="9,4" Margin="0,0,10,0"><TextBlock Text="AŞAMA 10 • R2" Foreground="#D9E9F6" FontSize="14" FontWeight="Bold"/></Border>
+                                                <Border Background="#1D4B70" CornerRadius="10" Padding="9,4" Margin="0,0,10,0" Visibility="Collapsed"><TextBlock Text="AŞAMA 10 • R2" Foreground="#D9E9F6" FontSize="14" FontWeight="Bold"/></Border>
                                                 <TextBlock Text="AKILLI ÖZET" Foreground="#FFC75B" FontSize="13" FontWeight="Bold"/>
                                             </StackPanel>
                                             <TextBlock Text="Ödeme hareketlerinizi tek bakışta görün" FontSize="24" FontWeight="SemiBold" Foreground="White" Margin="0,9,20,0"/>
@@ -145,7 +146,7 @@
                                                 <Border Background="#0B3A60" BorderBrush="#365874" BorderThickness="1" CornerRadius="8" Padding="12,7"><TextBlock x:Name="HomeTotalInstitutionSummaryText" Text="0 kurum hareketi" Foreground="#D8E4EF" FontSize="13.5" FontWeight="SemiBold"/></Border>
                                             </StackPanel>
                                         </StackPanel>
-                                        <Border Grid.Column="1" Background="#0A2A49" BorderBrush="#335A79" BorderThickness="1" CornerRadius="11" Padding="17,13" VerticalAlignment="Center">
+                                        <Border Grid.Column="1" Background="#0A2A49" BorderBrush="#335A79" BorderThickness="1" CornerRadius="10" Padding="17,13" VerticalAlignment="Center">
                                             <StackPanel>
                                                 <TextBlock x:Name="HomeMonthLabelText" Text="BU AY" Foreground="#91ABC0" FontSize="12.5" FontWeight="Bold" HorizontalAlignment="Right"/>
                                                 <TextBlock x:Name="HomeMonthPaymentText" Text="0,00 TL" Foreground="#FFB41F" FontSize="29" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,4,0,0"/>
@@ -161,9 +162,9 @@
                                 </Border>
 
                                 <UniformGrid Columns="3" Margin="0,0,0,12">
-                                    <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="11" Padding="18,12" Margin="0,0,6,0"><StackPanel><TextBlock Text="KALICI VERİ" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeSchoolCountText" Text="27 KURUM" Foreground="#031C38" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock Text="Kurum kayıtları" Foreground="#526277" FontSize="13.5"/></StackPanel></Border>
-                                    <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="11" Padding="18,12" Margin="3,0"><StackPanel><TextBlock Text="AKTİF FATURA" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeInvoiceCountText" Text="0 KAYIT" Foreground="#031C38" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock x:Name="HomeInvoiceTypeText" Text="Tür: Henüz belirlenmedi" Foreground="#526277" FontSize="13.5"/></StackPanel></Border>
-                                    <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="11" Padding="18,12" Margin="6,0,0,0"><StackPanel><TextBlock Text="HYS KAPANIŞI" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeArchiveCountText" Text="0 / 0 KAPALI" Foreground="#031C38" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock Text="Kapalı / toplam arşiv" Foreground="#526277" FontSize="13.5"/></StackPanel></Border>
+                                    <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="18,12" Margin="0,0,6,0"><StackPanel><TextBlock Text="KALICI VERİ" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeSchoolCountText" Text="27 KURUM" Foreground="#031C38" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock Text="Kurum kayıtları" Foreground="#526277" FontSize="13.5"/></StackPanel></Border>
+                                    <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="18,12" Margin="3,0"><StackPanel><TextBlock Text="AKTİF FATURA" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeInvoiceCountText" Text="0 KAYIT" Foreground="#031C38" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock x:Name="HomeInvoiceTypeText" Text="Tür: Henüz belirlenmedi" Foreground="#526277" FontSize="13.5"/></StackPanel></Border>
+                                    <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="18,12" Margin="6,0,0,0"><StackPanel><TextBlock Text="HYS KAPANIŞI" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeArchiveCountText" Text="0 / 0 KAPALI" Foreground="#031C38" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock Text="Kapalı / toplam arşiv" Foreground="#526277" FontSize="13.5"/></StackPanel></Border>
                                 </UniformGrid>
 
                                 <Grid Margin="0,0,0,8">
@@ -179,7 +180,7 @@
 
                                 <Grid Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions>
-                                    <Border Style="{StaticResource PremiumPanel}" Padding="16" MinHeight="240">
+                                    <Border Style="{StaticResource PremiumPanel}" CornerRadius="10" Padding="16" MinHeight="240">
                                         <StackPanel>
                                             <TextBlock Text="FATURA TÜRÜ DAĞILIMI" Style="{StaticResource PremiumSectionTitle}"/>
                                             <TextBlock Text="HYS ile kapalı arşivler • ödeme tutarına göre" Style="{StaticResource PremiumSectionSubtitle}" Margin="0,3,0,13"/>
@@ -200,7 +201,7 @@
                                         </StackPanel>
                                     </Border>
 
-                                    <Border Grid.Column="2" Style="{StaticResource PremiumPanel}" Padding="16" MinHeight="240">
+                                    <Border Grid.Column="2" Style="{StaticResource PremiumPanel}" CornerRadius="10" Padding="16" MinHeight="240">
                                         <StackPanel>
                                             <TextBlock Text="SON 6 AY ÖDEME EĞİLİMİ" Style="{StaticResource PremiumSectionTitle}"/>
                                             <TextBlock Text="Fatura tarihine göre aylık ödeme toplamı" Style="{StaticResource PremiumSectionSubtitle}" Margin="0,3,0,13"/>
@@ -327,7 +328,7 @@
 
                             <Grid Grid.Row="2">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="1.75*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="11" Padding="10">
+                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="10">
                                     <DataGrid x:Name="SchoolsGrid" Style="{StaticResource ModernDataGrid}" AutoGenerateColumns="False" IsReadOnly="True"
                                               SelectionMode="Single" SelectionUnit="FullRow" SelectionChanged="SchoolsGrid_SelectionChanged">
                                         <DataGrid.Columns>
@@ -546,7 +547,7 @@
                                 </Grid>
                             </Border>
 
-                            <Border Grid.Row="3" Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="11" Padding="10">
+                            <Border Grid.Row="3" Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="10">
                                 <Grid>
                                     <DataGrid x:Name="InvoicesGrid" ItemsSource="{Binding ActiveInvoiceRows}" Style="{StaticResource ModernDataGrid}"
                                               AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionUnit="FullRow"

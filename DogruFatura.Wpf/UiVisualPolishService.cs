@@ -19,8 +19,6 @@ internal static class UiVisualPolishService
         ArgumentNullException.ThrowIfNull(window);
 
         ApplyVersionText(window);
-        SimplifyHeader(window);
-        ImproveHomeLayout(window);
         PolishDatePickers(window);
         NormalizeButtons(window);
         NormalizePanels(window);
@@ -30,66 +28,6 @@ internal static class UiVisualPolishService
     {
         window.HeaderVersionText.Text = AppVersionInfo.DisplayVersion;
         window.AboutProductVersionText.Text = $"DoğruFatura {AppVersionInfo.DisplayVersion}";
-    }
-
-    private static void SimplifyHeader(MainWindow window)
-    {
-        var versionLabel = UiTree.Descendants<TextBlock>(window).FirstOrDefault(x => x.Text == "SÜRÜM");
-        if (versionLabel is not null)
-        {
-            var versionBorder = UiTree.FindAncestor<Border>(versionLabel);
-            if (versionBorder is not null) versionBorder.Visibility = Visibility.Collapsed;
-
-            var headerStack = versionBorder is null ? null : UiTree.FindAncestor<StackPanel>(versionBorder);
-            var headerGrid = headerStack is null ? null : UiTree.FindAncestor<Grid>(headerStack);
-            if (headerGrid is not null && headerGrid.ColumnDefinitions.Count > 1)
-                headerGrid.ColumnDefinitions[1].Width = new GridLength(220);
-        }
-
-        var stampLabel = UiTree.Descendants<TextBlock>(window).FirstOrDefault(x => x.Text == "DAMGA ORANI");
-        if (stampLabel is null) return;
-        var stampBorder = UiTree.FindAncestor<Border>(stampLabel);
-        if (stampBorder is null) return;
-
-        stampBorder.Visibility = Visibility.Collapsed;
-        var grid = UiTree.FindAncestor<Grid>(stampBorder);
-        if (grid is not null && grid.ColumnDefinitions.Count > 3)
-        {
-            grid.ColumnDefinitions[2].Width = new GridLength(0);
-            grid.ColumnDefinitions[3].Width = new GridLength(0);
-        }
-    }
-
-    private static void ImproveHomeLayout(MainWindow window)
-    {
-        foreach (var stageText in UiTree.Descendants<TextBlock>(window).Where(x => x.Text == "AŞAMA 10 • R2").ToArray())
-        {
-            if (UiTree.FindAncestor<Border>(stageText) is { } badge)
-                badge.Visibility = Visibility.Collapsed;
-        }
-
-        if (window.FindName("HomeView") is not FrameworkElement home) return;
-
-        var smartSummaryLabel = UiTree.Descendants<TextBlock>(home).FirstOrDefault(x => x.Text == "AKILLI ÖZET");
-        if (smartSummaryLabel is not null && UiTree.FindAncestor<Border>(smartSummaryLabel) is { } smartSummaryCard)
-        {
-            smartSummaryCard.Effect = null;
-            smartSummaryCard.SnapsToDevicePixels = true;
-            smartSummaryCard.UseLayoutRounding = true;
-        }
-
-        foreach (var border in UiTree.Descendants<Border>(home))
-        {
-            if (border.CornerRadius.TopLeft is >= 9 and <= 12)
-                border.CornerRadius = new CornerRadius(10);
-        }
-
-        foreach (var text in UiTree.Descendants<TextBlock>(home))
-        {
-            TextOptions.SetTextFormattingMode(text, TextFormattingMode.Display);
-            TextOptions.SetTextRenderingMode(text, TextRenderingMode.ClearType);
-            text.SnapsToDevicePixels = true;
-        }
     }
 
     private static void PolishDatePickers(MainWindow window)
