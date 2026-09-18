@@ -38,13 +38,13 @@ Tamamlananlar:
   - `MainWindow` DI commit'i: `2c106f6d367574016b3fdc3b8457173628aae1b0`
   - Composition root commit'i: `33804ae702114e8c0b5b2cf8802826f07853b010`
   - 18.09.2026 kullanıcı yerel doğrulaması: **0 warning / 0 error**.
-- Rapor/arşiv DI genişletme 2 kodlandı:
+- Rapor/arşiv DI genişletme 2 tamamlandı ve yerel build ile doğrulandı:
   - `ArchivePdfSynchronizationService` artık `MainWindow` içinde oluşturulmuyor.
   - Aynı `DocumentArchiveStorageService` ve `FinalReportPdfService.Save` bağımlılıklarıyla `App.Application_Startup` composition root'unda kurulup constructor ile veriliyor.
   - Composition root commit'i: `d1439a413f924c4a4196f8111b93eb35ec296afe`
   - `MainWindow` DI commit'i: `7c3999cd07bc66daed5334d73e4a955b94906acb`
   - Kullanıcı davranışı, PDF üretimi, arşiv yolu ve hash doğrulama mantığında işlevsel değişiklik amaçlanmadı.
-  - Bu ikinci paket için yeni yerel build doğrulaması bekleniyor.
+  - 18.09.2026 kullanıcı yerel doğrulaması: .NET SDK `10.0.400`, **0 warning / 0 error**, `[3/3] DogruFatura baslatiliyor...`.
 
 Kalan ana işler:
 
@@ -110,25 +110,34 @@ Kullanıcının yerel `DERLE_CALISTIR.bat` doğrulamasına göre:
 
 Not: Türkçe regresyon testleri repoya eklendi ancak `DERLE_CALISTIR.bat` test yürütme sonucu değildir; test paketi ayrıca çalıştırılarak doğrulanmalıdır.
 
-## Şu an kodlanan ve yerel doğrulaması bekleyen paket
+## Şu an doğrulama bekleyen adım
 
-### Aşama 2 — Rapor/Arşiv DI genişletme 2
+### Tam xUnit test paketi
 
-- `ArchivePdfSynchronizationService` doğrudan `MainWindow` içinde oluşturulmak yerine constructor bağımlılığı oldu.
-- Servis `App.Application_Startup` içinde, mevcut `DocumentArchiveStorageService` ve `FinalReportPdfService.Save` bağımlılıklarıyla kuruluyor.
-- İncelenen `MainWindow` partial dosyalarında başka doğrudan `new ...Service()` / `new ...Store()` oluşturma noktası bulunmadı.
-- Bu paket yalnız oluşturma sorumluluğunu composition root'a taşır; arşiv/PDF senkronizasyon davranışını değiştirmez.
+DI genişletme 2 yerel build açısından doğrulandı. Sıradaki kapı tam test paketidir.
 
-Beklenen yerel sonuç: **0 warning / 0 error** ve uygulamanın normal başlaması.
+Kolay yerel doğrulama için yeni kök araç eklendi:
+
+- `TESTLERI_CALISTIR.bat`
+- Commit: `1756826fce79f86c156b19216814fd3eab1fd9f9`
+- Visual Studio gerektirmez.
+- `DogruFatura.Tests` bağımlılıklarını restore eder ve tüm xUnit testlerini çalıştırır.
+
+Özellikle doğrulanması gereken gruplar:
+
+- Türkçe `I/İ/ı/i` regresyon testleri.
+- PDF regression testleri.
+- Data safety / restore / recovery testleri.
+- Backup manifest ve PDF hash bütünlük testleri.
+- Single-instance testleri.
 
 ## Sıradaki iş
 
 1. GitHub Desktop → **Fetch origin → Pull origin**.
-2. `hardening/1.1-data-safety` branch'inde `DERLE_CALISTIR.bat` çalıştır.
-3. Beklenen: **0 warning / 0 error** ve uygulamanın başlaması.
-4. Başarılıysa DI genişletme 2 doğrulanmış olarak kapatılacak.
-5. Test projesi ayrıca çalıştırılacak; özellikle Türkçe karşılaştırma, PDF regression ve data-safety/restore testleri doğrulanacak.
-6. Sonraki küçük Aşama 2 paketi, kalan application-service sınırları veya `MainWindow` sorumluluk ayrıştırması içinden seçilecek.
+2. `hardening/1.1-data-safety` branch'inde `TESTLERI_CALISTIR.bat` çalıştır.
+3. Beklenen: tüm testlerin başarılı olması.
+4. Testler yeşilse sonuç bu MD'ye işlenecek.
+5. Ardından bir sonraki küçük Aşama 2 paketi seçilecek; ilk aday `MainWindow` sorumluluklarını davranış koruyarak application-service sınırlarına ayırmaktır.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
