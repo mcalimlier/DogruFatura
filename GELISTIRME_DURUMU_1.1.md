@@ -31,14 +31,20 @@ Tamamlananlar:
 - `InvoiceValidationService` ve Kontrol Merkezi ortak kural motoru.
 - Dependency Injection ilk dilimi.
 - `HistoricalPdfImportService` içinde `TaxCalculationService` bağımlılığı örnek servise taşındı.
-- Rapor/arşiv DI genişletme paketinin ilk dilimi kodlandı:
+- Rapor/arşiv DI genişletme 1 tamamlandı ve yerel build ile doğrulandı:
   - `MainWindow` artık `FinalReportDocumentService`, `FinalReportPdfService`, `DocumentArchiveStorageService` ve `HistoricalPdfImportService` nesnelerini kendi içinde oluşturmuyor.
   - Bu servisler `App` composition root'unda oluşturulup `MainWindow` constructor'ına veriliyor.
   - `HistoricalPdfImportService`, uygulamanın aynı `TaxCalculationService` örneğini kullanıyor.
-  - `ArchivePdfSynchronizationService` mevcut davranışını koruyarak enjekte edilen storage/PDF servisleriyle kuruluyor.
   - `MainWindow` DI commit'i: `2c106f6d367574016b3fdc3b8457173628aae1b0`
   - Composition root commit'i: `33804ae702114e8c0b5b2cf8802826f07853b010`
-  - Bu paket için yerel build doğrulaması henüz bekliyor.
+  - 18.09.2026 kullanıcı yerel doğrulaması: **0 warning / 0 error**.
+- Rapor/arşiv DI genişletme 2 kodlandı:
+  - `ArchivePdfSynchronizationService` artık `MainWindow` içinde oluşturulmuyor.
+  - Aynı `DocumentArchiveStorageService` ve `FinalReportPdfService.Save` bağımlılıklarıyla `App.Application_Startup` composition root'unda kurulup constructor ile veriliyor.
+  - Composition root commit'i: `d1439a413f924c4a4196f8111b93eb35ec296afe`
+  - `MainWindow` DI commit'i: `7c3999cd07bc66daed5334d73e4a955b94906acb`
+  - Kullanıcı davranışı, PDF üretimi, arşiv yolu ve hash doğrulama mantığında işlevsel değişiklik amaçlanmadı.
+  - Bu ikinci paket için yeni yerel build doğrulaması bekleniyor.
 
 Kalan ana işler:
 
@@ -106,17 +112,12 @@ Not: Türkçe regresyon testleri repoya eklendi ancak `DERLE_CALISTIR.bat` test 
 
 ## Şu an kodlanan ve yerel doğrulaması bekleyen paket
 
-### Aşama 2 — Rapor/Arşiv DI genişletme 1
+### Aşama 2 — Rapor/Arşiv DI genişletme 2
 
-- `MainWindow` doğrudan servis oluşturma sorumluluğundan arındırıldı.
-- Enjekte edilen servisler:
-  - `FinalReportDocumentService`
-  - `FinalReportPdfService`
-  - `DocumentArchiveStorageService`
-  - `HistoricalPdfImportService`
-- Composition root `App.Application_Startup` içinde açık biçimde kuruluyor.
-- `TaxCalculationService` tek örnek olarak hem `MainWindow` hem `HistoricalPdfImportService` tarafından paylaşılıyor.
-- PDF oluşturma, arşiv klasörü ve historical PDF import kullanıcı akışında işlevsel değişiklik amaçlanmadı.
+- `ArchivePdfSynchronizationService` doğrudan `MainWindow` içinde oluşturulmak yerine constructor bağımlılığı oldu.
+- Servis `App.Application_Startup` içinde, mevcut `DocumentArchiveStorageService` ve `FinalReportPdfService.Save` bağımlılıklarıyla kuruluyor.
+- İncelenen `MainWindow` partial dosyalarında başka doğrudan `new ...Service()` / `new ...Store()` oluşturma noktası bulunmadı.
+- Bu paket yalnız oluşturma sorumluluğunu composition root'a taşır; arşiv/PDF senkronizasyon davranışını değiştirmez.
 
 Beklenen yerel sonuç: **0 warning / 0 error** ve uygulamanın normal başlaması.
 
@@ -125,9 +126,9 @@ Beklenen yerel sonuç: **0 warning / 0 error** ve uygulamanın normal başlamas�
 1. GitHub Desktop → **Fetch origin → Pull origin**.
 2. `hardening/1.1-data-safety` branch'inde `DERLE_CALISTIR.bat` çalıştır.
 3. Beklenen: **0 warning / 0 error** ve uygulamanın başlaması.
-4. Başarılıysa DI genişletme 1 doğrulanmış olarak kapatılacak.
-5. Ardından `ArchivePdfSynchronizationService` dahil kalan servis oluşturma sorumlulukları taranacak ve bir sonraki küçük DI paketi seçilecek.
-6. Türkçe regresyon testleri ayrıca çalıştırılacak.
+4. Başarılıysa DI genişletme 2 doğrulanmış olarak kapatılacak.
+5. Test projesi ayrıca çalıştırılacak; özellikle Türkçe karşılaştırma, PDF regression ve data-safety/restore testleri doğrulanacak.
+6. Sonraki küçük Aşama 2 paketi, kalan application-service sınırları veya `MainWindow` sorumluluk ayrıştırması içinden seçilecek.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
