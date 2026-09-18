@@ -14,15 +14,18 @@ internal static class UiVisualPolishService
     private static readonly Brush White = Brushes.White;
     private static readonly Brush WarningDark = BrushFrom("#8A5A12");
 
-    public static void Apply(MainWindow window)
+    public static void Apply(MainWindow window, ApplicationSafetyService safetyService)
     {
+        ArgumentNullException.ThrowIfNull(window);
+        ArgumentNullException.ThrowIfNull(safetyService);
+
         ApplyVersionAndCopy(window);
         SimplifyHeader(window);
         ImproveHomeLayout(window);
         PolishDatePickers(window);
         NormalizeButtons(window);
         NormalizePanels(window);
-        AddDiagnosticButton(window);
+        AddDiagnosticButton(window, safetyService);
     }
 
     private static void ApplyVersionAndCopy(MainWindow window)
@@ -177,7 +180,7 @@ internal static class UiVisualPolishService
         }
     }
 
-    private static void AddDiagnosticButton(MainWindow window)
+    private static void AddDiagnosticButton(MainWindow window, ApplicationSafetyService safetyService)
     {
         if (UiTree.Descendants<Button>(window).Any(button => Equals(button.Content, "TANILAMA PAKETİ")))
             return;
@@ -207,8 +210,7 @@ internal static class UiVisualPolishService
         {
             try
             {
-                var safety = new ApplicationSafetyService();
-                var path = DiagnosticPackageService.Create(safety);
+                var path = DiagnosticPackageService.Create(safetyService);
                 UiNotificationService.Show(
                     window,
                     "Tanılama paketi oluşturuldu:\n" + path,
