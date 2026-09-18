@@ -136,52 +136,67 @@ Kullanıcının yerel `DERLE_CALISTIR.bat` doğrulamasına göre:
 
 **Aşama 4 warning temizliği yerel build açısından tamamlandı.**
 
-Not: Türkçe regresyon testleri repoya eklendi ancak `DERLE_CALISTIR.bat` test yürütme sonucu değildir; test paketi ayrıca çalıştırılarak doğrulanmalıdır.
+Not: Tam xUnit paketi 18.09.2026 tarihinde ayrıca çalıştırıldı ve **107/107 test başarılı, 0 başarısız, 0 atlandı** sonucu alındı.
 
-## Şu an doğrulama bekleyen adım
+## Tam xUnit doğrulaması — TAMAMLANDI
 
-### Tam xUnit test paketi — analyzer düzeltmeleri sonrası yeniden çalışma
+18.09.2026 tarihinde analyzer düzeltmelerinden sonra `TESTLERI_CALISTIR.bat` yeniden çalıştırıldı.
 
-18.09.2026 tarihinde `TESTLERI_CALISTIR.bat` ilk kez çalıştırıldı.
+Sonuç:
+- SDK: `.NET 10.0.400`
+- `DogruFatura.Core`: başarılı
+- `DogruFatura.Wpf`: başarılı
+- `DogruFatura.Tests`: başarılı
+- Toplam test: **107**
+- Başarılı: **107**
+- Başarısız: **0**
+- Atlandı: **0**
+- BAT sonucu: **[OK] TUM TESTLER BASARILI**
+- Test özeti süresi: yaklaşık **18,5 sn**; toplam BAT/build süresi yaklaşık **33,9 sn**.
 
-İlk sonuç:
-- Test bağımlılıkları başarıyla restore edildi.
-- Core ve WPF test derlemesi başladı.
-- `DogruFatura.Tests` test assembly'si **testler çalışmadan önce** analyzer aşamasında durdu.
-- Hata: **2 × xUnit2031**
-- Uyarı: **68 × CA1707 + 1 × CA1014 = 69 warning**
-- Bu nedenle bu koşu **gerçek test sonucu değildir**; hiçbir test başarısı iddia edilmez.
+Bu test paketi şunları kapsayan mevcut regresyonları yeşil doğruladı:
+- Türkçe `I/İ/ı/i` karşılaştırmaları.
+- PDF sayfa planı / gerçek PDF regresyonu / historical importer geri okuma.
+- Data safety, restore, recovery ve schema migration.
+- Backup manifest ve PDF SHA-256 bütünlüğü.
+- Single-instance fail-closed.
+- Responsive layout.
+- Diagnostic/recovery.
+- Core vergi/HYS kuralları.
+- Performans testleri.
 
-Düzeltmeler:
-- `Assert.Single(collection.Where(predicate))` kullanımları `Assert.Single(collection, predicate)` biçimine çevrildi.
-- Test assembly'sine açık CLS işareti eklendi.
-- 68 CA1707 uyarısına neden olan test metodu adları, test mantığı değiştirilmeden alt çizgisiz PascalCase biçimine getirildi.
-- Son statik taramada:
-  - alt çizgili public test metodu: **0**
-  - `Assert.Single(...Where(...))`: **0**
-
-Düzeltme commit'leri:
+Önceki analyzer düzeltme commit'leri:
 - `07042842af89e0fdd26ca0cbd38f04e8ac270c9d`
 - `af418ec9d2bb0d21128139deefcfd3abd22b6cce`
 - `d31913ab73f0b42e6021805e75264e06298fc851`
 
-Sıradaki işlem:
+### Kod temizliği / sadeleştirme paketi 3 — KODLANDI, YEREL BUILD BEKLİYOR
+
+Tam test paketi yeşil olduktan sonra kalan düşük riskli using temizliği tamamlandı:
+
+- `MainWindow.ArchiveDocuments.cs` geniş using bloğu gerçek bağımlılıklara indirildi.
+- Ana `MainWindow.xaml.cs` geniş using bloğu gerçek bağımlılıklara indirildi.
+- Constructor, event akışı, store yükleme, PDF/arşiv işlemleri ve veri güvenliği davranışına dokunulmadı.
+
+Commitler:
+- `03fc8f7d51db0016ad863ce9102759e8ecdb7dc8`
+- `d4730f603e1e633e4beef2f9c27d58a157d4f6c0`
+
+Sıradaki doğrulama:
 1. GitHub Desktop → **Fetch origin → Pull origin**.
-2. `TESTLERI_CALISTIR.bat` yeniden çalıştır.
-3. Beklenen: test projesinin analyzer/compile aşamasını geçmesi ve xUnit testlerinin gerçekten çalışması.
-4. Başarılıysa toplam test sayısı / geçen / kalan sonuçları bu MD'ye işlenecek.
-5. Testler yeşil olmadan yeni davranışsal veya mimari sadeleştirme paketine geçilmeyecek.
+2. `DERLE_CALISTIR.bat`.
+3. Beklenen: **0 warning / 0 error** ve normal başlatma.
+4. Bu paket salt using temizliği olduğu için önce build kapısı yeterli; build temizse sonraki sadeleştirme paketine geçilebilir.
 
 ## Sonraki sadeleştirme adayları
 
-Tam xUnit paketi yeşil olduktan sonra düşük riskten yükseğe:
+Düşük riskten yükseğe:
 
-1. `MainWindow.ArchiveDocuments.cs` ve varsa kalan partial dosyalardaki gereksiz using bloklarını temizlemek.
-2. `UiVisualPolishService.ApplyVersionAndCopy` içindeki statik runtime metin yamalarını doğrudan XAML'e taşımak; yalnız dinamik sürüm bilgisini kodda bırakmak.
-3. Runtime'da oluşturulan `TANILAMA PAKETİ` düğmesini XAML'e taşımak.
-4. `ConfigureFixedWindowForCurrentScreen` ile `ResponsiveLayoutService.Apply/FitToCurrentWorkArea` arasındaki çift boyutlandırma sorumluluğunu görsel regresyonla tekleştirmek.
-5. Üretim kullanımı olmadığı doğrulanırsa test-odaklı yardımcıları test katmanına taşımak.
-6. Daha sonra `MainWindow` constructor bootstrap/store yükleme sorumluluklarını küçük application-service'e ayırmak.
+1. `UiVisualPolishService.ApplyVersionAndCopy` içindeki statik runtime metin yamalarını doğrudan XAML'e taşımak; yalnız dinamik sürüm bilgisini kodda bırakmak.
+2. Runtime'da oluşturulan `TANILAMA PAKETİ` düğmesini XAML'e taşımak.
+3. `ConfigureFixedWindowForCurrentScreen` ile `ResponsiveLayoutService.Apply/FitToCurrentWorkArea` arasındaki çift boyutlandırma sorumluluğunu görsel regresyonla tekleştirmek.
+4. Üretim kullanımı olmadığı doğrulanırsa test-odaklı yardımcıları test katmanına taşımak.
+5. Daha sonra `MainWindow` constructor bootstrap/store yükleme sorumluluklarını küçük application-service'e ayırmak.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
