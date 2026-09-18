@@ -9,7 +9,7 @@ namespace DogruFatura.Tests;
 public sealed class BackupManifestIntegrityTests
 {
     [Fact]
-    public void ManualBackup_WritesV2ManifestWithLengthAndSha256ForEveryStoredFile()
+    public void ManualBackupWritesV2ManifestWithLengthAndSha256ForEveryStoredFile()
     {
         using var temp = new TempFolders();
         var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");

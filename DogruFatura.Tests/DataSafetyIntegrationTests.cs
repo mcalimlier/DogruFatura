@@ -9,7 +9,7 @@ namespace DogruFatura.Tests;
 public sealed class DataSafetyIntegrationTests
 {
     [Fact]
-    public void ManualBackup_Restore_RoundTripRestoresDataAndPdf()
+    public void ManualBackupRestoreRoundTripRestoresDataAndPdf()
     {
         using var temp = new TempFolders();
         var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");
@@ -37,7 +37,7 @@ public sealed class DataSafetyIntegrationTests
     }
 
     [Fact]
-    public void Restore_TamperedV2Backup_IsRejectedWithoutChangingLiveData()
+    public void RestoreTamperedV2BackupIsRejectedWithoutChangingLiveData()
     {
         using var temp = new TempFolders();
         var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");
@@ -67,7 +67,7 @@ public sealed class DataSafetyIntegrationTests
     }
 
     [Fact]
-    public void Restore_SemanticallyInvalidBackup_IsRejectedWithoutChangingLiveData()
+    public void RestoreSemanticallyInvalidBackupIsRejectedWithoutChangingLiveData()
     {
         using var temp = new TempFolders();
         var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");
@@ -91,7 +91,7 @@ public sealed class DataSafetyIntegrationTests
     }
 
     [Fact]
-    public void Restore_BackupMissingRequiredDataFile_IsRejectedWithoutChangingLiveData()
+    public void RestoreBackupMissingRequiredDataFileIsRejectedWithoutChangingLiveData()
     {
         using var temp = new TempFolders();
         var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");
@@ -120,7 +120,7 @@ public sealed class DataSafetyIntegrationTests
     }
 
     [Fact]
-    public void CheckIntegrity_CurrentSchemaCompleteData_IsHealthy()
+    public void CheckIntegrityCurrentSchemaCompleteDataIsHealthy()
     {
         using var temp = new TempFolders();
         var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");
@@ -135,7 +135,7 @@ public sealed class DataSafetyIntegrationTests
     }
 
     [Fact]
-    public void CheckIntegrity_ChangedClosedArchivePdf_IsReportedBySha256()
+    public void CheckIntegrityChangedClosedArchivePdfIsReportedBySha256()
     {
         using var temp = new TempFolders();
         var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");
@@ -173,7 +173,7 @@ public sealed class DataSafetyIntegrationTests
     }
 
     [Fact]
-    public void CheckIntegrity_SemanticallyInvalidData_IsReported()
+    public void CheckIntegritySemanticallyInvalidDataIsReported()
     {
         using var temp = new TempFolders();
         var service = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.1.0-test");
@@ -189,7 +189,7 @@ public sealed class DataSafetyIntegrationTests
     }
 
     [Fact]
-    public void LegacyDocumentsStorage_MigratesToDesktopWithoutDataLoss()
+    public void LegacyDocumentsStorageMigratesToDesktopWithoutDataLoss()
     {
         using var temp = new TempFolders();
         var legacyRoot = Path.Combine(temp.Documents, "DoğruFatura");
@@ -210,7 +210,7 @@ public sealed class DataSafetyIntegrationTests
     }
 
     [Fact]
-    public void LegacyMigration_DoesNotOverwriteExistingDesktopFile()
+    public void LegacyMigrationDoesNotOverwriteExistingDesktopFile()
     {
         using var temp = new TempFolders();
         var legacyData = Path.Combine(temp.Documents, "DoğruFatura", "Veri");

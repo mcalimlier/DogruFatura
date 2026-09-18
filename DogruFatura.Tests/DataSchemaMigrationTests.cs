@@ -8,7 +8,7 @@ namespace DogruFatura.Tests;
 public sealed class DataSchemaMigrationTests
 {
     [Fact]
-    public void LegacyInvoiceFile_IsLoaded_Upgraded_AndOriginalFormatIsBackedUp()
+    public void LegacyInvoiceFileIsLoadedUpgradedAndOriginalFormatIsBackedUp()
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "AktifFaturalar.json");
@@ -27,7 +27,7 @@ public sealed class DataSchemaMigrationTests
     }
 
     [Fact]
-    public void LegacySchoolFile_IsLoaded_AndUpgradedToCurrentSchema()
+    public void LegacySchoolFileIsLoadedAndUpgradedToCurrentSchema()
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "Okullar.json");
@@ -46,7 +46,7 @@ public sealed class DataSchemaMigrationTests
     }
 
     [Fact]
-    public void LegacyAuthorityProfile_IsLoaded_AndUpgradedToCurrentSchema()
+    public void LegacyAuthorityProfileIsLoadedAndUpgradedToCurrentSchema()
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "YetkiliProfili.json");
@@ -62,7 +62,7 @@ public sealed class DataSchemaMigrationTests
     }
 
     [Fact]
-    public void LegacyArchiveFile_IsLoaded_AndUpgradedToCurrentSchema()
+    public void LegacyArchiveFileIsLoadedAndUpgradedToCurrentSchema()
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "IslemArsivi.json");
@@ -85,7 +85,7 @@ public sealed class DataSchemaMigrationTests
     }
 
     [Fact]
-    public void CurrentSchema_SaveAndReload_RoundTripsWithoutMigrationWarning()
+    public void CurrentSchemaSaveAndReloadRoundTripsWithoutMigrationWarning()
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "AktifFaturalar.json");
@@ -103,7 +103,7 @@ public sealed class DataSchemaMigrationTests
     }
 
     [Fact]
-    public void FutureSchema_IsRejected_WithoutOverwritingSource()
+    public void FutureSchemaIsRejectedWithoutOverwritingSource()
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "AktifFaturalar.json");
@@ -124,7 +124,7 @@ public sealed class DataSchemaMigrationTests
     }
 
     [Fact]
-    public void WrongDataType_IsRejected_WithoutOverwritingSource()
+    public void WrongDataTypeIsRejectedWithoutOverwritingSource()
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "AktifFaturalar.json");

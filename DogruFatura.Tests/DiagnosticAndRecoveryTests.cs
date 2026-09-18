@@ -7,7 +7,7 @@ namespace DogruFatura.Tests;
 public sealed class DiagnosticAndRecoveryTests
 {
     [Fact]
-    public void DiagnosticPackage_ContainsSummaryAndLogsButNeverUserJsonOrPdf()
+    public void DiagnosticPackageContainsSummaryAndLogsButNeverUserJsonOrPdf()
     {
         using var temp = new TempEnvironment();
         var safety = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.0.0-rc1-test");
@@ -31,7 +31,7 @@ public sealed class DiagnosticAndRecoveryTests
     }
 
     [Fact]
-    public void StaleSessionMarker_TriggersRecoveryBackupAndCleanExitRemovesMarker()
+    public void StaleSessionMarkerTriggersRecoveryBackupAndCleanExitRemovesMarker()
     {
         using var temp = new TempEnvironment();
         var markerRoot = Path.Combine(temp.Root, "Session");

@@ -7,7 +7,7 @@ namespace DogruFatura.Tests;
 public sealed class ArchiveStorageIntegrationTests
 {
     [Fact]
-    public void CloseAndReopenArchive_MovesPdfBothDirections()
+    public void CloseAndReopenArchiveMovesPdfBothDirections()
     {
         using var temp = new TempFolder();
         var storage = new DocumentArchiveStorageService(temp.Path);
@@ -44,7 +44,7 @@ public sealed class ArchiveStorageIntegrationTests
     }
 
     [Fact]
-    public void ImportedHistoricalPdf_IsCopiedAndOriginalRemains()
+    public void ImportedHistoricalPdfIsCopiedAndOriginalRemains()
     {
         using var temp = new TempFolder();
         var storage = new DocumentArchiveStorageService(temp.Path);
@@ -61,7 +61,7 @@ public sealed class ArchiveStorageIntegrationTests
     }
 
     [Fact]
-    public void ExistingArchivePdf_IsNeverOverwritten()
+    public void ExistingArchivePdfIsNeverOverwritten()
     {
         using var temp = new TempFolder();
         var storage = new DocumentArchiveStorageService(temp.Path);
