@@ -188,7 +188,7 @@ Sıradaki doğrulama:
 3. Beklenen: **0 warning / 0 error** ve normal başlatma.
 4. 18.09.2026 kullanıcı yerel doğrulaması: .NET SDK `10.0.400`, **0 warning / 0 error**, `[3/3] DogruFatura baslatiliyor...`.
 
-### Kod temizliği / sadeleştirme paketi 4 — KODLANDI, YEREL BUILD BEKLİYOR
+### Kod temizliği / sadeleştirme paketi 4 — TAMAMLANDI, KULLANICI TARAFINDAN TEMİZ OLARAK DOĞRULANDI
 
 Runtime sabit UI metin yamaları XAML'e taşındı:
 
@@ -208,7 +208,7 @@ Doğrulama durumu:
 - Kod statik olarak kontrol edildi.
 - Eski sabit metin yamaları XAML'de: **0**
 - Eski `ApplyVersionAndCopy` / `text.Text switch`: **0**
-- Bu commit henüz kullanıcı yerel build'i ile doğrulanmadı.
+- Kullanıcı 18.09.2026 tarihinde paket 4'ü **temiz** olarak bildirdi; yeni hata/uyarı veya görsel sorun bildirilmedi.
 
 Sıradaki işlem:
 1. GitHub Desktop → **Fetch origin → Pull origin**.
@@ -216,15 +216,44 @@ Sıradaki işlem:
 3. Beklenen: **0 warning / 0 error** ve normal başlatma.
 4. Uygulamada özellikle üst bar, Ana Ekran, Raporlar/Çıktılar, İşlem Arşivi ve Hakkında ekranındaki metinlerin doğru göründüğü hızlıca kontrol edilmeli.
 
+### Kod temizliği / sadeleştirme paketi 5 — KODLANDI, YEREL BUILD BEKLİYOR
+
+Runtime'da oluşturulan `TANILAMA PAKETİ` düğmesi XAML'e taşındı:
+
+- Veri Güvenliği `WrapPanel` içine statik XAML düğmesi eklendi.
+- Düğmenin içerik, boyut, renk, tooltip ve AutomationProperties bilgileri XAML'e taşındı.
+- `CreateDiagnosticPackage_Click` handler'ı `MainWindow.Safety.cs` içine eklendi.
+- Handler mevcut injected `_safetyService` örneğini kullanıyor.
+- `UiVisualPolishService.AddDiagnosticButton` tamamen kaldırıldı.
+- `UiVisualPolishService.Apply` artık `ApplicationSafetyService` parametresi almıyor.
+- `UiPolishService.Apply` artık `ApplicationSafetyService` parametresi almıyor.
+- `App.Application_Startup` içindeki çağrı `UiPolishService.Apply(main)` olarak sadeleştirildi.
+- Tanılama paketi üretim mantığı ve kullanıcıya gösterilen bildirim/hata davranışı korunuyor.
+
+Commit:
+- `574bec3568c25702b02832dbbf520c1f047011ce`
+
+Statik kontrol:
+- XAML'de `TANILAMA PAKETİ`: mevcut.
+- `CreateDiagnosticPackage_Click`: mevcut.
+- `DiagnosticPackageService.Create(_safetyService)`: mevcut.
+- Eski `AddDiagnosticButton`: **0**.
+- Eski safety parametreli UI polish çağrıları: **0**.
+
+Sıradaki işlem:
+1. GitHub Desktop → **Fetch origin → Pull origin**.
+2. `DERLE_CALISTIR.bat`.
+3. Beklenen: **0 warning / 0 error** ve normal başlatma.
+4. Hakkında / Veri Güvenliği ekranında `TANILAMA PAKETİ` düğmesinin görünür olduğunu ve tıklanınca tanılama ZIP'i oluşturduğunu hızlıca doğrula.
+
 ## Sonraki sadeleştirme adayları
 
 Düşük riskten yükseğe:
 
-1. `UiVisualPolishService.ApplyVersionAndCopy` içindeki statik runtime metin yamalarını doğrudan XAML'e taşımak; yalnız dinamik sürüm bilgisini kodda bırakmak.
-2. Runtime'da oluşturulan `TANILAMA PAKETİ` düğmesini XAML'e taşımak.
-3. `ConfigureFixedWindowForCurrentScreen` ile `ResponsiveLayoutService.Apply/FitToCurrentWorkArea` arasındaki çift boyutlandırma sorumluluğunu görsel regresyonla tekleştirmek.
-4. Üretim kullanımı olmadığı doğrulanırsa test-odaklı yardımcıları test katmanına taşımak.
-5. Daha sonra `MainWindow` constructor bootstrap/store yükleme sorumluluklarını küçük application-service'e ayırmak.
+1. `SimplifyHeader` / `ImproveHomeLayout` içindeki kalan runtime visual-tree taramalarını kontrollü azaltmak.
+2. `ConfigureFixedWindowForCurrentScreen` ile `ResponsiveLayoutService.Apply/FitToCurrentWorkArea` arasındaki çift boyutlandırma sorumluluğunu görsel regresyonla tekleştirmek.
+3. Üretim kullanımı olmadığı doğrulanırsa test-odaklı yardımcıları test katmanına taşımak.
+4. Daha sonra `MainWindow` constructor bootstrap/store yükleme sorumluluklarını küçük application-service'e ayırmak.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
