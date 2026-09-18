@@ -54,7 +54,7 @@ public sealed class DomainIdentityTests
 
         var school = Assert.Single(result.Schools);
         Assert.NotEqual(Guid.Empty, school.SchoolId);
-        Assert.Contains(""SchoolId"", File.ReadAllText(path, Encoding.UTF8), StringComparison.Ordinal);
+        Assert.Contains("\"SchoolId\"", File.ReadAllText(path, Encoding.UTF8), StringComparison.Ordinal);
     }
 
     [Fact]
