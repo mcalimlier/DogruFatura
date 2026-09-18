@@ -16,6 +16,12 @@ public sealed record ArchivedInvoiceList(
     string PdfSha256 = "")
 {
     [JsonIgnore]
+    public InvoiceKind Kind => DomainValueText.ParseInvoiceKind(InvoiceType);
+
+    [JsonIgnore]
+    public ArchiveState State => IsClosed ? ArchiveState.Closed : ArchiveState.Open;
+
+    [JsonIgnore]
     public int InvoiceCount => Invoices.Count;
 
     [JsonIgnore]
