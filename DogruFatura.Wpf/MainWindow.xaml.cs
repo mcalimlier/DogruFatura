@@ -81,7 +81,8 @@ public partial class MainWindow : Window
         FinalReportDocumentService finalReportDocumentService,
         FinalReportPdfService finalReportPdfService,
         DocumentArchiveStorageService documentArchiveStorageService,
-        HistoricalPdfImportService historicalPdfImportService)
+        HistoricalPdfImportService historicalPdfImportService,
+        ArchivePdfSynchronizationService archivePdfSynchronizationService)
     {
         ArgumentNullException.ThrowIfNull(taxService);
         ArgumentNullException.ThrowIfNull(schoolDataStore);
@@ -93,6 +94,7 @@ public partial class MainWindow : Window
         ArgumentNullException.ThrowIfNull(finalReportPdfService);
         ArgumentNullException.ThrowIfNull(documentArchiveStorageService);
         ArgumentNullException.ThrowIfNull(historicalPdfImportService);
+        ArgumentNullException.ThrowIfNull(archivePdfSynchronizationService);
 
         _taxService = taxService;
         _schoolDataStore = schoolDataStore;
@@ -104,12 +106,10 @@ public partial class MainWindow : Window
         _finalReportPdfService = finalReportPdfService;
         _documentArchiveStorageService = documentArchiveStorageService;
         _historicalPdfImportService = historicalPdfImportService;
+        _archivePdfSynchronizationService = archivePdfSynchronizationService;
 
         _startupSafetyResult = _safetyService.InitializeAndCheck();
         _lastSafetyBackupPath = _startupSafetyResult.BackupPath;
-        _archivePdfSynchronizationService = new ArchivePdfSynchronizationService(
-            _documentArchiveStorageService,
-            _finalReportPdfService.Save);
 
         SchoolLoadResult schoolLoadResult;
         try
