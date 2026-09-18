@@ -140,35 +140,48 @@ Not: Türkçe regresyon testleri repoya eklendi ancak `DERLE_CALISTIR.bat` test 
 
 ## Şu an doğrulama bekleyen adım
 
-### Tam xUnit test paketi
+### Tam xUnit test paketi — analyzer düzeltmeleri sonrası yeniden çalışma
 
-Kod temizliği / sadeleştirme paketi 2 de yerel build açısından doğrulandı.
+18.09.2026 tarihinde `TESTLERI_CALISTIR.bat` ilk kez çalıştırıldı.
 
-Sıradaki tek doğrulama kapısı:
+İlk sonuç:
+- Test bağımlılıkları başarıyla restore edildi.
+- Core ve WPF test derlemesi başladı.
+- `DogruFatura.Tests` test assembly'si **testler çalışmadan önce** analyzer aşamasında durdu.
+- Hata: **2 × xUnit2031**
+- Uyarı: **68 × CA1707 + 1 × CA1014 = 69 warning**
+- Bu nedenle bu koşu **gerçek test sonucu değildir**; hiçbir test başarısı iddia edilmez.
 
+Düzeltmeler:
+- `Assert.Single(collection.Where(predicate))` kullanımları `Assert.Single(collection, predicate)` biçimine çevrildi.
+- Test assembly'sine açık CLS işareti eklendi.
+- 68 CA1707 uyarısına neden olan test metodu adları, test mantığı değiştirilmeden alt çizgisiz PascalCase biçimine getirildi.
+- Son statik taramada:
+  - alt çizgili public test metodu: **0**
+  - `Assert.Single(...Where(...))`: **0**
+
+Düzeltme commit'leri:
+- `07042842af89e0fdd26ca0cbd38f04e8ac270c9d`
+- `af418ec9d2bb0d21128139deefcfd3abd22b6cce`
+- `d31913ab73f0b42e6021805e75264e06298fc851`
+
+Sıradaki işlem:
 1. GitHub Desktop → **Fetch origin → Pull origin**.
-2. `TESTLERI_CALISTIR.bat`.
-3. Beklenen: tüm xUnit testlerinin başarılı olması.
-
-Tam test paketi yeşil olmadan yeni mimari veya davranışsal sadeleştirme paketine geçilmeyecek.
-
-Testlerde özellikle:
-
-- Türkçe `I/İ/ı/i` regresyonu.
-- PDF regression.
-- Data safety / restore / recovery.
-- Backup manifest / PDF SHA-256 bütünlüğü.
-- Single-instance.
-- Responsive layout / UI yardımcı testleri.
+2. `TESTLERI_CALISTIR.bat` yeniden çalıştır.
+3. Beklenen: test projesinin analyzer/compile aşamasını geçmesi ve xUnit testlerinin gerçekten çalışması.
+4. Başarılıysa toplam test sayısı / geçen / kalan sonuçları bu MD'ye işlenecek.
+5. Testler yeşil olmadan yeni davranışsal veya mimari sadeleştirme paketine geçilmeyecek.
 
 ## Sonraki sadeleştirme adayları
 
-1. `MainWindow.ArchiveDocuments.cs` ve varsa kalan partial dosyalardaki geniş using bloklarını aynı yöntemle temizlemek.
-2. `UiVisualPolishService.ApplyVersionAndCopy` içindeki statik runtime metin yamalarını doğrudan XAML'e taşımak; yalnız dinamik sürüm metnini kodda bırakmak.
-3. `AddDiagnosticButton` ile runtime'da oluşturulan tanılama düğmesini XAML'e taşımak.
-4. `ConfigureFixedWindowForCurrentScreen` ve `ResponsiveLayoutService.Apply/FitToCurrentWorkArea` arasındaki çift pencere boyutlandırma sorumluluğunu görsel regresyon kontrolüyle tekleştirmek.
-5. Üretimde kullanılmadığı doğrulanırsa `ColorContrastService` gibi test-odaklı yardımcıları test katmanına taşımak.
-6. `MainWindow` constructor'ındaki store yükleme/fallback/bootstrap işlerini küçük bir application-service'e ayırmak; bu daha büyük adımdır ve tam test paketi yeşil olmadan başlanmamalıdır.
+Tam xUnit paketi yeşil olduktan sonra düşük riskten yükseğe:
+
+1. `MainWindow.ArchiveDocuments.cs` ve varsa kalan partial dosyalardaki gereksiz using bloklarını temizlemek.
+2. `UiVisualPolishService.ApplyVersionAndCopy` içindeki statik runtime metin yamalarını doğrudan XAML'e taşımak; yalnız dinamik sürüm bilgisini kodda bırakmak.
+3. Runtime'da oluşturulan `TANILAMA PAKETİ` düğmesini XAML'e taşımak.
+4. `ConfigureFixedWindowForCurrentScreen` ile `ResponsiveLayoutService.Apply/FitToCurrentWorkArea` arasındaki çift boyutlandırma sorumluluğunu görsel regresyonla tekleştirmek.
+5. Üretim kullanımı olmadığı doğrulanırsa test-odaklı yardımcıları test katmanına taşımak.
+6. Daha sonra `MainWindow` constructor bootstrap/store yükleme sorumluluklarını küçük application-service'e ayırmak.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
@@ -196,17 +209,18 @@ Visual Studio kullanılmıyor.
 2. Branch: `hardening/1.1-data-safety`
 3. **Pull origin**
 4. **Repository > Show in Explorer**
-5. `DERLE_CALISTIR.bat`
-6. `TESTLERI_CALISTIR.bat`
+5. Build için `DERLE_CALISTIR.bat`
+6. Test için `TESTLERI_CALISTIR.bat`
 
-`DERLE_CALISTIR.bat` `--no-incremental` tam analiz yapar; testleri çalıştırmaz.
+`DERLE_CALISTIR.bat` test sonucu değildir.
 
 ## Kritik notlar
 
-- Warning'ler suppress edilerek gizlenmeyecek; mümkün olduğunda nedeni düzeltilecek.
+- Warning'ler körlemesine suppress edilerek gizlenmeyecek.
+- Test projesindeki CA1707 uyarıları suppress edilmedi; test metodu adları düzeltildi.
 - Türkçe kurum adı karşılaştırmalarında dil davranışı korunacak.
 - Kullanıcı verisini otomatik silen veya geri döndürülemez dönüştüren değişiklik yapılmayacak.
 - Restore/hash/manifest güvenliği zayıflatılmayacak.
 - Yerel build ve GitHub Actions CI statüleri ayrı tutulacak.
 - CI runner sorunu çözülmeden “CI doğrulandı” denmeyecek.
-- Her tamamlanan veya doğrulama bekleyen paketten sonra bu MD güncellenecek.
+- Her paket ve doğrulama sonucu bu MD'ye işlenecek.
