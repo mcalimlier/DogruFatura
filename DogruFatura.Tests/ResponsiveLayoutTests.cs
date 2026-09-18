@@ -41,4 +41,28 @@ public sealed class ResponsiveLayoutTests
         Assert.True(profile.RequiresDownscale);
         Assert.InRange(profile.ContentScale, 0.70, 0.73);
     }
+    [Fact]
+    public void StartupLayoutUsesPreferredNinetyPercentOnLargeScreen()
+    {
+        var profile = ResponsiveLayoutService.CalculateStartup(1920, 1080);
+
+        Assert.Equal(1305, profile.WindowWidthDip);
+        Assert.Equal(850, profile.WindowHeightDip);
+        Assert.Equal(0.90, profile.ContentScale, 6);
+    }
+
+    [Theory]
+    [InlineData(1366, 768)]
+    [InlineData(1920, 1080)]
+    [InlineData(2560, 1440)]
+    public void StartupLayoutStaysInsideLegacyWorkAreaLimits(int width, int height)
+    {
+        var profile = ResponsiveLayoutService.CalculateStartup(width, height);
+
+        Assert.True(profile.WindowWidthDip <= width * 0.94 + 0.5);
+        Assert.True(profile.WindowHeightDip <= height * 0.92 + 0.5);
+        Assert.True(profile.WindowWidthDip <= ResponsiveLayoutService.DesignWidth * 0.90 + 0.5);
+        Assert.True(profile.WindowHeightDip <= ResponsiveLayoutService.DesignHeight * 0.90 + 0.5);
+    }
+
 }
