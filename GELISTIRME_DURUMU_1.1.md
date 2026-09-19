@@ -2553,6 +2553,140 @@ Test sayısı:
 4. `TESTLERI_CALISTIR.bat`
    - beklenen: **123/123**
 
+## 19.09.2026 — Aşama 5.2 İstatistik görsel sadeleştirme revizyonu — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Kullanıcı LiveCharts2 donut görünümünü başarılı buldu ve iki sadeleştirme istedi:
+1. grafiğin bulunduğu beyaz alanların köşeleri yuvarlatılsın,
+2. İstatistik sayfasının en altındaki detay döküm tablosu kaldırılıp kazanılan alan donut ve sağ dağılım listesine verilsin.
+
+### XAML sadeleştirmesi
+
+`StatisticsView`:
+- 5 ana satırdan **4 ana satıra** indirildi.
+- kaldırılan alt detay tablo satırı artık yok.
+- yeni yapı:
+  1. başlık
+  2. özet kartları
+  3. filtreler/toplam satırı
+  4. büyük donut + dağılım detay alanı
+
+Kaldırıldı:
+- `StatisticsGrid`
+- `StatisticsEmptyState`
+- kurum/yıl/tür kırılımını gösteren alt `DataGrid`.
+
+Core istatistik servisi ve `ArchiveStatisticsResult.Rows` korunuyor:
+- donut dağılımı hâlâ aynı hesap sonucunu kullanıyor,
+- mali hesaplama mantığı değişmedi,
+- ileride CSV/Excel veya başka detay görünümü eklemek için kırılım verisi kaybolmadı.
+
+### Yuvarlatılmış kartlar
+
+Ana görsel alan:
+- açık arka plan,
+- `CornerRadius=20`,
+- `ClipToBounds=True`.
+
+Sol donut kartı:
+- beyaz,
+- `CornerRadius=20`,
+- ayrı border,
+- clip açık.
+
+Sağ dağılım detay kartı:
+- beyaz,
+- `CornerRadius=20`,
+- ayrı border,
+- clip açık.
+
+Donut merkez paneli:
+- `176x176`,
+- `CornerRadius=88`,
+- tam daire beyaz merkez.
+
+### Kazanılan alanın kullanımı
+
+Donut:
+- önce: **300x300**
+- yeni: **420x420**
+
+Sol kolon:
+- **520 px**
+
+LiveCharts halka:
+- `InnerRadius: 92 -> 128`
+- `HoverPushout: 8 -> 10`
+- `DataLabelsSize: 16 -> 18`
+
+Merkez toplam:
+- `20 px -> 23 px`
+
+Sağ dağılım listesi:
+- yeni başlık: `DAĞILIM DETAYI`
+- açıklama eklendi.
+- kart padding artırıldı.
+- legend satır aralığı `12 -> 16`.
+- renk işareti `13x13 -> 15x15`.
+- tür adı `15 -> 16 px`.
+- fatura adedi `13 -> 13.5 px`.
+- tutar `15 -> 16 px`.
+- yüzde `13 -> 13.5 px`.
+
+### Code-behind temizliği
+
+Alt tablo kaldırıldığı için:
+- `StatisticsGrid.ItemsSource = ...`
+- `StatisticsEmptyState.Visibility = ...`
+
+kodları kaldırıldı.
+
+Artık İstatistik ekranının görsel çıktısı:
+- özet kartları,
+- filtreler,
+- toplam satırı,
+- büyük donut,
+- sağ dağılım detayı
+
+üzerinden çalışıyor.
+
+### Doğrulama sırasında yakalanan XAML kapanış problemi
+
+Alt tablo blok olarak çıkarılırken `StatisticsView` kapanış `</Grid>` etiketi de ilk committe düşmüştü.
+Build kapısından önce statik kontrolle yakalandı ve ayrı fix commitinde düzeltildi.
+
+Son statik kontrol:
+- StatisticsView 4 satır: geçti
+- alt DataGrid tamamen kaldırıldı: geçti
+- code-behind tablo referansı yok: geçti
+- donut 420x420: geçti
+- üç ana beyaz/açık panel yuvarlatılmış: geçti
+- StatisticsView About görünümünden önce düzgün kapanıyor: geçti
+
+### Commitler
+
+- tablo kaldırma + büyük yuvarlatılmış yerleşim: `6569af4b67c12040ce61269fc01fa9cc0897622c`
+- StatisticsView kapanış fix: `f82d69a3e7d0b364a4bc79981ee00323e921bf6e`
+- donut/legend ölçü büyütme + tablo code-behind temizliği: `0614920f2d071f6a55dfe966c0277a43cb434f6a`
+
+Test sayısı:
+- yeni test eklenmedi.
+- hedef **123/123**.
+
+### Sıradaki doğrulama
+
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+3. İSTATİSTİK görsel smoke:
+   - beyaz kart köşeleri yuvarlak görünmeli,
+   - alt detay tablosu artık görünmemeli,
+   - donut belirgin biçimde daha büyük olmalı,
+   - sağ dağılım listesi daha geniş ve okunaklı olmalı,
+   - merkez toplam ödeme taşmamalı,
+   - filtreler donut + legend + üst toplamları birlikte değiştirmeli.
+4. `TESTLERI_CALISTIR.bat`
+   - beklenen: **123/123**
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
