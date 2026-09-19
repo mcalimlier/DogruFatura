@@ -98,6 +98,7 @@ public partial class MainWindow
             ArchiveInvoiceDetailGrid.ItemsSource = Array.Empty<InvoiceRecord>();
             ArchiveDetailEmptyState.Visibility = Visibility.Visible;
             OpenArchivedListButton.IsEnabled = false;
+            DeleteArchivedListButton.IsEnabled = false;
             return;
         }
 
@@ -113,22 +114,17 @@ public partial class MainWindow
             : Color.FromRgb(255, 180, 31));
         ArchiveHysNumberBox.Text = archive.HysPaymentOrderDocumentNumber;
         ArchiveHysNumberBox.IsReadOnly = archive.IsClosed;
-        ArchiveClosureButton.Content = archive.HasClosedSnapshot
-            ? "MÜHÜRLÜ"
-            : archive.IsClosed
-                ? "KAPANIŞI GERİ AL"
-                : "HYS İLE KAPAT";
-        ArchiveClosureButton.Background = new SolidColorBrush(archive.HasClosedSnapshot
-            ? Color.FromRgb(49, 83, 113)
-            : archive.IsClosed
-                ? Color.FromRgb(145, 63, 72)
-                : Color.FromRgb(36, 138, 80));
-        ArchiveClosureButton.IsEnabled = !archive.HasClosedSnapshot;
+        ArchiveClosureButton.Content = archive.IsClosed ? "KAPANIŞI GERİ AL" : "HYS İLE KAPAT";
+        ArchiveClosureButton.Background = new SolidColorBrush(archive.IsClosed
+            ? Color.FromRgb(145, 63, 72)
+            : Color.FromRgb(36, 138, 80));
+        ArchiveClosureButton.IsEnabled = true;
         ArchiveInvoiceDetailGrid.ItemsSource = archive.Invoices;
         ArchiveDetailEmptyState.Visibility = Visibility.Collapsed;
         OpenArchivedListButton.IsEnabled = true;
+        DeleteArchivedListButton.IsEnabled = true;
         SetArchiveStatus(archive.HasClosedSnapshot
-            ? "Seçili HYS arşivi mühürlüdür; iş/veri içeriği değiştirilemez. Arşiv çıktısını güvenle görüntüleyebilirsiniz."
+            ? "Seçili HYS arşivinin bütünlük mührü geçerli. Kapanışı geri alırsanız mühür kaldırılır; yeniden kapatınca yeni mühür üretilir."
             : "Seçili listeyi açtığınızda arşiv çıktısı gösterilir; aktif listeniz değişmez.");
     }
 
