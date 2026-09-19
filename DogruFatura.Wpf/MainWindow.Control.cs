@@ -10,14 +10,14 @@ using System.Windows.Media;
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private bool FilterControlIssue(object item)
+{
+    private bool FilterControlIssue(object item)
     {
         if (item is not ControlIssue issue) return false;
 
-        var severity = ControlSeverityFilterBox.SelectedItem as string;
-        if (!string.IsNullOrWhiteSpace(severity)
-            && severity != "Tümü"
-            && !string.Equals(issue.SeverityLabel, severity, StringComparison.Ordinal))
+        var selectedSeverity = DomainValueText.ParseControlIssueSeverity(
+            ControlSeverityFilterBox.SelectedItem as string);
+        if (selectedSeverity.HasValue && issue.Severity != selectedSeverity.Value)
             return false;
 
         var category = ControlCategoryFilterBox.SelectedItem as string;
