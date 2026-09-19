@@ -98,6 +98,7 @@ public partial class MainWindow
             ArchiveInvoiceDetailGrid.ItemsSource = Array.Empty<InvoiceRecord>();
             ArchiveDetailEmptyState.Visibility = Visibility.Visible;
             OpenArchivedListButton.IsEnabled = false;
+            EditArchivedListButton.IsEnabled = false;
             DeleteArchivedListButton.IsEnabled = false;
             return;
         }
@@ -122,6 +123,7 @@ public partial class MainWindow
         ArchiveInvoiceDetailGrid.ItemsSource = archive.Invoices;
         ArchiveDetailEmptyState.Visibility = Visibility.Collapsed;
         OpenArchivedListButton.IsEnabled = true;
+        EditArchivedListButton.IsEnabled = true;
         DeleteArchivedListButton.IsEnabled = true;
         SetArchiveStatus(archive.HasClosedSnapshot
             ? "Seçili HYS arşivinin bütünlük mührü geçerli. Kapanışı geri alırsanız mühür kaldırılır; yeniden kapatınca yeni mühür üretilir."
