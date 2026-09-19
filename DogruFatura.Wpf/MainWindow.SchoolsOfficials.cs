@@ -7,13 +7,14 @@ using System.Windows.Media;
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private bool FilterSchool(object item)
+{
+    private bool FilterSchool(object item)
     {
         if (item is not SchoolRecord school) return false;
 
-        var selectedType = SchoolFilterTypeBox.SelectedItem as string;
-        if (!string.IsNullOrWhiteSpace(selectedType) && selectedType != "Tümü"
-            && school.InstitutionType != selectedType)
+        var selectedKind = DomainValueText.ParseInstitutionKind(
+            SchoolFilterTypeBox.SelectedItem as string);
+        if (selectedKind != InstitutionKind.Unknown && school.Kind != selectedKind)
             return false;
 
         var search = SchoolSearchBox.Text.Trim();
@@ -81,9 +82,10 @@ public partial class MainWindow
         _suppressSchoolEvents = false;
 
         SchoolEditorModeText.Text = "Yeni kayıt";
-        var filteredType = SchoolFilterTypeBox.SelectedItem as string;
-        SchoolTypeEditorBox.SelectedItem = !string.IsNullOrWhiteSpace(filteredType) && filteredType != "Tümü"
-            ? filteredType
+        var filteredKind = DomainValueText.ParseInstitutionKind(
+            SchoolFilterTypeBox.SelectedItem as string);
+        SchoolTypeEditorBox.SelectedItem = filteredKind != InstitutionKind.Unknown
+            ? DomainValueText.ToStorageValue(filteredKind)
             : InstitutionTypes[0];
         SchoolNameEditorBox.Clear();
         SchoolVknEditorBox.Clear();
