@@ -347,7 +347,6 @@ public partial class MainWindow
         ArchiveStatisticsResult result)
     {
         var navy = XColor.FromArgb(3, 28, 56);
-        var gold = XColor.FromArgb(255, 180, 31);
         var muted = XColor.FromArgb(82, 98, 119);
         var green = XColor.FromArgb(36, 138, 80);
 
@@ -465,7 +464,11 @@ public partial class MainWindow
             rowFont,
             new XSolidBrush(muted),
             new XRect(430, 470, 360, 35),
-            XStringFormats.TopLeft);
+            new XStringFormat
+            {
+                Alignment = XStringAlignment.Near,
+                LineAlignment = XLineAlignment.Near
+            });
     }
 
     private static void DrawStatisticsPdfCharts(
@@ -658,10 +661,13 @@ public partial class MainWindow
         return bitmap;
     }
 
+    private static string StatisticsExportTimestamp() =>
+        DateTime.Now.ToString("yyyyMMdd-HHmm", CultureInfo.InvariantCulture);
+
     private static string CsvCell(string value)
     {
         var safe = value ?? string.Empty;
-        if (safe.Length > 0 && "=+-@".Contains(safe[0], StringComparison.Ordinal))
+        if (safe.Length > 0 && safe[0] is '=' or '+' or '-' or '@')
             safe = "'" + safe;
         return """ + safe.Replace(""", """", StringComparison.Ordinal) + """;
     }
