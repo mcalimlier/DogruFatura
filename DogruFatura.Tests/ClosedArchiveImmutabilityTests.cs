@@ -3,10 +3,10 @@ using DogruFatura.Core.Services;
 
 namespace DogruFatura.Tests;
 
-public sealed class ClosedArchiveImmutabilityTests
+public sealed class ClosedArchiveSnapshotTests
 {
     [Fact]
-    public void SealedClosedArchiveCannotBeChangedOrDeleted()
+    public void SealDetectsUnresealedChangesAndAllowsAuthorizedResealOrDelete()
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "IslemArsivi.json");
@@ -19,26 +19,28 @@ public sealed class ClosedArchiveImmutabilityTests
         {
             RealizationOfficerTitle = "Değiştirilmiş Unvan"
         };
-        var resealedChangedArchive = ClosedArchiveSnapshotService.Seal(
-            sealedArchive with { AuthorityProfile = changedProfile });
+        var changedWithoutReseal = sealedArchive with
+        {
+            AuthorityProfile = changedProfile
+        };
 
+        var mismatchError = Assert.Throws<InvalidOperationException>(
+            () => store.Save(new[] { changedWithoutReseal }));
+        Assert.Contains("mühür", mismatchError.Message, StringComparison.CurrentCultureIgnoreCase);
+
+        var resealedChangedArchive = ClosedArchiveSnapshotService.Seal(changedWithoutReseal);
         Assert.NotEqual(
             sealedArchive.ClosedSnapshotSha256,
             resealedChangedArchive.ClosedSnapshotSha256);
 
-        var changeError = Assert.Throws<InvalidOperationException>(
-            () => store.Save(new[] { resealedChangedArchive }));
-        Assert.Contains("değiştirilemez", changeError.Message, StringComparison.CurrentCultureIgnoreCase);
+        store.Save(new[] { resealedChangedArchive });
 
-        var deleteError = Assert.Throws<InvalidOperationException>(
-            () => store.Save(Array.Empty<ArchivedInvoiceList>()));
-        Assert.Contains("silinemez", deleteError.Message, StringComparison.CurrentCultureIgnoreCase);
+        var loadedChanged = Assert.Single(store.LoadOrCreate().Archives);
+        Assert.Equal(resealedChangedArchive.ClosedSnapshotSha256, loadedChanged.ClosedSnapshotSha256);
+        Assert.True(ClosedArchiveSnapshotService.Matches(loadedChanged));
 
-        var loaded = Assert.Single(store.LoadOrCreate().Archives);
-        Assert.Equal(sealedArchive.Id, loaded.Id);
-        Assert.True(loaded.HasClosedSnapshot);
-        Assert.Equal(sealedArchive.ClosedSnapshotSha256, loaded.ClosedSnapshotSha256);
-        Assert.True(ClosedArchiveSnapshotService.Matches(loaded));
+        store.Save(Array.Empty<ArchivedInvoiceList>());
+        Assert.Empty(store.LoadOrCreate().Archives);
     }
 
     private static ArchivedInvoiceList ClosedArchive()
