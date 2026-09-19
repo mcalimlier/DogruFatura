@@ -1,3 +1,4 @@
+using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
 using System.Globalization;
 using System.Windows;
@@ -6,7 +7,8 @@ using System.Windows.Media;
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private void RefreshDashboard()
+{
+    private void RefreshDashboard()
     {
         if (HomeMonthLabelText is null) return;
 
