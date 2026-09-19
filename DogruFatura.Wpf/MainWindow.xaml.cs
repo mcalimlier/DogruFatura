@@ -13,8 +13,23 @@ namespace DogruFatura.Wpf;
 
 public partial class MainWindow : Window
 {
+    private static readonly string[] InvoiceTypes =
+    {
+        DomainValueText.ToStorageValue(InvoiceKind.Electricity),
+        DomainValueText.ToStorageValue(InvoiceKind.Telephone),
+        DomainValueText.ToStorageValue(InvoiceKind.Internet),
+        DomainValueText.ToStorageValue(InvoiceKind.Water)
+    };
+
     private static readonly string[] InstitutionTypes =
-        { "İlkokul", "Ortaokul", "Anasınıfı/Anaokulu", "Kurum" };
+    {
+        DomainValueText.ToStorageValue(InstitutionKind.PrimarySchool),
+        DomainValueText.ToStorageValue(InstitutionKind.MiddleSchool),
+        DomainValueText.ToStorageValue(InstitutionKind.Preschool),
+        DomainValueText.ToStorageValue(InstitutionKind.Institution)
+    };
+
+    private static readonly string[] AllInvoiceTypeFilterPrefix = { "Tümü" };
     private static readonly string[] AllInstitutionTypeFilterPrefix = { "Tümü" };
 
     public ObservableCollection<SchoolRecord> AllSchools { get; }
@@ -160,7 +175,7 @@ public partial class MainWindow : Window
     {
         _suppressFormEvents = true;
         InstitutionTypeBox.ItemsSource = InstitutionTypes;
-        InvoiceTypeBox.ItemsSource = new[] { "Elektrik", "Telefon", "İnternet", "Su" };
+        InvoiceTypeBox.ItemsSource = InvoiceTypes;
         InstitutionBox.ItemsSource = Array.Empty<SchoolRecord>();
         _suppressFormEvents = false;
     }
@@ -185,7 +200,7 @@ public partial class MainWindow : Window
     private ICollectionView InitializeArchiveView()
     {
         _suppressArchiveEvents = true;
-        ArchiveTypeFilterBox.ItemsSource = new[] { "Tümü", "Elektrik", "Telefon", "İnternet", "Su" };
+        ArchiveTypeFilterBox.ItemsSource = AllInvoiceTypeFilterPrefix.Concat(InvoiceTypes).ToArray();
         ArchiveTypeFilterBox.SelectedIndex = 0;
         ArchiveStatusFilterBox.ItemsSource = new[] { "Tümü", "Açık", "Kapalı" };
         ArchiveStatusFilterBox.SelectedIndex = 0;
