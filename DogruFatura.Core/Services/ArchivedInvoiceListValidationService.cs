@@ -23,12 +23,18 @@ public static class ArchivedInvoiceListValidationService
         if (!string.IsNullOrWhiteSpace(archive.PdfSha256)
             && !FileIntegrityService.IsValidSha256(archive.PdfSha256))
             return Invalid("Arşiv PDF SHA-256 bilgisi geçersiz.");
+        if (!string.IsNullOrWhiteSpace(archive.ClosedSnapshotSha256)
+            && !FileIntegrityService.IsValidSha256(archive.ClosedSnapshotSha256))
+            return Invalid("Kapalı arşiv mühür SHA-256 bilgisi geçersiz.");
 
         var reportValidation = FinalReportValidationService.Validate(archive.Invoices);
         if (!reportValidation.IsValid || reportValidation.InvoiceType is null)
             return Invalid(reportValidation.Message);
         if (!string.Equals(reportValidation.InvoiceType, archive.InvoiceType, StringComparison.Ordinal))
             return Invalid("Arşiv liste türü, fatura kayıtlarıyla uyuşmuyor.");
+
+        if (archive.HasClosedSnapshot && !archive.IsClosed)
+            return Invalid("Mühürlü HYS arşivi kapalı durumda kalmalıdır.");
 
         if (archive.IsClosed)
         {
@@ -45,6 +51,9 @@ public static class ArchivedInvoiceListValidationService
             if (!archive.ClosedAt.HasValue)
                 return Invalid("Kapalı arşiv kaydının kapanış tarihi eksik.");
         }
+
+        if (archive.HasClosedSnapshot && !ClosedArchiveSnapshotService.Matches(archive))
+            return Invalid("Kapalı arşiv mühür SHA-256 özeti kayıt içeriğiyle uyuşmuyor.");
 
         return new ArchivedInvoiceListValidationResult(true, "Arşiv kaydı geçerli.");
     }
