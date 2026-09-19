@@ -894,6 +894,54 @@ Doğrulama:
 5. `TESTLERI_CALISTIR.bat`
 6. Beklenen: **0 warning / 0 error + 117/117**
 
+## 19.09.2026 — Üst şerit görsel sadeleştirme revizyonu — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Kullanıcının ekran görüntüsündeki işaretlere göre üst şerit yeniden dengelendi.
+
+Sorunlar:
+- `HESAPLAMA` kartı gereğinden büyük görünüyordu.
+- `AKTİF KURUM` alanı yıldız (`*`) kolonu doldurduğu için içerikten çok daha uzun boş bir kutu oluşturuyordu.
+- Küçük sürüm etiketi `TEMİZLE` düğmesinin üstüne yerleştirildiği için düğmeyle tek bileşen gibi ve sıkışık görünüyordu.
+
+Uygulanan düzen:
+- Logo alanı korunuyor.
+- `HESAPLAMA` durumu 148 px genişliğinde daha kompakt bir karta indirildi.
+- `AKTİF KURUM` alanı 280 px sabit kolona alındı; artık kalan bütün boşluğu işgal etmiyor.
+- Orta alan gerçek boşluk/spacer olarak bırakıldı; üst şerit daha ferah.
+- `FORM HAZIRLIK` göstergesi korunuyor.
+- `TEMİZLE` yeniden bağımsız düğme oldu.
+- `HeaderVersionText` ayrı 58 px kolona taşındı; pencere kontrollerinden hemen önce küçük `v...` etiketi olarak gösteriliyor.
+- Sürüm tooltip'i artık etkileşim alabiliyor; tam informational version korunuyor.
+- Minimize / maximize / close kontrolleri aynı işlev ve isimlerle korunuyor.
+
+Davranış koruması:
+- `EngineStatusDot`, `EngineStatusText`
+- `ActiveInstitutionText`
+- `HeaderReadinessArc`, `HeaderReadinessText`
+- `HeaderVersionText`
+- `MaximizeRestoreButton`, `MaximizeRestoreIcon`
+
+XAML içinde bu isimlerin her biri **tek kez** bulunuyor; event handler veya canlı güncelleme mantığı değiştirilmedi.
+
+Commit:
+- `f1b7db244f31106060cb6e84c3d2d28318bb94e8`
+
+Bu revizyon Paket 11 + header version doğrulama kapısına dahildir.
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+3. Ana Ekran üst şerit görsel kontrolü:
+   - HESAPLAMA kompakt,
+   - AKTİF KURUM gereksiz uzamıyor,
+   - orta boşluk temiz,
+   - FORM HAZIRLIK hizalı,
+   - TEMİZLE bağımsız,
+   - sürüm etiketi pencere düğmelerinden önce küçük ve okunaklı.
+4. İşlem Arşivi → Tümü / Açık / Kapalı filtresi
+5. `TESTLERI_CALISTIR.bat`
+6. Beklenen: **0 warning / 0 error + 117/117**
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
