@@ -118,6 +118,7 @@ public partial class MainWindow
         }
 
         var invoiceSelection = InstitutionBox.SelectedItem as SchoolRecord;
+        var wasNewSchool = _editedSchool is null;
         var editingInvoiceSelection = _editedSchool is not null && ReferenceEquals(invoiceSelection, _editedSchool);
 
         if (_editedSchool is null)
@@ -151,6 +152,12 @@ public partial class MainWindow
                 return;
             }
         }
+
+        AppendAudit(
+            wasNewSchool ? AuditTrailEventType.SchoolCreated : AuditTrailEventType.SchoolUpdated,
+            AuditTrailEntityType.School,
+            candidate.SchoolId.ToString("D"),
+            $"Kind={candidate.Kind}");
 
         RefreshSchoolView();
         if (_schoolView.Contains(candidate))
@@ -209,6 +216,12 @@ public partial class MainWindow
             RefreshSchoolView();
             return;
         }
+
+        AppendAudit(
+            AuditTrailEventType.SchoolDeleted,
+            AuditTrailEntityType.School,
+            schoolToDelete.SchoolId.ToString("D"),
+            $"Kind={schoolToDelete.Kind}");
 
         RefreshSchoolView();
         StartNewSchool();
@@ -290,6 +303,10 @@ public partial class MainWindow
         try
         {
             _authorityProfileDataStore.Save(profile);
+            AppendAudit(
+                AuditTrailEventType.AuthorityProfileUpdated,
+                AuditTrailEntityType.AuthorityProfile,
+                "authority-profile");
             _authorityProfile = profile;
             LoadAuthorityProfileToForm(profile);
             InvalidateFinalReportPreview();
@@ -317,6 +334,10 @@ public partial class MainWindow
         try
         {
             _authorityProfileDataStore.Save(defaultProfile);
+            AppendAudit(
+                AuditTrailEventType.AuthorityProfileDefaultsRestored,
+                AuditTrailEntityType.AuthorityProfile,
+                "authority-profile");
             _authorityProfile = defaultProfile;
             LoadAuthorityProfileToForm(defaultProfile);
             InvalidateFinalReportPreview();
