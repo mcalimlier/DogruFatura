@@ -7,7 +7,8 @@ using System.Windows.Media;
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private void ArchiveClosure_Click(object sender, RoutedEventArgs e)
+{
+    private void ArchiveClosure_Click(object sender, RoutedEventArgs e)
     {
         if (ArchiveGrid.SelectedItem is not ArchivedInvoiceList archive)
         {
@@ -193,6 +194,20 @@ public partial class MainWindow
             return false;
         }
 
+        var transactionId = Guid.NewGuid();
+        if (!TryAppendArchiveTransaction(
+                transactionId,
+                TransactionJournalState.Started,
+                archive,
+                out var journalStartError))
+        {
+            SetArchiveStatus(
+                "Aktif liste arşivlenemedi: işlem journal başlatılamadı. Veri dosyalarında değişiklik yapılmadı. "
+                + journalStartError,
+                true);
+            return false;
+        }
+
         ArchivedLists.Insert(0, archive);
         try
         {
@@ -201,10 +216,50 @@ public partial class MainWindow
         catch (Exception ex)
         {
             ArchivedLists.Remove(archive);
+            AppendArchiveTransactionBestEffort(
+                transactionId,
+                TransactionJournalState.RolledBack,
+                archive);
             RefreshArchiveView();
             SetArchiveStatus("İşlem arşivine kaydedilemedi: " + ex.Message, true);
             MessageBox.Show(this, "Aktif liste işlem arşivine kaydedilemedi:\n\n" + ex.Message,
                 "DoğruFatura - İşlem Arşivi", MessageBoxButton.OK, MessageBoxImage.Error);
+            return false;
+        }
+
+        if (!TryAppendArchiveTransaction(
+                transactionId,
+                TransactionJournalState.ArchivePersisted,
+                archive,
+                out var journalArchiveError))
+        {
+            ArchivedLists.Remove(archive);
+            var rollbackSucceeded = true;
+            try
+            {
+                _archiveDataStore.Save(ArchivedLists);
+            }
+            catch
+            {
+                ArchivedLists.Insert(0, archive);
+                rollbackSucceeded = false;
+            }
+
+            AppendArchiveTransactionBestEffort(
+                transactionId,
+                rollbackSucceeded
+                    ? TransactionJournalState.RolledBack
+                    : TransactionJournalState.RecoveryRequired,
+                archive);
+
+            RefreshArchiveView();
+            SetArchiveStatus(
+                rollbackSucceeded
+                    ? "İşlem journal güncellenemedi; arşiv yazımı güvenle geri alındı. " + journalArchiveError
+                    : "İşlem journal güncellenemedi ve arşiv rollback tamamlanamadı. "
+                      + "Yeni işlem yapmadan önce güvenlik yedeği alın ve veri bütünlüğünü kontrol edin. "
+                      + journalArchiveError,
+                true);
             return false;
         }
 
@@ -216,6 +271,7 @@ public partial class MainWindow
         {
             ArchivedLists.Remove(archive);
             var rollbackMessage = string.Empty;
+            var rollbackSucceeded = true;
             try
             {
                 _archiveDataStore.Save(ArchivedLists);
@@ -223,8 +279,16 @@ public partial class MainWindow
             catch
             {
                 ArchivedLists.Insert(0, archive);
+                rollbackSucceeded = false;
                 rollbackMessage = " Arşiv kopyası güvenlik amacıyla korunmuştur.";
             }
+
+            AppendArchiveTransactionBestEffort(
+                transactionId,
+                rollbackSucceeded
+                    ? TransactionJournalState.RolledBack
+                    : TransactionJournalState.RecoveryRequired,
+                archive);
 
             RefreshArchiveView();
             SetArchiveStatus("Aktif liste temizlenemedi; işlem tamamlanmadı." + rollbackMessage, true);
@@ -233,6 +297,20 @@ public partial class MainWindow
                 "DoğruFatura - İşlem Arşivi", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
         }
+
+        var journalWarning = false;
+        if (!TryAppendArchiveTransaction(
+                transactionId,
+                TransactionJournalState.ActiveListCleared,
+                archive,
+                out _))
+            journalWarning = true;
+        if (!TryAppendArchiveTransaction(
+                transactionId,
+                TransactionJournalState.Completed,
+                archive,
+                out _))
+            journalWarning = true;
 
         AppendAudit(
             AuditTrailEventType.ArchiveCreated,
@@ -247,7 +325,15 @@ public partial class MainWindow
         var synchronization = SynchronizeArchivePdfs(false);
         var synchronizedArchive = ArchivedLists.FirstOrDefault(candidate => candidate.Id == archive.Id);
         RefreshArchiveView(archive.Id);
-        if (synchronizedArchive is null || string.IsNullOrWhiteSpace(synchronizedArchive.PdfFileName))
+
+        if (journalWarning)
+        {
+            SetArchiveStatus(
+                $"{archive.ArchiveNumber} arşiv işlemi veri dosyalarında tamamlandı; ancak işlem journal kapanışı tam yazılamadı. "
+                + "Sonraki açılışta kontrol uyarısı görülebilir. Yeni işlemden önce güvenlik yedeği alın.",
+                true);
+        }
+        else if (synchronizedArchive is null || string.IsNullOrWhiteSpace(synchronizedArchive.PdfFileName))
         {
             SetArchiveStatus(
                 $"{archive.ArchiveNumber} açık arşiv olarak kaydedildi ancak PDF eşitlenemedi. EŞİTLE düğmesiyle yeniden deneyebilirsiniz.",
@@ -266,6 +352,7 @@ public partial class MainWindow
                 false,
                 true);
         }
+
         return true;
     }
 
