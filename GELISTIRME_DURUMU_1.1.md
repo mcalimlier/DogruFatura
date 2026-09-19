@@ -3168,6 +3168,121 @@ Commit:
    - `TESTLERI_CALISTIR.bat`
    - hedef **124/124**
 
+## 19.09.2026 — Aşama 5.3 ikinci build BAŞARISIZ — 10 error + 14 warning düzeltildi
+
+Kullanıcının ikinci yerel build sonucu:
+- restore: başarılı
+- Core: başarılı
+- WPF: **10 error + 14 warning**
+- build başarısız.
+
+### 10 derleme hatası — NumberParser görünmüyor
+
+Dosya:
+- `DogruFatura.Wpf/MainWindow.StatisticsExports.cs`
+
+Hatalar:
+- 10 x CS0103
+- `NumberParser` adı geçerli bağlamda yok.
+
+Neden:
+- `MainWindow.Statistics.cs` içinde `using DogruFatura.Core.Services;` vardı.
+- yeni export partial dosyasında bu using eksikti.
+- `NumberParser.Money(...)` bu nedenle çözümlenemiyordu.
+
+Düzeltme:
+- `using DogruFatura.Core.Services;` eklendi.
+
+### 14 analyzer warning düzeltmesi
+
+#### CA1305 — 10 adet CSV AppendLine
+
+Önce:
+- interpolated `StringBuilder.AppendLine($"...")`
+
+Yeni:
+- sabit label `Append(...)`
+- sayılar için açık `CultureInfo.InvariantCulture`
+- tarih için açık `tr-TR`
+
+Amaç:
+- CSV değerlerinin makine kültürüne göre değişmemesi,
+- analyzer warning üretmemesi.
+
+#### CA1822 — PreviousStatisticsFilter
+
+- instance veri kullanmıyordu.
+- `private static` yapıldı.
+
+#### CA1822 — StatisticsDistribution
+
+- instance veri kullanmıyordu.
+- `private static` yapıldı.
+
+#### CA1826 — AvailableYears.FirstOrDefault
+
+Önce:
+- indexlenebilir `IReadOnlyList<int>` üzerinde LINQ `FirstOrDefault()`.
+
+Yeni:
+- `availableYears.Count > 0 ? availableYears[0] : 0`
+
+#### CA1859 — CaptureStatisticsElementBitmap
+
+Önce dönüş tipi:
+- `BitmapSource`
+
+Gerçek oluşturulan tip:
+- `RenderTargetBitmap`
+
+Yeni dönüş tipi:
+- `RenderTargetBitmap`
+
+### Framework uyumluluğu önceki fix ile korunuyor
+
+WPF:
+- `net8.0-windows10.0.19041`
+
+Tests:
+- `net8.0-windows10.0.19041`
+
+Core:
+- `net8.0`
+
+### Commitler
+
+- Statistics analyzer cleanup: `ce20e77213f646678bda51887788a83d1322d6f8`
+- StatisticsExports compile + analyzer cleanup: `32ddb4b6debb8ebf22c11e7eb912f7ccbba4642c`
+
+### Statik doğrulama
+
+Geçti:
+- NumberParser namespace import mevcut
+- 10 NumberParser.Money çağrısı namespace ile çözümlenebilir
+- interpolated AppendLine kalmadı
+- CSV sayıları explicit invariant culture
+- PreviousStatisticsFilter static
+- latest year FirstOrDefault kaldırıldı
+- StatisticsDistribution static
+- RenderTargetBitmap concrete return
+- WPF/Tests TFM 19041
+- CsvCell quote syntax doğru
+- test hedefi **124/124**
+
+### Sıradaki zorunlu kapı
+
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+3. Beklenen:
+   - restore warning: **0**
+   - Core warning/error: **0 / 0**
+   - WPF warning/error: **0 / 0**
+4. Build yeşil olursa:
+   - istatistik UI smoke
+   - PDF / Yazdır / CSV / Excel / PNG çıktı smoke
+   - `TESTLERI_CALISTIR.bat`
+   - hedef **124/124**
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
