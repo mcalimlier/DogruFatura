@@ -1,5 +1,6 @@
 using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -22,7 +23,7 @@ public partial class MainWindow
         {
             ReplaceStatisticsItems(
                 StatisticsYearFilterBox,
-                options.AvailableYears.Select(year => year.ToString()),
+                options.AvailableYears.Select(year => year.ToString(CultureInfo.InvariantCulture)),
                 currentYear);
             ReplaceStatisticsItems(
                 StatisticsInstitutionFilterBox,
@@ -44,14 +45,14 @@ public partial class MainWindow
     private void ApplyStatisticsFilters()
     {
         var yearText = StatisticsYearFilterBox.SelectedItem as string;
-        int? year = int.TryParse(yearText, out var parsedYear) ? parsedYear : null;
+        int? year = int.TryParse(yearText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedYear) ? parsedYear : null;
 
         var institution = StatisticsInstitutionFilterBox.SelectedItem as string;
-        if (string.Equals(institution, "Tümü", StringComparison.CurrentCultureIgnoreCase))
+        if (string.Equals(institution, "Tümü", StringComparison.OrdinalIgnoreCase))
             institution = string.Empty;
 
         var invoiceType = StatisticsTypeFilterBox.SelectedItem as string;
-        if (string.Equals(invoiceType, "Tümü", StringComparison.CurrentCultureIgnoreCase))
+        if (string.Equals(invoiceType, "Tümü", StringComparison.OrdinalIgnoreCase))
             invoiceType = string.Empty;
 
         var result = ArchiveStatisticsService.Build(
@@ -92,7 +93,7 @@ public partial class MainWindow
             .FirstOrDefault(item => string.Equals(
                 item,
                 preferredSelection,
-                StringComparison.CurrentCultureIgnoreCase));
+                StringComparison.OrdinalIgnoreCase));
 
         comboBox.SelectedItem = selected ?? "Tümü";
     }
