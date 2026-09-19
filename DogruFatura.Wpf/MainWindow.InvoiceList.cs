@@ -189,6 +189,17 @@ public partial class MainWindow
             true);
     }
 
+    private void ArchiveActiveListFromList_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryArchiveActiveList(true))
+            return;
+
+        SetInvoiceListStatus(
+            "Aktif fatura listesi işlem arşivine kaydedildi ve aktif liste kapatıldı.",
+            false,
+            true);
+    }
+
     private void SetInvoiceListStatus(string message, bool isError, bool isSuccess = false)
     {
         InvoiceListStatusText.Text = message;
