@@ -3,6 +3,7 @@ using DogruFatura.Core.Services;
 using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 
@@ -49,11 +50,13 @@ public sealed class HistoricalPdfImportService
     public HistoricalPdfImportPreview Read(
         string sourcePath,
         IReadOnlyList<SchoolRecord> schools,
-        AuthorityProfile fallbackAuthorityProfile)
+        AuthorityProfile fallbackAuthorityProfile,
+        CancellationToken cancellationToken = default)
     {
         var fileName = Path.GetFileName(sourcePath);
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (!string.Equals(Path.GetExtension(sourcePath), ".pdf", StringComparison.OrdinalIgnoreCase))
                 return Invalid(sourcePath, fileName, "Yalnız PDF dosyaları arşive eklenebilir.");
             if (!TryExtractHysNumberFromFileName(
@@ -63,12 +66,17 @@ public sealed class HistoricalPdfImportService
                 return Invalid(sourcePath, fileName, "Dosya adında geçerli bir HYS kodu bulunamadı. " + hysError);
 
             using var document = PdfDocument.Open(sourcePath);
+            cancellationToken.ThrowIfCancellationRequested();
             if (document.NumberOfPages == 0)
                 return Invalid(sourcePath, fileName, "PDF sayfa içermiyor.");
 
-            var pages = document.GetPages()
-                .Select(page => ExtractPage(page))
-                .ToArray();
+            var pageBuffer = new List<ExtractedPage>(document.NumberOfPages);
+            foreach (var page in document.GetPages())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                pageBuffer.Add(ExtractPage(page));
+            }
+            var pages = pageBuffer.ToArray();
             var allText = string.Join(" ", pages.SelectMany(page => page.Lines).Select(line => line.Text));
             if (!Contains(allText, "FATURA ÖDEME LİSTESİ"))
                 return Invalid(sourcePath, fileName, "Belge DoğruFatura ödeme listesi düzeniyle uyuşmuyor.", hysNumber);
@@ -85,8 +93,10 @@ public sealed class HistoricalPdfImportService
             var inferredCompensationCount = 0;
             foreach (var page in pages)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 foreach (var row in ExtractRows(page, invoiceType, schools, reportDate.Value))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (!row.IsValid || row.Invoice is null)
                         return Invalid(
                             sourcePath,
@@ -103,6 +113,7 @@ public sealed class HistoricalPdfImportService
             if (invoices.Count == 0)
                 return Invalid(sourcePath, fileName, "PDF tablosunda okunabilir fatura satırı bulunamadı.", hysNumber, invoiceType);
 
+            cancellationToken.ThrowIfCancellationRequested();
             var sequenceNumbers = pages
                 .SelectMany(page => ExtractSequenceNumbers(page))
                 .ToArray();
@@ -139,6 +150,10 @@ public sealed class HistoricalPdfImportService
                 invoices.Count,
                 invoices.Sum(invoice => invoice.PaymentAmount),
                 archive);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
