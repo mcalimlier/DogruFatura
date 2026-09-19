@@ -1,6 +1,8 @@
 using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -9,7 +11,10 @@ using Microsoft.Win32;
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private void SynchronizeArchivePdfs_Click(object sender, RoutedEventArgs e) =>
+{
+    private CancellationTokenSource? _historicalPdfImportCancellation;
+
+    private void SynchronizeArchivePdfs_Click(object sender, RoutedEventArgs e) =>
         SynchronizeArchivePdfs(true);
 
     private ArchivePdfSynchronizationResult? SynchronizeArchivePdfs(bool userInitiated)
@@ -87,8 +92,11 @@ public partial class MainWindow
         return result;
     }
 
-    private void ImportHistoricalPdf_Click(object sender, RoutedEventArgs e)
+    private async void ImportHistoricalPdf_Click(object sender, RoutedEventArgs e)
     {
+        if (_historicalPdfImportCancellation is not null)
+            return;
+
         var dialog = new OpenFileDialog
         {
             Title = "Arşive eklenecek DoğruFatura PDF kayıtlarını seçin",
@@ -97,23 +105,46 @@ public partial class MainWindow
             CheckFileExists = true,
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)
         };
-        if (dialog.ShowDialog(this) != true || dialog.FileNames.Length == 0) return;
+        if (dialog.ShowDialog(this) != true || dialog.FileNames.Length == 0)
+            return;
 
         IReadOnlyList<HistoricalPdfImportPreview> previews;
+        using var cancellation = new CancellationTokenSource();
+        _historicalPdfImportCancellation = cancellation;
+        ArchiveImportButton.IsEnabled = false;
+        ArchiveImportCancelButton.IsEnabled = true;
+        ArchiveImportCancelButton.Visibility = Visibility.Visible;
+        ArchivePdfSyncButton.IsEnabled = false;
+
         try
         {
-            Mouse.OverrideCursor = Cursors.Wait;
-            SetArchiveStatus($"{dialog.FileNames.Length} PDF okunuyor ve doğrulanıyor...");
             var knownHysNumbers = ArchivedLists
                 .Where(archive => !string.IsNullOrWhiteSpace(archive.HysPaymentOrderDocumentNumber))
                 .Select(archive => archive.HysPaymentOrderDocumentNumber)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             var selectedHysNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var schools = AllSchools.ToList();
-            var buffer = new List<HistoricalPdfImportPreview>();
-            foreach (var fileName in dialog.FileNames)
+            var authorityProfile = _authorityProfile;
+            var buffer = new List<HistoricalPdfImportPreview>(dialog.FileNames.Length);
+
+            for (var index = 0; index < dialog.FileNames.Length; index++)
             {
-                var preview = _historicalPdfImportService.Read(fileName, schools, _authorityProfile);
+                cancellation.Token.ThrowIfCancellationRequested();
+
+                var fileName = dialog.FileNames[index];
+                SetArchiveStatus(
+                    $"{index + 1}/{dialog.FileNames.Length} PDF okunuyor ve doğrulanıyor: {Path.GetFileName(fileName)}");
+
+                var preview = await Task.Run(
+                    () => _historicalPdfImportService.Read(
+                        fileName,
+                        schools,
+                        authorityProfile,
+                        cancellation.Token),
+                    cancellation.Token);
+
+                cancellation.Token.ThrowIfCancellationRequested();
+
                 if (preview.IsValid && knownHysNumbers.Contains(preview.HysNumber))
                 {
                     preview = preview.WithError($"{preview.HysNumber} işlem arşivinde zaten kayıtlı.");
@@ -134,8 +165,19 @@ public partial class MainWindow
                 }
 
                 buffer.Add(preview);
+                SetArchiveStatus(
+                    $"{index + 1}/{dialog.FileNames.Length} PDF doğrulandı.");
             }
+
             previews = buffer;
+        }
+        catch (OperationCanceledException)
+        {
+            SetArchiveStatus(
+                "PDF okuma/doğrulama işlemi iptal edildi. Arşiv verilerinde değişiklik yapılmadı.",
+                false,
+                true);
+            return;
         }
         catch (Exception ex)
         {
@@ -144,11 +186,16 @@ public partial class MainWindow
         }
         finally
         {
-            Mouse.OverrideCursor = null;
+            _historicalPdfImportCancellation = null;
+            ArchiveImportButton.IsEnabled = true;
+            ArchiveImportCancelButton.IsEnabled = false;
+            ArchiveImportCancelButton.Visibility = Visibility.Collapsed;
+            ArchivePdfSyncButton.IsEnabled = true;
         }
 
         var importDialog = new HistoricalPdfImportDialog(previews) { Owner = this };
-        if (importDialog.ShowDialog() != true) return;
+        if (importDialog.ShowDialog() != true)
+            return;
 
         var validItems = importDialog.ValidItems;
         if (validItems.Count == 0)
@@ -193,7 +240,8 @@ public partial class MainWindow
             {
                 try
                 {
-                    if (File.Exists(createdFile)) File.Delete(createdFile);
+                    if (File.Exists(createdFile))
+                        File.Delete(createdFile);
                 }
                 catch
                 {
@@ -203,7 +251,8 @@ public partial class MainWindow
 
             RefreshArchiveView();
             SetArchiveStatus("Arşiv ekleme işlemi tamamlanamadı: " + ex.Message, true);
-            MessageBox.Show(this,
+            MessageBox.Show(
+                this,
                 "PDF kayıtları arşive eklenirken işlem geri alındı:\n\n" + ex.Message,
                 "DoğruFatura - Arşiv Ekle",
                 MessageBoxButton.OK,
@@ -227,6 +276,16 @@ public partial class MainWindow
             $"{addedArchives.Count} PDF, HYS ile kapalı arşiv kaydı olarak eklendi.",
             false,
             true);
+    }
+
+    private void CancelHistoricalPdfImport_Click(object sender, RoutedEventArgs e)
+    {
+        if (_historicalPdfImportCancellation is null)
+            return;
+
+        ArchiveImportCancelButton.IsEnabled = false;
+        SetArchiveStatus("PDF okuma/doğrulama işlemi iptal ediliyor...");
+        _historicalPdfImportCancellation.Cancel();
     }
 
     private void ArchiveFilter_TextChanged(object sender, TextChangedEventArgs e)
