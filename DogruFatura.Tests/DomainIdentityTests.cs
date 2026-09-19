@@ -80,6 +80,10 @@ public sealed class DomainIdentityTests
         Assert.Equal(ArchiveState.Closed, archive.State);
         Assert.Equal("Elektrik", DomainValueText.ToStorageValue(invoice.Kind));
         Assert.Equal("İlkokul", DomainValueText.ToStorageValue(school.Kind));
+        Assert.Equal("Kapalı", DomainValueText.ToStorageValue(archive.State));
+        Assert.Equal(ArchiveState.Open, DomainValueText.ParseArchiveState("Açık"));
+        Assert.Equal(ArchiveState.Closed, DomainValueText.ParseArchiveState("Kapalı"));
+        Assert.Null(DomainValueText.ParseArchiveState("Tümü"));
         Assert.Equal(school.ElectricityServiceNumber, school.GetServiceNumber(InvoiceKind.Electricity));
     }
 
