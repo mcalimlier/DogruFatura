@@ -113,6 +113,19 @@ public partial class MainWindow : Window
         ArchivedLists = new ObservableCollection<ArchivedInvoiceList>(archiveLoadResult.Archives);
 
         InitializeComponent();
+        EnsureDocumentArchiveDirectories();
+        InitializeWindowShell();
+        InitializeInvoiceEntrySources();
+        InitializeSchoolView();
+        InitializeArchiveView();
+        InitializeControlCenter();
+        RunCalculationEngineSelfTest();
+        InitializeInitialUiState();
+        ShowStartupWarnings(startupState);
+    }
+
+    private void EnsureDocumentArchiveDirectories()
+    {
         try
         {
             _documentArchiveStorageService.EnsureDirectories();
@@ -125,17 +138,27 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
+    }
+
+    private void InitializeWindowShell()
+    {
         SourceInitialized += MainWindow_SourceInitialized;
         DataContext = this;
         ApplyTaskbarIcon();
         UpdateMaximizeRestoreButton();
+    }
 
+    private void InitializeInvoiceEntrySources()
+    {
         _suppressFormEvents = true;
         InstitutionTypeBox.ItemsSource = InstitutionTypes;
         InvoiceTypeBox.ItemsSource = new[] { "Elektrik", "Telefon", "İnternet", "Su" };
         InstitutionBox.ItemsSource = Array.Empty<SchoolRecord>();
         _suppressFormEvents = false;
+    }
 
+    private void InitializeSchoolView()
+    {
         _suppressSchoolEvents = true;
         SchoolFilterTypeBox.ItemsSource = AllInstitutionTypeFilterPrefix.Concat(InstitutionTypes).ToArray();
         SchoolFilterTypeBox.SelectedIndex = 0;
@@ -149,7 +172,10 @@ public partial class MainWindow : Window
         StartNewSchool();
         RefreshSchoolView();
         LoadAuthorityProfileToForm(_authorityProfile);
+    }
 
+    private void InitializeArchiveView()
+    {
         _suppressArchiveEvents = true;
         ArchiveTypeFilterBox.ItemsSource = new[] { "Tümü", "Elektrik", "Telefon", "İnternet", "Su" };
         ArchiveTypeFilterBox.SelectedIndex = 0;
@@ -161,7 +187,10 @@ public partial class MainWindow : Window
         ArchiveInvoiceDetailGrid.ItemsSource = Array.Empty<InvoiceRecord>();
         _suppressArchiveEvents = false;
         RefreshArchiveView();
+    }
 
+    private void InitializeControlCenter()
+    {
         _suppressControlEvents = true;
         ControlSeverityFilterBox.ItemsSource = new[] { "Tümü", "Hata", "Uyarı" };
         ControlSeverityFilterBox.SelectedIndex = 0;
@@ -181,17 +210,23 @@ public partial class MainWindow : Window
         ControlIssuesGrid.ItemsSource = _controlView;
         _suppressControlEvents = false;
         RefreshControlCenter();
+    }
 
+    private void RunCalculationEngineSelfTest()
+    {
         var selfTest = EngineSelfTest.Run();
-        if (!selfTest.Success)
-        {
-            EngineStatusDot.Fill = new SolidColorBrush(Color.FromRgb(229, 57, 53));
-            EngineStatusText.Text = "Hata";
-            EngineStatusText.Foreground = Brushes.MistyRose;
-            MessageBox.Show("C# vergi hesap motoru öz testi başarısız:\n\n" + selfTest.Message,
-                "DoğruFatura", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        if (selfTest.Success)
+            return;
 
+        EngineStatusDot.Fill = new SolidColorBrush(Color.FromRgb(229, 57, 53));
+        EngineStatusText.Text = "Hata";
+        EngineStatusText.Foreground = Brushes.MistyRose;
+        MessageBox.Show("C# vergi hesap motoru öz testi başarısız:\n\n" + selfTest.Message,
+            "DoğruFatura", MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+
+    private void InitializeInitialUiState()
+    {
         ResetCalculationDisplay();
         UpdateFormReadiness();
         UpdateInvoiceListSummary();
@@ -200,6 +235,14 @@ public partial class MainWindow : Window
         Dispatcher.BeginInvoke(
             DispatcherPriority.Background,
             new Action(() => SynchronizeArchivePdfs(false)));
+    }
+
+    private void ShowStartupWarnings(MainWindowStartupState startupState)
+    {
+        var schoolLoadResult = startupState.SchoolLoadResult;
+        var invoiceLoadResult = startupState.InvoiceLoadResult;
+        var authorityProfileLoadResult = startupState.AuthorityProfileLoadResult;
+        var archiveLoadResult = startupState.ArchiveLoadResult;
 
         if (!string.IsNullOrWhiteSpace(schoolLoadResult.WarningMessage))
         {
