@@ -46,6 +46,8 @@
                     <Grid Grid.Column="2" VerticalAlignment="Center" Margin="8,0,14,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="280"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="140"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="120"/>
                             <ColumnDefinition Width="12"/>
@@ -70,7 +72,7 @@
                             </StackPanel>
                         </Border>
 
-                        <StackPanel Grid.Column="2"
+                        <StackPanel Grid.Column="4"
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center"
                                     HorizontalAlignment="Center"
@@ -88,7 +90,7 @@
                             </Grid>
                         </StackPanel>
 
-                        <Button Grid.Column="4"
+                        <Button Grid.Column="6"
                                 Style="{StaticResource ModernButton}"
                                 Content="TEMİZLE"
                                 Width="116"
@@ -97,21 +99,28 @@
                                 Background="#8A5A12"
                                 Click="ClearInvoiceForm_Click"/>
 
-                        <TextBlock x:Name="HeaderVersionText"
-                                   Grid.Column="1"
-                                   Text="v—"
-                                   Foreground="#8FA8C0"
-                                   FontSize="11.5"
-                                   FontWeight="SemiBold"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   TextAlignment="Center"/>
+                        <Border Grid.Column="2"
+                                Background="#082744"
+                                BorderBrush="#24496B"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="11,6">
+                            <StackPanel>
+                                <TextBlock Text="SÜRÜM" Foreground="#8FA8C0" FontSize="10.5" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="HeaderVersionText"
+                                           Text="v—"
+                                           Foreground="White"
+                                           FontSize="12.5"
+                                           FontWeight="SemiBold"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
 
-                        <Button Grid.Column="6" Style="{StaticResource StandardButtonBase}" Content="—" ToolTip="Küçült" FontSize="23.5" FontWeight="SemiBold" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="Minimize_Click"/>
-                        <Button x:Name="MaximizeRestoreButton" Grid.Column="7" Style="{StaticResource StandardButtonBase}" ToolTip="Tam ekran" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="MaximizeRestore_Click">
+                        <Button Grid.Column="8" Style="{StaticResource StandardButtonBase}" Content="—" ToolTip="Küçült" FontSize="23.5" FontWeight="SemiBold" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="Minimize_Click"/>
+                        <Button x:Name="MaximizeRestoreButton" Grid.Column="9" Style="{StaticResource StandardButtonBase}" ToolTip="Tam ekran" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="MaximizeRestore_Click">
                             <TextBlock x:Name="MaximizeRestoreIcon" FontFamily="Segoe MDL2 Assets" Text="&#xE922;" FontSize="16.5" FontWeight="SemiBold"/>
                         </Button>
-                        <Button Grid.Column="8" Style="{StaticResource StandardButtonBase}" Content="×" ToolTip="Kapat" FontSize="27.5" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="Close_Click"/>
+                        <Button Grid.Column="10" Style="{StaticResource StandardButtonBase}" Content="×" ToolTip="Kapat" FontSize="27.5" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="Close_Click"/>
                     </Grid>
                 </Grid>
 
