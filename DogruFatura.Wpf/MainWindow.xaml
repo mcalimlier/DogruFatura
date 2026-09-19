@@ -690,9 +690,13 @@
                                     <Button x:Name="ArchivePdfSyncButton" Style="{StaticResource ModernButton}" Content="PDF KONTROL" Width="112"
                                             Background="#8A5A12" Margin="0,0,10,0" Click="SynchronizeArchivePdfs_Click"
                                             ToolTip="Arşiv kayıtları ile PDF belgelerinin uyumunu kontrol eder ve eksik belgeleri güvenli biçimde tamamlar."/>
-                                    <Button Style="{StaticResource ModernButton}" Content="ARŞİV EKLE" Width="148"
+                                    <Button x:Name="ArchiveImportButton" Style="{StaticResource ModernButton}" Content="ARŞİV EKLE" Width="148"
                                             Background="#315371" Margin="0,0,10,0" Click="ImportHistoricalPdf_Click"
                                             ToolTip="HYS kodu içeren bir veya birden fazla eski DoğruFatura PDF'sini arşive ekle; baştaki sıra numaraları otomatik göz ardı edilir"/>
+                                    <Button x:Name="ArchiveImportCancelButton" Style="{StaticResource ModernButton}" Content="İPTAL" Width="82"
+                                            Background="#C23A43" Margin="0,0,10,0" Visibility="Collapsed"
+                                            Click="CancelHistoricalPdfImport_Click"
+                                            ToolTip="Devam eden PDF okuma/doğrulama işlemini iptal et"/>
                                     <Button x:Name="ArchiveActiveListButton" Style="{StaticResource ModernButton}"
                                             Content="AKTİF LİSTEYİ ARŞİVLE" Width="245" Background="#248A50"
                                             Click="ArchiveActiveList_Click"/>
