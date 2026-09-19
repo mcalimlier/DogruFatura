@@ -8,8 +8,11 @@ using Microsoft.Win32;
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private SafetyCheckResult RefreshSafetyInformation()
+{
+    private SafetyCheckResult RefreshSafetyInformation()
     {
+        HeaderVersionText.Text = AppVersionInfo.DisplayVersion;
+        HeaderVersionText.ToolTip = "DoğruFatura " + _safetyService.InformationalVersion;
         AboutVersionText.Text = "DoğruFatura " + _safetyService.InformationalVersion;
         AboutRuntimeText.Text = _safetyService.RuntimeDescription;
 
