@@ -140,7 +140,7 @@ public partial class MainWindow
         };
     }
 
-    private ArchiveStatisticsFilter? PreviousStatisticsFilter(ArchiveStatisticsFilter current)
+    private static ArchiveStatisticsFilter? PreviousStatisticsFilter(ArchiveStatisticsFilter current)
     {
         if (current.StartDate.HasValue && current.EndDate.HasValue)
         {
@@ -501,9 +501,8 @@ public partial class MainWindow
             switch (template)
             {
                 case "Yıllık Genel Rapor":
-                    var latestYear = ArchiveStatisticsService.Build(ArchivedLists)
-                        .AvailableYears
-                        .FirstOrDefault();
+                    var availableYears = ArchiveStatisticsService.Build(ArchivedLists).AvailableYears;
+                    var latestYear = availableYears.Count > 0 ? availableYears[0] : 0;
                     StatisticsYearFilterBox.SelectedItem = latestYear > 0
                         ? latestYear.ToString(CultureInfo.InvariantCulture)
                         : "Tümü";
