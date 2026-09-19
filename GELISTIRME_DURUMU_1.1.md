@@ -80,7 +80,7 @@ Kalan ana işler:
 - `MainWindow` sorumluluk ayrımı yalnız yeni davranış eklenirken gerçek bir uygulama-servisi sınırı oluşursa sürdürülecek.
 - Typed domain geçişi gerekli alanlarda tamamlandı: fatura türü, kurum türü, arşiv durumu ve kontrol önem derecesi typed katmanı kullanıyor.
 - `SchoolId` işi tamamlandı; yeni/güncellenen faturalar ID bağı kullanıyor, legacy kayıtlar uyumlu fallback ile korunuyor.
-- Aşama 3 başladı: vergi kural sürümü/yürürlük metadata'sı ilk dilimde eklendi. Sırada bu metadata'nın kalıcı fatura kaydına taşınması, append-only audit trail, transaction journal ve kapalı HYS arşivinin değişmez belge modeli var.
+- Aşama 3 başladı: vergi kural sürümü/yürürlük metadata'sı eklendi ve InvoiceRecord kalıcılığı kodlandı. Sırada append-only audit trail, transaction journal ve kapalı HYS arşivinin değişmez belge modeli var.
 
 ## Aşama 4 — Warning temizliği
 
@@ -1198,6 +1198,82 @@ Sıradaki doğrulama:
    - yeni test metodu yok
    - beklenen: **117/117**
 5. Yeşil olursa Aşama 3.2'de kural metadata'sı yeni/güncellenen `InvoiceRecord` kayıtlarına legacy uyumlu opsiyonel alanlarla taşınacak.
+
+## 19.09.2026 — Aşama 3.1 kullanıcı doğrulaması BAŞARILI
+
+Kullanıcı Aşama 3.1 sonrasında build/smoke/test akışlarının başarılı olduğunu bildirdi.
+
+- Vergi kural metadata modeli çalışıyor.
+- Mevcut 0,00948 hesap davranışında sorun bildirilmedi.
+- Ayrıntılı sayaç tekrar paylaşılmadığı için son açık sayısal baseline **117/117** olarak korunuyor.
+
+## 19.09.2026 — Aşama 3.2 InvoiceRecord vergi kural metadata kalıcılığı — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Amaç:
+- yeni/güncellenen kullanıcı faturalarında hangi vergi kuralıyla hesap yapıldığını kalıcı kayıtta tutmak,
+- legacy ve tarihsel veriye geriye dönük yanlış kural atfetmemek.
+
+`InvoiceRecord` sonuna geriye uyumlu opsiyonel alanlar eklendi:
+- `TaxRuleVersion = ""`
+- `TaxRuleEffectiveFrom = null`
+- `AppliedStampDutyRate = 0m`
+
+Ayrıca:
+- `HasTaxRuleMetadata` JSON dışı görünümü eklendi.
+- Positional constructor'ın mevcut parametre sırası bozulmadı; yeni alanlar en sona eklendi.
+
+Yeni/güncellenen kullanıcı faturası:
+- `MainWindow.InvoiceEntry` hesap sonucundaki
+  - `RuleVersion`
+  - `RuleEffectiveFrom`
+  - `AppliedStampDutyRate`
+  değerlerini `InvoiceRecord` içine yazıyor.
+- Fatura güncellemesinde mevcut ID ve CreatedAt korunurken kural metadata'sı yeni hesap sonucuna göre güncelleniyor.
+
+Legacy veri:
+- Yeni alanları hiç içermeyen eski JSON kayıtları yüklenebiliyor.
+- `InvoiceDataStore.Normalize` eksik/null `TaxRuleVersion` değerini boş string olarak normalize ediyor.
+- Eski fatura değerleri değişmeden geçerliyse metadata **bilinmiyor** olarak korunuyor:
+  - `TaxRuleVersion = ""`
+  - `TaxRuleEffectiveFrom = null`
+  - `AppliedStampDutyRate = 0`
+- Geçmişe dönük olarak mevcut kuralın uygulanmış olduğu varsayılmıyor.
+
+Su faturası legacy migration:
+- Eğer store mevcut su faturasının vergi alanlarını gerçekten yeniden hesaplayıp güncelliyorsa, o yeni hesapla birlikte rule metadata da yazılıyor.
+- Böylece metadata yalnız gerçekten yapılan yeniden hesaplamaya bağlanıyor.
+
+Tarihsel PDF import:
+- PDF tutarları güncel motorla doğrulansa bile özgün PDF'nin hangi kural sürümünde üretildiği kanıtlanamadığı için rule metadata bilinçli olarak boş bırakılıyor.
+- Bu davranış kod içine açıklayıcı yorumla kaydedildi.
+
+Test kapsamı:
+- `LegacyInvoiceFileIsLoadedUpgradedAndOriginalFormatIsBackedUp` artık yeni tax metadata alanlarını hiç içermeyen gerçek legacy JSON biçimini kuruyor ve yükleme sonrası metadata'nın bilinmiyor kaldığını doğruluyor.
+- `CurrentSchemaSaveAndReloadRoundTripsWithoutMigrationWarning` yeni metadata'nın save/reload round-trip ile aynen korunduğunu doğruluyor.
+- `TypedDomainViewsPreserveExistingStorageText` yeni kullanıcı faturası modelinde rule metadata görünümünü doğruluyor.
+- Yeni test metodu eklenmedi; beklenen toplam hâlâ **117**.
+
+Commitler:
+- InvoiceRecord metadata: `266850af44cb50470f9dd669487cc857af454bde`
+- kullanıcı fatura kayıt yolu: `af7deff9fb56d18b128f68859cfe031552d4d015`
+- store legacy/migration davranışı: `4dd003c118e23c037be265e2db3fa2700b03de98`
+- schema migration/roundtrip testleri: `9e3ed427f9492f09bff0accb5f415412f3b557d4`
+- domain metadata testleri: `19444757e4eb9938710027558055e1b9158f0365`
+- tarihsel PDF metadata açıklaması: `b46446cc643ee15d84caabaac02a8b2a4b8c1178`
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+3. Smoke:
+   - yeni Elektrik faturası ekle
+   - mevcut faturayı düzenle/kaydet
+   - uygulamayı kapat/aç ve aktif faturanın korunmasını kontrol et
+   - tarihsel PDF import akışında davranış değişikliği olmadığını kontrol et
+4. `TESTLERI_CALISTIR.bat`
+   - yeni test metodu yok
+   - beklenen: **117/117**
+5. Bu kapı yeşil olursa Aşama 3.3 olarak **append-only audit trail** temel modeli ve güvenli store dilimine geçilecek.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
