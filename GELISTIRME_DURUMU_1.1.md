@@ -1694,6 +1694,94 @@ Sıradaki doğrulama:
    - beklenen: **120/120**
 5. Yeşil olursa Aşama 3 mali denetim/izlenebilirlik paketi kapanış değerlendirmesi yapılacak; ardından Aşama 5 UX işlerine geçilecek.
 
+## 19.09.2026 — Aşama 3.5 kullanıcı geri bildirimi: mühür kilit davranışı düzeltildi
+
+Kullanıcı mühürlemenin çalıştığını ancak mühürlü arşiv seçildiğinde önceki davranıştaki değişiklik/yeniden açma ve silme yeteneğinin kaybolduğunu bildirdi.
+
+Sorun:
+- İlk Aşama 3.5 tasarımında `HasClosedSnapshot` UI ve store seviyesinde **kalıcı kilit** olarak yorumlandı.
+- `KAPANIŞI GERİ AL` devre dışı bırakıldı.
+- store mevcut mühürlü kaydın değiştirilmesini ve listeden silinmesini reddetti.
+- Bu, kullanıcının önceki iş akışını gereksiz yere bozdu.
+
+Düzeltilen tasarım:
+- snapshot mühür artık **kilit değil, bütünlük doğrulaması**.
+- uygulama içinden yetkili değişiklik yapılabilir.
+- değişiklik mühürlü kapalı içerikte yapılacaksa uygulama önce kaydı yeniden açar / eski snapshot'ı temizler; tekrar kapatıldığında yeni snapshot üretilir.
+- mühür güncellenmeden içerik dosya/nesne seviyesinde değiştirilirse mevcut validation yine hash uyuşmazlığını yakalar.
+
+Yeniden açma:
+- mühürlü kapalı kayıt için `KAPANIŞI GERİ AL` tekrar aktif.
+- reopen sırasında:
+  - `IsClosed = false`
+  - `ClosedAt = null`
+  - `ClosedSnapshotSha256 = ""`
+- mevcut HYS bilgisi önceki davranış gibi korunur.
+- kullanıcı HYS bilgisini açık durumda değiştirebilir ve tekrar kapatınca yeni snapshot üretilir.
+
+Silme:
+- arşiv detayına `ARŞİVİ SİL` düğmesi eklendi.
+- seçili arşiv açık veya kapalı/mühürlü olsa da kullanıcı onayıyla listeden silinebilir.
+- store save başarısız olursa kayıt eski indeksine geri konur.
+- `ArchiveDeleted` audit olayı eklenmiştir.
+- kayıtlı PDF fiziksel dosyası **otomatik silinmez**; veri kaybını önlemek için disk üzerinde korunur.
+- silme sonrası dashboard/arşiv görünümü yenilenir.
+- açık rapor referansı silinen arşive aitse temizlenir.
+
+Store:
+- `ValidateSealedArchiveImmutability` kaldırıldı.
+- mühürlü kayıt için “silinemez/değiştirilemez” kalıcı store kilidi kaldırıldı.
+- `ArchivedInvoiceListValidationService` içindeki snapshot hash eşleşme kontrolü aynen korunuyor.
+- dolayısıyla mühür güncellenmeden yapılan yetkisiz/tutarsız değişiklik save sırasında reddedilir.
+
+UI:
+- `Mühürlü` bilgi etiketi korunuyor.
+- mühürlü kapalı kayıtta düğme artık tekrar `KAPANIŞI GERİ AL`.
+- kapanış düğmesi tekrar etkin.
+- yeni `ARŞİVİ SİL` düğmesi seçili kayıtta etkin.
+- durum mesajı mühürün bütünlük doğrulaması olduğunu ve reopen sonrası yeniden kapatmada yeni mühür üretileceğini açıklıyor.
+
+Test:
+- mevcut `ClosedArchiveImmutabilityTests` içeriği yeni doğru semantiğe çevrildi:
+  - mühür güncellenmeden değiştirilmiş içerik reddedilir,
+  - uygulama içinden yeniden mühürlenmiş değişiklik kaydedilebilir,
+  - arşiv silme store tarafından kabul edilir.
+- yeni test metodu eklenmedi; hedef test sayısı **120** olarak kalır.
+
+Commitler:
+- audit ArchiveDeleted: `bf1fb6d0d04807900ff0b4ee593995cc17fcc405`
+- store kilit düzeltmesi: `a1a73995331f56a280eb76807c2f5cf36ac746da`
+- reopen + delete command: `1bc68b02a5d8f3706db42eb667e6b15acb24e306`
+- UI davranışı: `f36dc7bfda634b80152cabfe3328302f84916ee5`
+- ARŞİVİ SİL düğmesi: `6eb7ac0a2b293a89f1ccea600a6c0edee46b4049`
+- test semantiği: `cf354294553b210da42832dca40af8ea57661492`
+
+Statik kontrol:
+- store kalıcı mühür kilidi: kaldırıldı
+- snapshot hash doğrulaması: korunuyor
+- mühürlü reopen: aktif
+- reopen snapshot temizliği: mevcut
+- yeniden kapatma/reseal: mevcut
+- arşiv silme + rollback: mevcut
+- silme audit: mevcut
+- PDF otomatik silme: **yok**
+- test hedefi: **120**
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+3. Smoke:
+   - mühürlü kapalı arşiv seç
+   - `KAPANIŞI GERİ AL` çalışmalı
+   - açık hale geldikten sonra HYS bilgisini değiştirip tekrar kapatabilmelisin
+   - tekrar kapatınca `Mühürlü` görünmeli
+   - başka bir arşivde `ARŞİVİ SİL` kullan; kayıt listeden kalkmalı
+   - PDF varsa fiziksel PDF dosyası korunmalı
+4. `TESTLERI_CALISTIR.bat`
+   - beklenen: **120/120**
+5. Bu revizyon doğrulanmadan Aşama 3 kapanışı yapılmayacak.
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
