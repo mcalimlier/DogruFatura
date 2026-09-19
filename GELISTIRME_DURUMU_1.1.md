@@ -1782,6 +1782,142 @@ Sıradaki doğrulama:
    - beklenen: **120/120**
 5. Bu revizyon doğrulanmadan Aşama 3 kapanışı yapılmayacak.
 
+## 19.09.2026 — Aşama 3.5 arşiv silme ve tam düzenleme akışı revizyonu — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Kullanıcı iki davranış istedi:
+1. Arşiv silmede ayrıca yedek/kopya tutulmasın; yalnız kesin silme onayı gösterilsin ve onaylanırsa kayıt doğrudan silinsin.
+2. Arşiv içeriğinin yalnız HYS değil, faturalar dahil tamamı düzenlenebilsin; bunun için seçili arşiv Aktif Fatura Listesi'ne geri alınsın ve normal fatura düzenleme araçları kullanılsın.
+
+### Arşiv silme
+
+Yeni davranış:
+- `SİL` düğmesinde yalnız kalıcı silme onayı gösterilir:
+  - arşiv kaydı,
+  - ona bağlı PDF
+  kalıcı olarak silineceği açıkça belirtilir.
+- Onay verilmezse hiçbir işlem yapılmaz.
+- Onay verilirse:
+  1. arşiv kaydı `IslemArsivi.json` içinden kaldırılır,
+  2. store save başarılıysa bağlı PDF doğrudan silinir,
+  3. ayrıca backup/kopya dosyası oluşturulmaz,
+  4. `ArchiveDeleted` audit olayı yazılır.
+- Arşiv store save başarısızsa in-memory kayıt eski indeksine geri konur.
+- PDF silme ayrı I/O hatası verirse arşiv kaydı silinmiş olarak kalır, teknik hata loglanır ve kullanıcıya PDF'nin silinemediği bildirilir.
+
+`DocumentArchiveStorageService.DeleteStoredPdf`:
+- kayıtlı `PdfFileName` ve HYS tabanlı PDF adını kontrol eder,
+- yalnız DoğruFatura Aktif Çıktılar / Arşivlenenler klasörlerinde arar,
+- bulunan ilgili PDF'yi doğrudan siler,
+- yedek dosya üretmez.
+
+### Arşivi düzenlemeye alma
+
+Arşiv detayında üç eylem:
+- `AÇ`
+- `DÜZENLE`
+- `SİL`
+
+`DÜZENLE` davranışı:
+- seçili arşivin faturalarını **Aktif Fatura Listesi'ne geri alır**,
+- kullanıcı bundan sonra mevcut normal fatura listesinde:
+  - kurum,
+  - fatura numarası,
+  - hizmet numarası,
+  - tarihler,
+  - tutarlar/KDV,
+  - diğer fatura alanları
+  dahil kayıtları normal düzenleme akışıyla değiştirebilir.
+- Aktif Fatura Listesi doluyken işlem başlamaz; mevcut aktif kayıtlarla arşiv faturaları karıştırılmaz.
+- Kullanıcıdan açık onay alınır.
+- onay sonrası eski arşiv kaydı kaldırılır.
+- eski arşiv PDF'si kaldırılır.
+- HYS kapanış bilgisi arşiv kaydıyla birlikte sona erer; kullanıcı düzenleme sonrası listeyi tekrar arşivleyip HYS ile yeniden kapatabilir ve yeni snapshot mühürü oluşur.
+
+### Arşivden aktife transaction journal
+
+Yeni operation:
+- `TransactionJournalOperation.RestoreArchiveToActive`
+
+Yeni state'ler:
+- `ActiveListRestored`
+- `ArchiveRemoved`
+
+Akış:
+1. `Started`
+2. arşiv faturaları `AktifFaturalar.json` içine yazılır
+3. `ActiveListRestored`
+4. arşiv kaydı `IslemArsivi.json` içinden kaldırılır
+5. `ArchiveRemoved`
+6. `Completed`
+7. eski PDF silinir
+8. `ArchiveRestoredToActive` audit olayı yazılır
+9. kullanıcı Fatura Listesi ekranına yönlendirilir
+
+Rollback:
+- aktif liste yazımı başarısız → transaction `RolledBack`
+- journal ilerleyemez → aktif liste mümkünse boşaltılarak rollback
+- archive save başarısız → arşiv kayıt listesine geri eklenir ve aktif liste boşaltılır
+- iki rollback birlikte tamamlanamazsa `RecoveryRequired`
+- journal kapanışı yazılamazsa kalıcı veri işlemi geri çevrilmez; sonraki açılış kontrolü devreye girer.
+
+PII:
+- transaction/audit detail içinde kurum adı, VKN veya fatura no eklenmedi.
+- yalnız archive ID, invoice count/type gibi teknik bilgi tutuluyor.
+
+### UI
+
+Arşiv detay alt eylemleri artık:
+- `AÇ`
+- `DÜZENLE`
+- `SİL`
+
+`DÜZENLE` tooltip:
+- arşivdeki faturaları Aktif Fatura Listesi'ne geri alarak normal düzenleme araçlarıyla değiştirme davranışını açıklıyor.
+
+### Test
+
+Yeni test:
+- `ArchiveStorageIntegrationTests.DeleteStoredPdfRemovesArchiveFileWithoutBackupCopy`
+- bağlı PDF'nin gerçekten silindiğini doğrular.
+- temp kökünde başka dosya/yedek kopya kalmadığını doğrular.
+
+Test sayısı:
+- önce hedef: **120**
+- yeni hedef: **121**
+
+Commitler:
+- transaction operation/state: `87aa9f6be69233390b1925939fb5478e19ffef32`
+- audit restore olayı: `8b70bdf530f4960b09decee0f1788661df0b3ee7`
+- doğrudan PDF silme: `21a1e2a319418fc6834ac02233d03aee8d2b5e2c`
+- journal helper genelleştirme: `50ef052803ecf24afdfb32feda33313b00c04a48`
+- arşiv düzenle + doğrudan sil akışı: `055b71c45679822b0cfa545a5a89128df04bbb99`
+- edit düğme state: `be89424cfeff1d978fd7075756cefdc8d4bb693d`
+- AÇ/DÜZENLE/SİL UI: `88fd4abc0a05edab2ae2e6859f2f03440bedb5e8`
+- PDF silme regresyon testi: `8d6491017fd307acdd62f126c7d9b74e875d8638`
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+3. Silme smoke:
+   - bir arşiv seç
+   - `SİL`
+   - yalnız “emin misiniz / geri alınamaz” onayı görünmeli
+   - Evet → kayıt ve bağlı PDF silinmeli
+   - yedek/kopya dosyası oluşmamalı
+4. Düzenleme smoke:
+   - Aktif Fatura Listesi boşken bir arşiv seç
+   - `DÜZENLE`
+   - onayla
+   - arşiv kaydı listeden kalkmalı
+   - faturalar Aktif Fatura Listesi'nde görünmeli
+   - normal `DÜZENLE` ile fatura içeriği değiştirilebilmeli
+   - tekrar arşivleyip HYS ile kapatılabilmeli
+5. Aktif listede kayıt varken arşiv `DÜZENLE` denendiğinde işlem başlamamalı.
+6. `TESTLERI_CALISTIR.bat`
+   - beklenen: **121/121**
+7. Bu revizyon doğrulanmadan Aşama 3 kapanışı yapılmayacak.
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
