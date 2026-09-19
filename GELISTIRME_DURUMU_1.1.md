@@ -1015,6 +1015,49 @@ Sıradaki doğrulama:
 5. `TESTLERI_CALISTIR.bat`
 6. Beklenen: **0 warning / 0 error + 117/117**
 
+## 19.09.2026 — Üst şerit sürüm kartı GÖRSEL OLARAK DOĞRULANDI
+
+Kullanıcı yeni sürüm kartının çalıştığını doğruladı.
+
+- `SÜRÜM` kartı üst şeritte görünür.
+- `AKTİF KURUM` ile aynı başlık/değer font ölçüleri kullanılıyor.
+- Dinamik sürüm bilgisi çalışıyor.
+- Bu bildirim görsel/çalışma doğrulamasıdır; Paket 11 için tam xUnit çıktısı ayrıca paylaşılmadığı sürece tam test kapısı ayrı tutulur.
+
+## 19.09.2026 — Kod temizliği / sadeleştirme paketi 12 — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Okul/Kurum ekranındaki tür filtresinde kalan ham string karşılaştırması mevcut typed domain katmanına taşındı.
+
+Değişiklikler:
+- `FilterSchool` artık seçili ComboBox metnini `DomainValueText.ParseInstitutionKind` ile `InstitutionKind` değerine çeviriyor.
+- Filtre, `school.InstitutionType != selectedType` yerine `school.Kind != selectedKind` karşılaştırması kullanıyor.
+- `Tümü` veya geçersiz/boş seçim `InstitutionKind.Unknown` olarak yorumlanıp filtre uygulanmıyor; mevcut kullanıcı davranışı korunuyor.
+- `StartNewSchool` içinde filtre seçiliyse yeni kayıt türü typed değerden `DomainValueText.ToStorageValue` ile geri üretiliyor.
+- Kalıcı `InstitutionType` JSON string alanı değişmedi.
+- Kayıt ekleme/düzenleme/silme, SchoolId, store/save, restore veya invoice bağına dokunulmadı.
+- Aynı dosyada monolitik dönemden kalmış `{    private` biçimleme artığı da temizlendi.
+
+Commit:
+- `535a6ac5d9fea7bba00b6895272659fd2df51230`
+
+Statik kontrol:
+- typed institution parse: mevcut
+- `school.Kind` filtresi: mevcut
+- eski `selectedType != "Tümü"` filtresi: **0**
+- yeni kayıt varsayılanı typed kaynaktan storage metnine dönüyor
+- JSON/storage sözleşmesi değişmedi
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+3. OKUL / KURUM ekranı:
+   - Tümü filtresi tüm kayıtları göstermeli
+   - İlkokul / Ortaokul / Anasınıfı-Anaokulu / Kurum filtreleri doğru çalışmalı
+   - belirli tür filtresindeyken YENİ KAYIT o türü varsayılan seçmeli
+4. İşlem Arşivi → Tümü / Açık / Kapalı filtresini de hızlıca kontrol et
+5. `TESTLERI_CALISTIR.bat`
+6. Beklenen: **0 warning / 0 error + 117/117**
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
