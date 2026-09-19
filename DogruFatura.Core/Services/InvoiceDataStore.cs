@@ -71,7 +71,15 @@ public sealed class InvoiceDataStore
             var calculation = taxService.Calculate(invoice.PayableAmount, invoice.VatAmount, invoice.InvoiceType, invoice.InterruptionCompensationAmount);
             if (!calculation.IsValid) continue;
             if (invoice.VatBase == calculation.VatBase && invoice.StampDuty == calculation.StampDuty && invoice.PaymentAmount == calculation.PaymentAmount) continue;
-            invoices[index] = invoice with { VatBase = calculation.VatBase, StampDuty = calculation.StampDuty, PaymentAmount = calculation.PaymentAmount };
+            invoices[index] = invoice with
+            {
+                VatBase = calculation.VatBase,
+                StampDuty = calculation.StampDuty,
+                PaymentAmount = calculation.PaymentAmount,
+                TaxRuleVersion = calculation.RuleVersion,
+                TaxRuleEffectiveFrom = calculation.RuleEffectiveFrom,
+                AppliedStampDutyRate = calculation.AppliedStampDutyRate
+            };
             migratedWaterInvoices++;
         }
 
@@ -140,7 +148,8 @@ public sealed class InvoiceDataStore
         Vkn = invoice.Vkn ?? string.Empty,
         InvoiceType = invoice.InvoiceType ?? string.Empty,
         InvoiceNumber = invoice.InvoiceNumber ?? string.Empty,
-        ServiceNumber = invoice.ServiceNumber ?? string.Empty
+        ServiceNumber = invoice.ServiceNumber ?? string.Empty,
+        TaxRuleVersion = invoice.TaxRuleVersion ?? string.Empty
     };
 
     public void Save(IEnumerable<InvoiceRecord> invoices)
