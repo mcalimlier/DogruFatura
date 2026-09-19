@@ -1,5 +1,6 @@
 using ClosedXML.Excel;
 using DogruFatura.Core.Models;
+using DogruFatura.Core.Services;
 using Microsoft.Win32;
 using PdfSharp;
 using PdfSharp.Drawing;
@@ -37,16 +38,17 @@ public partial class MainWindow
         {
             var builder = new StringBuilder();
             builder.AppendLine("sep=;");
-            builder.AppendLine($"Rapor;{CsvCell("DoğruFatura İstatistik Raporu")}");
-            builder.AppendLine($"Tarih;{CsvCell(DateTime.Now.ToString("dd.MM.yyyy HH:mm", CultureInfo.GetCultureInfo("tr-TR")))}");
-            builder.AppendLine($"Filtre;{CsvCell(StatisticsFilterDescription())}");
-            builder.AppendLine($"Arşiv;{result.ArchiveCount}");
-            builder.AppendLine($"Fatura;{result.InvoiceCount}");
-            builder.AppendLine($"Kurum;{result.InstitutionCount}");
-            builder.AppendLine($"Fatura Toplamı;{result.PayableTotal.ToString("0.00", CultureInfo.InvariantCulture)}");
-            builder.AppendLine($"KDV;{result.VatTotal.ToString("0.00", CultureInfo.InvariantCulture)}");
-            builder.AppendLine($"Damga;{result.StampDutyTotal.ToString("0.00", CultureInfo.InvariantCulture)}");
-            builder.AppendLine($"Ödeme;{result.PaymentTotal.ToString("0.00", CultureInfo.InvariantCulture)}");
+            builder.Append("Rapor;").AppendLine(CsvCell("DoğruFatura İstatistik Raporu"));
+            builder.Append("Tarih;").AppendLine(CsvCell(
+                DateTime.Now.ToString("dd.MM.yyyy HH:mm", CultureInfo.GetCultureInfo("tr-TR"))));
+            builder.Append("Filtre;").AppendLine(CsvCell(StatisticsFilterDescription()));
+            builder.Append("Arşiv;").AppendLine(result.ArchiveCount.ToString(CultureInfo.InvariantCulture));
+            builder.Append("Fatura;").AppendLine(result.InvoiceCount.ToString(CultureInfo.InvariantCulture));
+            builder.Append("Kurum;").AppendLine(result.InstitutionCount.ToString(CultureInfo.InvariantCulture));
+            builder.Append("Fatura Toplamı;").AppendLine(result.PayableTotal.ToString("0.00", CultureInfo.InvariantCulture));
+            builder.Append("KDV;").AppendLine(result.VatTotal.ToString("0.00", CultureInfo.InvariantCulture));
+            builder.Append("Damga;").AppendLine(result.StampDutyTotal.ToString("0.00", CultureInfo.InvariantCulture));
+            builder.Append("Ödeme;").AppendLine(result.PaymentTotal.ToString("0.00", CultureInfo.InvariantCulture));
             builder.AppendLine();
             builder.AppendLine("Kurum;Yıl;Tür;Adet;Fatura Tutarı;KDV;Damga;Ödeme");
 
@@ -620,7 +622,7 @@ public partial class MainWindow
         return string.Join(" • ", parts);
     }
 
-    private StatisticsDonutItem[] StatisticsDistribution(ArchiveStatisticsResult result) =>
+    private static StatisticsDonutItem[] StatisticsDistribution(ArchiveStatisticsResult result) =>
         result.Rows
             .GroupBy(row => row.InvoiceType, StringComparer.OrdinalIgnoreCase)
             .Select(group => new StatisticsDonutItem(
@@ -643,7 +645,7 @@ public partial class MainWindow
         return stream.ToArray();
     }
 
-    private static BitmapSource CaptureStatisticsElementBitmap(
+    private static RenderTargetBitmap CaptureStatisticsElementBitmap(
         FrameworkElement element,
         double scale)
     {
