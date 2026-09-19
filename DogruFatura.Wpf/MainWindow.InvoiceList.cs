@@ -138,6 +138,12 @@ public partial class MainWindow
             return;
         }
 
+        AppendAudit(
+            AuditTrailEventType.InvoiceDeleted,
+            AuditTrailEntityType.Invoice,
+            invoice.Id.ToString("D"),
+            $"Type={invoice.InvoiceType}");
+
         if (_editedInvoice?.Id == invoice.Id)
             EndInvoiceEditMode();
         var nextSelection = ActiveInvoices.Count == 0
@@ -167,6 +173,12 @@ public partial class MainWindow
             SetInvoiceListStatus(errorMessage, true);
             return;
         }
+
+        AppendAudit(
+            AuditTrailEventType.InvoiceReordered,
+            AuditTrailEntityType.Invoice,
+            row.Invoice.Id.ToString("D"),
+            $"Position={targetIndex + 1}");
 
         UpdateInvoiceListSummary(row.Invoice.Id);
         SetInvoiceListStatus(
