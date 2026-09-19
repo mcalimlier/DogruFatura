@@ -533,6 +533,7 @@ public partial class MainWindow
         ActiveStampTotalText.Text = NumberParser.Money(ActiveInvoices.Sum(x => x.StampDuty));
         ActivePaymentTotalText.Text = NumberParser.Money(ActiveInvoices.Sum(x => x.PaymentAmount));
         InvoiceListEmptyState.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        ArchiveFromListButton.IsEnabled = count > 0;
 
         ReportInvoiceCountText.Text = $"{count} kayıt";
         ReportInvoiceTypeText.Text = listTypeLabel;
