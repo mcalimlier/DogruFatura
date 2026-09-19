@@ -15,11 +15,18 @@ public static class ArchiveStatisticsService
             .Where(archive => archive.IsStatisticsEligible && archive.Invoices is not null)
             .ToArray();
 
-        var source = eligibleArchives
-            .SelectMany(archive => archive.Invoices.Select(invoice => new ArchiveInvoice(archive.Id, invoice)))
-            .GroupBy(item => item.Invoice.Id)
-            .Select(group => group.First())
-            .ToArray();
+        var sourceBuffer = new List<ArchiveInvoice>();
+        var knownInvoiceIds = new HashSet<Guid>();
+        foreach (var archive in eligibleArchives)
+        {
+            foreach (var invoice in archive.Invoices)
+            {
+                if (invoice.Id != Guid.Empty && !knownInvoiceIds.Add(invoice.Id))
+                    continue;
+                sourceBuffer.Add(new ArchiveInvoice(archive.Id, invoice));
+            }
+        }
+        var source = sourceBuffer.ToArray();
 
         var availableYears = source
             .Select(item => item.Invoice.InvoiceDate.Year)
