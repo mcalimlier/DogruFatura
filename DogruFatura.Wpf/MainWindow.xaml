@@ -154,6 +154,9 @@
                         <Button x:Name="NavControl" Style="{StaticResource NavButton}" Click="NavControl_Click">
                             <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D9;" FontSize="22" Width="42"/><TextBlock Text="KONTROL MERKEZİ" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
+                        <Button x:Name="NavStatistics" Style="{StaticResource NavButton}" Click="NavStatistics_Click">
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D2;" FontSize="22" Width="42"/><TextBlock Text="İSTATİSTİK" Style="{StaticResource NavLabel}"/></StackPanel>
+                        </Button>
                         <Button x:Name="NavAbout" Style="{StaticResource NavButton}" Click="NavAbout_Click">
                             <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE946;" FontSize="22" Width="42"/><TextBlock Text="HAKKINDA / GÜVENLİK" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
@@ -582,13 +585,17 @@
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="116"/><ColumnDefinition Width="8"/><ColumnDefinition Width="100"/><ColumnDefinition Width="8"/>
-                                        <ColumnDefinition Width="104"/><ColumnDefinition Width="8"/><ColumnDefinition Width="104"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="104"/><ColumnDefinition Width="8"/><ColumnDefinition Width="104"/><ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="118"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <Button x:Name="EditInvoiceButton" Style="{StaticResource ModernButton}" Content="DÜZENLE" Height="42" IsEnabled="False" Click="EditSelectedInvoice_Click"/>
                                     <Button x:Name="DeleteInvoiceButton" Grid.Column="2" Style="{StaticResource ModernButton}" Content="SİL" Height="42" Background="#C23A43" IsEnabled="False" Click="DeleteSelectedInvoice_Click"/>
                                     <Button x:Name="MoveInvoiceUpButton" Grid.Column="4" Style="{StaticResource ModernButton}" Content="YUKARI" Height="42" Background="#315371" IsEnabled="False" Click="MoveSelectedInvoiceUp_Click"/>
                                     <Button x:Name="MoveInvoiceDownButton" Grid.Column="6" Style="{StaticResource ModernButton}" Content="AŞAĞI" Height="42" Background="#315371" IsEnabled="False" Click="MoveSelectedInvoiceDown_Click"/>
-                                    <Border x:Name="InvoiceListStatusBorder" Grid.Column="8" Background="#123B5B" BorderBrush="#365874" BorderThickness="1" CornerRadius="8" Padding="12,8">
+                                    <Button x:Name="ArchiveFromListButton" Grid.Column="8" Style="{StaticResource ModernButton}" Content="ARŞİVLE" Height="42"
+                                            Background="#248A50" IsEnabled="False" Click="ArchiveActiveListFromList_Click"
+                                            ToolTip="Aktif fatura listesini doğrudan işlem arşivine al; başarılı olunca aktif liste kapanır"/>
+                                    <Border x:Name="InvoiceListStatusBorder" Grid.Column="10" Background="#123B5B" BorderBrush="#365874" BorderThickness="1" CornerRadius="8" Padding="12,8">
                                         <TextBlock x:Name="InvoiceListStatusText" Text="Bir işlem için fatura seçin." Style="{StaticResource StatusText}"/>
                                     </Border>
                                 </Grid>
@@ -687,7 +694,7 @@
                                     <TextBlock Text="Listeleri saklayın, HYS Ödeme Emri Belge No ile kesin kapatın ve gerektiğinde yeniden açın." Style="{StaticResource PageSubtitle}"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
-                                    <Button x:Name="ArchivePdfSyncButton" Style="{StaticResource ModernButton}" Content="PDF KONTROL" Width="132"
+                                    <Button x:Name="ArchivePdfSyncButton" Style="{StaticResource ModernButton}" Content="PDF KONTROL" Width="160"
                                             Background="#8A5A12" Margin="0,0,10,0" Click="SynchronizeArchivePdfs_Click"
                                             ToolTip="Arşiv kayıtları ile PDF belgelerinin uyumunu kontrol eder ve eksik belgeleri güvenli biçimde tamamlar."/>
                                     <Button x:Name="ArchiveImportButton" Style="{StaticResource ModernButton}" Content="ARŞİV EKLE" Width="148"
@@ -1021,6 +1028,100 @@
                                     </Grid>
                                 </Border>
                             </Grid>
+                        </Grid>
+                        <Grid x:Name="StatisticsView" Visibility="Collapsed">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid>
+                                <StackPanel>
+                                    <TextBlock Text="İSTATİSTİK" Style="{StaticResource PageTitle}"/>
+                                    <TextBlock Text="HYS ile kapanmış arşiv kayıtlarından kurum, yıl ve fatura türü bazında mali toplamları inceleyin." Style="{StaticResource PageSubtitle}"/>
+                                </StackPanel>
+                                <Button Style="{StaticResource ModernButton}" Content="YENİLE" Width="120"
+                                        Background="#248A50" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        Click="RefreshStatistics_Click"/>
+                            </Grid>
+
+                            <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,9">
+                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="0,0,4,0">
+                                    <StackPanel><TextBlock Text="ARŞİV" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="StatisticsArchiveCountText" Text="0 arşiv" Foreground="#031C38" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel>
+                                </Border>
+                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="3,0">
+                                    <StackPanel><TextBlock Text="FATURA" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="StatisticsInvoiceCountText" Text="0 fatura" Foreground="#031C38" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel>
+                                </Border>
+                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="3,0">
+                                    <StackPanel><TextBlock Text="KURUM" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="StatisticsInstitutionCountText" Text="0 kurum" Foreground="#031C38" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel>
+                                </Border>
+                                <Border Background="#EFF9F3" BorderBrush="#A8D5B9" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="4,0,0,0">
+                                    <StackPanel><TextBlock Text="TOPLAM ÖDEME" Foreground="#34704B" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="StatisticsPaymentTotalText" Text="0,00 TL" Foreground="#248A50" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel>
+                                </Border>
+                            </UniformGrid>
+
+                            <Border Grid.Row="2" Style="{StaticResource PremiumPanel}" Padding="12" Margin="0,0,0,9">
+                                <Grid>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="145"/><ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="*"/><ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="160"/><ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="104"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="Yıl" Style="{StaticResource PremiumFieldLabel}"/>
+                                        <ComboBox x:Name="StatisticsYearFilterBox" Style="{StaticResource PremiumFieldComboBox}"
+                                                  SelectionChanged="StatisticsFilter_SelectionChanged"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Kurum" Style="{StaticResource PremiumFieldLabel}"/>
+                                        <ComboBox x:Name="StatisticsInstitutionFilterBox" Style="{StaticResource PremiumFieldComboBox}"
+                                                  SelectionChanged="StatisticsFilter_SelectionChanged"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="Fatura Türü" Style="{StaticResource PremiumFieldLabel}"/>
+                                        <ComboBox x:Name="StatisticsTypeFilterBox" Style="{StaticResource PremiumFieldComboBox}"
+                                                  SelectionChanged="StatisticsFilter_SelectionChanged"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="6" Style="{StaticResource ModernButton}" Content="TEMİZLE"
+                                            VerticalAlignment="Bottom" Background="#315371" Click="ClearStatisticsFilters_Click"/>
+                                    <Border Grid.Row="1" Grid.ColumnSpan="7" Background="#123B5B" BorderBrush="#365874"
+                                            BorderThickness="1" CornerRadius="8" Padding="11,8" Margin="0,10,0,0">
+                                        <TextBlock x:Name="StatisticsTotalsText"
+                                                   Text="Fatura toplamı: 0,00 TL • KDV: 0,00 TL • Damga: 0,00 TL • Ödeme: 0,00 TL"
+                                                   Style="{StaticResource StatusText}" TextWrapping="Wrap"/>
+                                    </Border>
+                                </Grid>
+                            </Border>
+
+                            <Border Grid.Row="3" Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="10">
+                                <Grid>
+                                    <DataGrid x:Name="StatisticsGrid" Style="{StaticResource ModernDataGrid}" AutoGenerateColumns="False"
+                                              IsReadOnly="True" SelectionMode="Single" SelectionUnit="FullRow"
+                                              CanUserSortColumns="True" CanUserReorderColumns="False">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Kurum" Binding="{Binding InstitutionName}" Width="2*"/>
+                                            <DataGridTextColumn Header="Yıl" Binding="{Binding Year}" Width="72"/>
+                                            <DataGridTextColumn Header="Tür" Binding="{Binding InvoiceType}" Width="100"/>
+                                            <DataGridTextColumn Header="Adet" Binding="{Binding InvoiceCount}" Width="68"/>
+                                            <DataGridTextColumn Header="Fatura Tutarı" Binding="{Binding PayableTotal, StringFormat={}{0:N2} TL}" Width="125"/>
+                                            <DataGridTextColumn Header="KDV" Binding="{Binding VatTotal, StringFormat={}{0:N2} TL}" Width="105"/>
+                                            <DataGridTextColumn Header="Damga" Binding="{Binding StampDutyTotal, StringFormat={}{0:N2} TL}" Width="105"/>
+                                            <DataGridTextColumn Header="Ödeme" Binding="{Binding PaymentTotal, StringFormat={}{0:N2} TL}" Width="125"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                    <Border x:Name="StatisticsEmptyState" Background="#F7F9FC" IsHitTestVisible="False">
+                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D2;" Foreground="#9BB0C2" FontSize="42" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Seçili filtrelerde istatistik verisi yok" Foreground="#526277" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                                            <TextBlock Text="İstatistikler HYS ile kapanmış arşiv kayıtlarındaki faturalardan hesaplanır." Foreground="#7A8B9E" FontSize="14.5" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </Border>
                         </Grid>
                         <ScrollViewer x:Name="AboutView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                             <StackPanel Margin="0,0,8,16">
