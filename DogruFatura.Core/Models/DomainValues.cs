@@ -51,6 +51,13 @@ public static class DomainValueText
         _ => null
     };
 
+    public static ControlIssueSeverity? ParseControlIssueSeverity(string? value) => value?.Trim() switch
+    {
+        "Hata" => ControlIssueSeverity.Error,
+        "Uyarı" => ControlIssueSeverity.Warning,
+        _ => null
+    };
+
     public static string ToStorageValue(InvoiceKind value) => value switch
     {
         InvoiceKind.Electricity => "Elektrik",
@@ -73,6 +80,13 @@ public static class DomainValueText
     {
         ArchiveState.Open => "Açık",
         ArchiveState.Closed => "Kapalı",
+        _ => string.Empty
+    };
+
+    public static string ToDisplayValue(ControlIssueSeverity value) => value switch
+    {
+        ControlIssueSeverity.Error => "Hata",
+        ControlIssueSeverity.Warning => "Uyarı",
         _ => string.Empty
     };
 }
