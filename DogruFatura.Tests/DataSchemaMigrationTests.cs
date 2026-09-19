@@ -13,13 +13,40 @@ public sealed class DataSchemaMigrationTests
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "AktifFaturalar.json");
         var invoice = Invoice("LEGACY-INV-001");
-        var original = JsonSerializer.Serialize(new[] { invoice });
+        var legacy = new[]
+        {
+            new
+            {
+                invoice.Id,
+                invoice.CreatedAt,
+                invoice.InstitutionType,
+                invoice.InstitutionName,
+                invoice.Vkn,
+                invoice.InvoiceType,
+                invoice.InvoiceNumber,
+                invoice.ServiceNumber,
+                invoice.InvoiceDate,
+                invoice.DueDate,
+                invoice.PayableAmount,
+                invoice.VatAmount,
+                invoice.VatBase,
+                invoice.StampDuty,
+                invoice.PaymentAmount,
+                invoice.InterruptionCompensationAmount,
+                invoice.SchoolId
+            }
+        };
+        var original = JsonSerializer.Serialize(legacy);
         File.WriteAllText(path, original, Encoding.UTF8);
 
         var result = new InvoiceDataStore(path).LoadOrCreate();
 
-        Assert.Single(result.Invoices);
-        Assert.Equal(invoice.Id, result.Invoices[0].Id);
+        var loaded = Assert.Single(result.Invoices);
+        Assert.Equal(invoice.Id, loaded.Id);
+        Assert.False(loaded.HasTaxRuleMetadata);
+        Assert.Equal(string.Empty, loaded.TaxRuleVersion);
+        Assert.Null(loaded.TaxRuleEffectiveFrom);
+        Assert.Equal(0m, loaded.AppliedStampDutyRate);
         AssertCurrentEnvelope(path, DataFileKinds.ActiveInvoices);
         Assert.Contains("şema", result.WarningMessage!, StringComparison.CurrentCultureIgnoreCase);
         var backup = Assert.Single(Directory.EnumerateFiles(temp.Path, "AktifFaturalar_Schema0_Onceki_*.json"));
@@ -90,13 +117,23 @@ public sealed class DataSchemaMigrationTests
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "AktifFaturalar.json");
         var store = new InvoiceDataStore(path);
-        var invoice = Invoice("CURRENT-001");
+        var calculation = new TaxCalculationService().Calculate(1500m, 250m, "Elektrik");
+        var invoice = Invoice("CURRENT-001") with
+        {
+            TaxRuleVersion = calculation.RuleVersion,
+            TaxRuleEffectiveFrom = calculation.RuleEffectiveFrom,
+            AppliedStampDutyRate = calculation.AppliedStampDutyRate
+        };
 
         store.Save(new[] { invoice });
         var result = store.LoadOrCreate();
 
-        Assert.Single(result.Invoices);
-        Assert.Equal(invoice.Id, result.Invoices[0].Id);
+        var loaded = Assert.Single(result.Invoices);
+        Assert.Equal(invoice.Id, loaded.Id);
+        Assert.True(loaded.HasTaxRuleMetadata);
+        Assert.Equal(calculation.RuleVersion, loaded.TaxRuleVersion);
+        Assert.Equal(calculation.RuleEffectiveFrom, loaded.TaxRuleEffectiveFrom);
+        Assert.Equal(calculation.AppliedStampDutyRate, loaded.AppliedStampDutyRate);
         AssertCurrentEnvelope(path, DataFileKinds.ActiveInvoices);
         Assert.True(string.IsNullOrWhiteSpace(result.WarningMessage));
         Assert.Empty(Directory.EnumerateFiles(temp.Path, "*_Schema*_Onceki_*.json"));
