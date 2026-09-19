@@ -133,7 +133,7 @@ public partial class MainWindow
                 DataLabelsSize = 16,
                 DataLabelsPosition = PolarLabelsPosition.Middle,
                 DataLabelsFormatter = _ => percentage >= 0.06m ? percentageText : string.Empty,
-                TooltipLabelFormatter = _ =>
+                ToolTipLabelFormatter = _ =>
                     $"{item.InvoiceType}: {NumberParser.Money(item.PaymentTotal)} ({percentageText})"
             });
 
