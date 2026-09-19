@@ -123,6 +123,12 @@ public partial class MainWindow
             return;
         }
 
+        AppendAudit(
+            updated.IsClosed ? AuditTrailEventType.ArchiveClosed : AuditTrailEventType.ArchiveReopened,
+            AuditTrailEntityType.Archive,
+            updated.Id.ToString("D"),
+            $"State={updated.State};InvoiceCount={updated.InvoiceCount}");
+
         var synchronization = SynchronizeArchivePdfs(false);
         var synchronizedArchive = ArchivedLists.FirstOrDefault(candidate => candidate.Id == updated.Id);
         if (!pdfMove.Moved
@@ -227,6 +233,12 @@ public partial class MainWindow
                 "DoğruFatura - İşlem Arşivi", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
         }
+
+        AppendAudit(
+            AuditTrailEventType.ArchiveCreated,
+            AuditTrailEntityType.Archive,
+            archive.Id.ToString("D"),
+            $"State={archive.State};InvoiceCount={archive.InvoiceCount};Type={archive.InvoiceType}");
 
         ActiveInvoices.Clear();
         EndInvoiceEditMode();
