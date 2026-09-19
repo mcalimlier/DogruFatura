@@ -37,15 +37,15 @@ public static class ArchiveStatisticsService
         var availableInstitutions = source
             .Select(item => (item.Invoice.InstitutionName ?? string.Empty).Trim())
             .Where(name => !string.IsNullOrWhiteSpace(name))
-            .Distinct(StringComparer.CurrentCultureIgnoreCase)
-            .OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
         var availableInvoiceTypes = source
             .Select(item => (item.Invoice.InvoiceType ?? string.Empty).Trim())
             .Where(type => !string.IsNullOrWhiteSpace(type))
-            .Distinct(StringComparer.CurrentCultureIgnoreCase)
-            .OrderBy(type => type, StringComparer.CurrentCultureIgnoreCase)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(type => type, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
         var filtered = source
@@ -54,12 +54,12 @@ public static class ArchiveStatisticsService
                 || string.Equals(
                     item.Invoice.InstitutionName?.Trim(),
                     filter.InstitutionName.Trim(),
-                    StringComparison.CurrentCultureIgnoreCase))
+                    StringComparison.OrdinalIgnoreCase))
             .Where(item => string.IsNullOrWhiteSpace(filter.InvoiceType)
                 || string.Equals(
                     item.Invoice.InvoiceType?.Trim(),
                     filter.InvoiceType.Trim(),
-                    StringComparison.CurrentCultureIgnoreCase))
+                    StringComparison.OrdinalIgnoreCase))
             .ToArray();
 
         var rows = filtered
@@ -78,9 +78,9 @@ public static class ArchiveStatisticsService
                 group.Sum(item => item.Invoice.VatAmount),
                 group.Sum(item => item.Invoice.StampDuty),
                 group.Sum(item => item.Invoice.PaymentAmount)))
-            .OrderBy(row => row.InstitutionName, StringComparer.CurrentCultureIgnoreCase)
+            .OrderBy(row => row.InstitutionName, StringComparer.OrdinalIgnoreCase)
             .ThenByDescending(row => row.Year)
-            .ThenBy(row => row.InvoiceType, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(row => row.InvoiceType, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
         return new ArchiveStatisticsResult(
@@ -89,7 +89,7 @@ public static class ArchiveStatisticsService
             filtered
                 .Select(item => (item.Invoice.InstitutionName ?? string.Empty).Trim())
                 .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Distinct(StringComparer.CurrentCultureIgnoreCase)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Count(),
             filtered.Sum(item => item.Invoice.PayableAmount),
             filtered.Sum(item => item.Invoice.VatAmount),
