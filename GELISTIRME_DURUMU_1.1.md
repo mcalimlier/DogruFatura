@@ -2028,6 +2028,53 @@ Sıradaki doğrulama:
    - beklenen: **122/122**
 5. Yeşil olursa Aşama 5.2 için **boş fatura numarası mükerrer uyarısı** ele alınacak.
 
+## 19.09.2026 — Aşama 5.1 gerçek PDF smoke SONRAYA BIRAKILDI
+
+Kullanıcının şu anda uygun deneme arşiv/PDF seti bulunmadığı için:
+- çoklu tarihsel PDF async ilerleme,
+- okuma sırasında İPTAL,
+- normal tarihsel PDF import smoke
+
+manuel doğrulaması sonraya bırakıldı.
+
+Kod ve statik kontroller korunuyor; Aşama 5.1 tamamen kapanmış sayılmayacak, ancak uygun test verisi gelene kadar UX çalışmalarını engellemeyecek.
+
+## 19.09.2026 — Aşama 5 UI ölçü revizyonu — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Kullanıcı geri bildirimi:
+1. `PDF KONTROL` düğmesinde yazı yatayda kesiliyordu.
+2. Arşiv detayındaki `AÇ / DÜZENLE / SİL` düğmeleri eşit genişlikte değildi.
+3. Form hazırlık göstergesi `%100` olduğunda yazı çember sınırına taşıyordu.
+
+Düzeltmeler:
+- `ArchivePdfSyncButton` genişliği `112 -> 132`.
+- arşiv alt eylem grid'i üç eşit `*` kolona çevrildi:
+  - `AÇ`
+  - `DÜZENLE`
+  - `SİL`
+- aradaki 8 px boşluklar korundu.
+- form hazırlık çember geometrisine dokunulmadı.
+- `HeaderReadinessText` fontu `15 -> 12.5` düşürüldü; `%100` metni 48x48 çember içine güvenli sığacak şekilde küçültüldü.
+
+Commit:
+- `a9778c9d1891cca4c318fecacb69c1bfe2386e23`
+
+Statik kontrol:
+- PDF KONTROL width 132: geçti
+- AÇ/DÜZENLE/SİL eşit yıldız kolonlar: geçti
+- form hazırlık font 12.5: geçti
+
+Doğrulama:
+1. Fetch origin → Pull origin
+2. `DERLE_CALISTIR.bat`
+3. Görsel smoke:
+   - PDF KONTROL yazısı tam görünmeli
+   - AÇ / DÜZENLE / SİL yatayda eşit genişlikte görünmeli
+   - Form Hazırlık `%100` metni çember dışına taşmamalı
+4. `TESTLERI_CALISTIR.bat`
+   - kod tarafındaki son hedef **122/122**
+   - gerçek PDF import smoke'u uygun test dosyası bulunduğunda ayrıca yapılacak
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
