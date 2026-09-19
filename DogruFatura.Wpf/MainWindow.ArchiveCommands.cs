@@ -16,6 +16,14 @@ public partial class MainWindow
             return;
         }
 
+        if (archive.IsClosed && archive.HasClosedSnapshot)
+        {
+            SetArchiveStatus(
+                "Bu HYS arşivi SHA-256 snapshot ile mühürlenmiştir; kapanışı geri alınamaz ve iş/veri içeriği değiştirilemez.",
+                true);
+            return;
+        }
+
         ArchivedInvoiceList updated;
         var pdfMove = PdfMoveResult.None(archive.PdfFileName);
         string successMessage;
@@ -84,13 +92,13 @@ public partial class MainWindow
                 return;
             }
 
-            updated = archive with
+            updated = ClosedArchiveSnapshotService.Seal(archive with
             {
                 HysPaymentOrderDocumentNumber = normalizedHysNumber,
                 IsClosed = true,
                 ClosedAt = DateTime.Now,
                 PdfFileName = pdfMove.PdfFileName
-            };
+            });
             successMessage = pdfMove.Moved
                 ? $"{normalizedHysNumber} kaydedildi; PDF Arşivlenenler klasörüne taşınıp HYS koduyla adlandırıldı."
                 : $"{normalizedHysNumber} kaydedildi; arşiv kapatıldı. Bu listeye ait kayıtlı PDF bulunamadı.";
