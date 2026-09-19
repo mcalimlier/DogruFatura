@@ -13,7 +13,8 @@ public sealed record ArchivedInvoiceList(
     bool IsClosed = false,
     DateTime? ClosedAt = null,
     string PdfFileName = "",
-    string PdfSha256 = "")
+    string PdfSha256 = "",
+    string ClosedSnapshotSha256 = "")
 {
     [JsonIgnore]
     public InvoiceKind Kind => DomainValueText.ParseInvoiceKind(InvoiceType);
@@ -37,6 +38,9 @@ public sealed record ArchivedInvoiceList(
 
     [JsonIgnore]
     public bool IsStatisticsEligible => IsClosed && !string.IsNullOrWhiteSpace(HysPaymentOrderDocumentNumber);
+
+    [JsonIgnore]
+    public bool HasClosedSnapshot => !string.IsNullOrWhiteSpace(ClosedSnapshotSha256);
 
     [JsonIgnore]
     public string InstitutionSummary
@@ -67,6 +71,7 @@ public sealed record ArchivedInvoiceList(
         HysPaymentOrderDocumentNumber = (HysPaymentOrderDocumentNumber ?? string.Empty).Trim().ToUpperInvariant(),
         PdfFileName = (PdfFileName ?? string.Empty).Trim(),
         PdfSha256 = (PdfSha256 ?? string.Empty).Trim().ToUpperInvariant(),
+        ClosedSnapshotSha256 = (ClosedSnapshotSha256 ?? string.Empty).Trim().ToUpperInvariant(),
         Invoices = Invoices?.ToList() ?? new List<InvoiceRecord>(),
         AuthorityProfile = (AuthorityProfile ?? AuthorityProfileDefaults.Create()).Normalize()
     };
