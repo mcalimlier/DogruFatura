@@ -70,7 +70,7 @@ public sealed class HistoricalPdfImportService
             if (document.NumberOfPages == 0)
                 return Invalid(sourcePath, fileName, "PDF sayfa içermiyor.");
 
-            var pageBuffer = new List<ExtractedPage>(document.NumberOfPages);
+            var pageBuffer = new List<PdfPageData>(document.NumberOfPages);
             foreach (var page in document.GetPages())
             {
                 cancellationToken.ThrowIfCancellationRequested();
