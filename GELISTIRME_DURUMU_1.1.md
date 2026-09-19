@@ -3067,6 +3067,107 @@ Not:
    - beklenen: **124/124**
 6. Aşama 5.1 tarihsel PDF gerçek dosya smoke testi hâlâ uygun örnek PDF seti bulunduğunda ayrıca yapılacak.
 
+## 19.09.2026 — Aşama 5.3 ilk build BAŞARISIZ — CSV syntax + LiveCharts target fix uygulandı
+
+Kullanıcının yerel build sonucu:
+- restore: **3 warning**
+- Core: başarılı
+- WPF: **4 error + 3 warning**
+- build başarısız.
+
+### Derleme hataları
+
+Dosya:
+- `DogruFatura.Wpf/MainWindow.StatisticsExports.cs`
+- satır: yaklaşık `672`
+
+Hatalar:
+- CS1002
+- CS1513
+- CS8997
+- CS1002
+
+Neden:
+`CsvCell` metodunun quote escape dönüş satırı yanlış üretilmişti:
+
+yanlış:
+```
+return """ + safe.Replace(""", """", StringComparison.Ordinal) + """;
+```
+
+doğru:
+```
+return "\"" + safe.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+```
+
+Fix commit:
+- `2b10316ee48afd8b7fd625bbdaa928dee432efbf`
+
+### NU1701 warningleri
+
+Restore warningleri:
+- `OpenTK 3.3.1`
+- `OpenTK.GLWpfControl 3.3.0`
+- `SkiaSharp.Views.WPF 3.119.0`
+
+Kullanıcı logunda proje effective TFM:
+- `net8.0-windows7.0`
+
+LiveCharts2 2.0.5, `SkiaSharp.Views.WPF 3.119.0` getiriyor.
+Bu SkiaSharp WPF paketi gerçek .NET 8 WPF assetini:
+- `net8.0-windows10.0.19041`
+altında sağlıyor.
+
+`net8.0-windows7.0` hedefinde NuGet .NET Framework assetine fallback ettiği için NU1701 oluşuyordu.
+
+Warning suppress edilmedi.
+
+Düzeltme:
+- WPF:
+  - `net8.0-windows`
+  - → `net8.0-windows10.0.19041`
+- Tests:
+  - `net8.0-windows`
+  - → `net8.0-windows10.0.19041`
+
+Tests de WPF projesine ProjectReference verdiği için iki proje aynı Windows platform minimumuyla hizalandı.
+
+Core:
+- `net8.0`
+- değişmedi.
+
+Commitler:
+- WPF TFM: `4e9fd13c896f7d6cba437828d29240bfbb1f1311`
+- Tests TFM: `d0ea3daabc411f28b40f27bf18b502439b9db695`
+
+### Export kültür temizliği
+
+Dosya adlarında doğrudan interpolation tarih formatı yerine:
+- `StatisticsExportTimestamp()`
+- `CultureInfo.InvariantCulture`
+
+kullanıldı.
+
+CSV/XLSX/PNG/PDF dosya adlarının tümü bu helper üzerinden oluşturuluyor.
+
+Commit:
+- `634f8432fc914dc9ac513967efd29619e1ba7f8f`
+
+### Sıradaki zorunlu kapı
+
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+3. Beklenen:
+   - restore NU1701: **0**
+   - Core warning/error: **0 / 0**
+   - WPF warning/error: **0 / 0**
+4. Build yeşil olmadan UI/output smoke veya test sonucuna geçilmeyecek.
+5. Build yeşil olursa:
+   - İstatistik ekranı smoke
+   - PDF/CSV/XLSX/PNG output smoke
+   - `TESTLERI_CALISTIR.bat`
+   - hedef **124/124**
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
