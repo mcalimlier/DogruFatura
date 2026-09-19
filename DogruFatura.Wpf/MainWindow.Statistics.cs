@@ -1,10 +1,14 @@
 using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
+using LiveChartsCore;
+using LiveChartsCore.Measure;
+using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.SkiaSharpView.Painting;
+using SkiaSharp;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Shapes;
 
 namespace DogruFatura.Wpf;
 
@@ -83,7 +87,6 @@ public partial class MainWindow
 
     private void RefreshStatisticsDonut(ArchiveStatisticsResult result)
     {
-        StatisticsDonutCanvas.Children.Clear();
         StatisticsDonutLegendPanel.Children.Clear();
         StatisticsDonutTotalText.Text = NumberParser.Money(result.PaymentTotal);
 
@@ -101,111 +104,86 @@ public partial class MainWindow
         var total = distribution.Sum(item => item.PaymentTotal);
         if (distribution.Length == 0 || total <= 0m)
         {
+            StatisticsDonutChart.Series = Array.Empty<ISeries>();
             StatisticsDonutEmptyState.Visibility = Visibility.Visible;
             return;
         }
 
         StatisticsDonutEmptyState.Visibility = Visibility.Collapsed;
 
-        const double center = 110d;
-        const double radius = 78d;
-        const double thickness = 30d;
-        var startAngle = -90d;
-
+        var series = new List<ISeries>(distribution.Length);
         foreach (var item in distribution)
         {
             var percentage = item.PaymentTotal / total;
-            var sweepAngle = (double)percentage * 360d;
-            var brush = StatisticsBrush(item.InvoiceType);
+            var skColor = StatisticsSkColor(item.InvoiceType);
+            var wpfBrush = StatisticsBrush(item.InvoiceType);
+            var percentageText = "%" + (percentage * 100m).ToString(
+                "N0",
+                CultureInfo.GetCultureInfo("tr-TR"));
 
-            if (sweepAngle >= 359.999d)
+            series.Add(new PieSeries<double>
             {
-                var ring = new Ellipse
-                {
-                    Width = radius * 2d,
-                    Height = radius * 2d,
-                    Stroke = brush,
-                    StrokeThickness = thickness
-                };
-                Canvas.SetLeft(ring, center - radius);
-                Canvas.SetTop(ring, center - radius);
-                StatisticsDonutCanvas.Children.Add(ring);
-            }
-            else
-            {
-                var startPoint = StatisticsDonutPoint(center, radius, startAngle);
-                var endPoint = StatisticsDonutPoint(center, radius, startAngle + sweepAngle);
-                var figure = new PathFigure
-                {
-                    StartPoint = startPoint,
-                    IsClosed = false,
-                    IsFilled = false
-                };
-                figure.Segments.Add(new ArcSegment
-                {
-                    Point = endPoint,
-                    Size = new Size(radius, radius),
-                    SweepDirection = SweepDirection.Clockwise,
-                    IsLargeArc = sweepAngle > 180d
-                });
-
-                StatisticsDonutCanvas.Children.Add(new Path
-                {
-                    Data = new PathGeometry(new[] { figure }),
-                    Stroke = brush,
-                    StrokeThickness = thickness,
-                    StrokeStartLineCap = PenLineCap.Flat,
-                    StrokeEndLineCap = PenLineCap.Flat
-                });
-            }
+                Name = item.InvoiceType,
+                Values = new[] { (double)item.PaymentTotal },
+                InnerRadius = 92,
+                HoverPushout = 8,
+                Fill = new SolidColorPaint(skColor),
+                Stroke = new SolidColorPaint(SKColors.White) { StrokeThickness = 2 },
+                DataLabelsPaint = new SolidColorPaint(SKColors.White),
+                DataLabelsSize = 16,
+                DataLabelsPosition = PolarLabelsPosition.Middle,
+                DataLabelsFormatter = _ => percentage >= 0.06m ? percentageText : string.Empty,
+                TooltipLabelFormatter = _ =>
+                    $"{item.InvoiceType}: {NumberParser.Money(item.PaymentTotal)} ({percentageText})"
+            });
 
             AddStatisticsLegendItem(
                 item,
                 percentage * 100m,
-                brush);
-
-            startAngle += sweepAngle;
+                wpfBrush);
         }
+
+        StatisticsDonutChart.Series = series;
     }
 
     private void AddStatisticsLegendItem(
         StatisticsDonutItem item,
         decimal percentage,
-        Brush brush)
+        SolidColorBrush brush)
     {
         var row = new Grid
         {
-            Margin = new Thickness(0, 0, 0, 10)
+            Margin = new Thickness(0, 0, 0, 12)
         };
-        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var marker = new Border
         {
-            Width = 11,
-            Height = 11,
-            CornerRadius = new CornerRadius(2),
+            Width = 13,
+            Height = 13,
+            CornerRadius = new CornerRadius(3),
             Background = brush,
             VerticalAlignment = VerticalAlignment.Center
         };
 
         var label = new StackPanel
         {
-            Margin = new Thickness(8, 0, 8, 0)
+            Margin = new Thickness(9, 0, 10, 0)
         };
         label.Children.Add(new TextBlock
         {
             Text = item.InvoiceType,
             Foreground = new SolidColorBrush(Color.FromRgb(3, 28, 56)),
-            FontSize = 14,
+            FontSize = 15,
             FontWeight = FontWeights.SemiBold
         });
         label.Children.Add(new TextBlock
         {
             Text = $"{item.InvoiceCount} fatura",
             Foreground = new SolidColorBrush(Color.FromRgb(100, 119, 139)),
-            FontSize = 12.5
+            FontSize = 13
         });
 
         var value = new StackPanel
@@ -216,7 +194,7 @@ public partial class MainWindow
         {
             Text = NumberParser.Money(item.PaymentTotal),
             Foreground = new SolidColorBrush(Color.FromRgb(3, 28, 56)),
-            FontSize = 14,
+            FontSize = 15,
             FontWeight = FontWeights.Bold,
             HorizontalAlignment = HorizontalAlignment.Right
         });
@@ -224,7 +202,8 @@ public partial class MainWindow
         {
             Text = "%" + percentage.ToString("N1", CultureInfo.GetCultureInfo("tr-TR")),
             Foreground = new SolidColorBrush(Color.FromRgb(84, 112, 141)),
-            FontSize = 12.5,
+            FontSize = 13,
+            FontWeight = FontWeights.SemiBold,
             HorizontalAlignment = HorizontalAlignment.Right
         });
 
@@ -236,14 +215,6 @@ public partial class MainWindow
         StatisticsDonutLegendPanel.Children.Add(row);
     }
 
-    private static Point StatisticsDonutPoint(double center, double radius, double angleDegrees)
-    {
-        var radians = angleDegrees * Math.PI / 180d;
-        return new Point(
-            center + (radius * Math.Cos(radians)),
-            center + (radius * Math.Sin(radians)));
-    }
-
     private static int StatisticsInvoiceTypeOrder(string invoiceType) => invoiceType switch
     {
         "Elektrik" => 0,
@@ -253,13 +224,22 @@ public partial class MainWindow
         _ => 4
     };
 
-    private static Brush StatisticsBrush(string invoiceType) => invoiceType switch
+    private static SolidColorBrush StatisticsBrush(string invoiceType) => invoiceType switch
     {
         "Elektrik" => Brushes.Goldenrod,
         "Su" => Brushes.SteelBlue,
         "Telefon" => Brushes.MediumPurple,
         "İnternet" => Brushes.MediumSeaGreen,
         _ => Brushes.SlateGray
+    };
+
+    private static SKColor StatisticsSkColor(string invoiceType) => invoiceType switch
+    {
+        "Elektrik" => new SKColor(218, 165, 32),
+        "Su" => new SKColor(70, 130, 180),
+        "Telefon" => new SKColor(147, 112, 219),
+        "İnternet" => new SKColor(60, 179, 113),
+        _ => new SKColor(112, 128, 144)
     };
 
     private sealed record StatisticsDonutItem(
