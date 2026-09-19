@@ -85,7 +85,7 @@
                                 <Ellipse Stroke="#29445F" StrokeThickness="5"/>
                                 <Path x:Name="HeaderReadinessArc" Stroke="#FFB41F" StrokeThickness="5"
                                       StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
-                                <TextBlock x:Name="HeaderReadinessText" Text="%0" Foreground="White" FontSize="15"
+                                <TextBlock x:Name="HeaderReadinessText" Text="%0" Foreground="White" FontSize="12.5"
                                            FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
                         </StackPanel>
@@ -687,7 +687,7 @@
                                     <TextBlock Text="Listeleri saklayın, HYS Ödeme Emri Belge No ile kesin kapatın ve gerektiğinde yeniden açın." Style="{StaticResource PageSubtitle}"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
-                                    <Button x:Name="ArchivePdfSyncButton" Style="{StaticResource ModernButton}" Content="PDF KONTROL" Width="112"
+                                    <Button x:Name="ArchivePdfSyncButton" Style="{StaticResource ModernButton}" Content="PDF KONTROL" Width="132"
                                             Background="#8A5A12" Margin="0,0,10,0" Click="SynchronizeArchivePdfs_Click"
                                             ToolTip="Arşiv kayıtları ile PDF belgelerinin uyumunu kontrol eder ve eksik belgeleri güvenli biçimde tamamlar."/>
                                     <Button x:Name="ArchiveImportButton" Style="{StaticResource ModernButton}" Content="ARŞİV EKLE" Width="148"
@@ -856,9 +856,9 @@
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="8"/>
-                                                <ColumnDefinition Width="118"/>
+                                                <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="8"/>
-                                                <ColumnDefinition Width="104"/>
+                                                <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <Button x:Name="OpenArchivedListButton" Style="{StaticResource ModernButton}"
                                                     Content="AÇ" Background="#2468D8" IsEnabled="False"
