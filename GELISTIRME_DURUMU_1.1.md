@@ -967,6 +967,54 @@ Doğrulama:
 5. `TESTLERI_CALISTIR.bat`
 6. Beklenen: **0 warning / 0 error + 117/117**
 
+## 19.09.2026 — Üst şerit sürüm kartı revizyonu — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Kullanıcı talebiyle üst şeritteki sürüm bilgisi düz metin olmaktan çıkarılıp `AKTİF KURUM` kartıyla aynı görsel dilde karta dönüştürüldü.
+
+Uygulanan düzen:
+- `AKTİF KURUM`: 280 px
+- aralık: 12 px
+- `SÜRÜM`: 140 px
+- kalan orta alan: esnek boşluk
+- `FORM HAZIRLIK`: 120 px
+- `TEMİZLE`: 116 px
+- pencere kontrolleri sağ kenarda korunuyor
+
+Sürüm kartı stili:
+- arka plan: `#082744`
+- border: `#24496B`
+- border kalınlığı: 1
+- `CornerRadius=8`
+- `Padding=11,6`
+- başlık: `SÜRÜM`
+- başlık fontu: **10.5** — `AKTİF KURUM` ile aynı
+- değer fontu: **12.5** — `ActiveInstitutionText` ile aynı
+- değer rengi: beyaz
+- `HeaderVersionText` dinamik sürüm kaynağını kullanmaya devam ediyor.
+
+Davranış:
+- `HeaderVersionText.Text = AppVersionInfo.DisplayVersion`
+- tam informational version tooltip korunuyor
+- ikinci sürüm kaynağı eklenmedi
+- Hakkında ekranındaki sürüm bilgisi değiştirilmedi
+
+Commit:
+- `3072b4fc8b07751dbcdb49d343a759a3286add56`
+
+Bu değişiklik Paket 11 doğrulama kapısına dahildir.
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+3. Üst şerit:
+   - SÜRÜM kartı AKTİF KURUM ile aynı stil ailesinde görünmeli
+   - SÜRÜM başlığı ile AKTİF KURUM başlığı aynı boyutta olmalı
+   - `v1.0.1` ile kurum değer metni aynı boyutta olmalı
+   - FORM HAZIRLIK / TEMİZLE / pencere kontrolleri hizalı olmalı
+4. İşlem Arşivi → Tümü / Açık / Kapalı filtresi
+5. `TESTLERI_CALISTIR.bat`
+6. Beklenen: **0 warning / 0 error + 117/117**
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
