@@ -3,7 +3,9 @@ namespace DogruFatura.Core.Models;
 public sealed record ArchiveStatisticsFilter(
     int? Year = null,
     string InstitutionName = "",
-    string InvoiceType = "");
+    string InvoiceType = "",
+    DateTime? StartDate = null,
+    DateTime? EndDate = null);
 
 public sealed record ArchiveStatisticsRow(
     string InstitutionName,
@@ -15,6 +17,13 @@ public sealed record ArchiveStatisticsRow(
     decimal StampDutyTotal,
     decimal PaymentTotal);
 
+public sealed record ArchiveStatisticsMonthlyRow(
+    int Year,
+    int Month,
+    int InvoiceCount,
+    decimal PayableTotal,
+    decimal PaymentTotal);
+
 public sealed record ArchiveStatisticsResult(
     int ArchiveCount,
     int InvoiceCount,
@@ -23,7 +32,10 @@ public sealed record ArchiveStatisticsResult(
     decimal VatTotal,
     decimal StampDutyTotal,
     decimal PaymentTotal,
+    decimal AveragePayableAmount,
+    decimal AveragePaymentAmount,
     IReadOnlyList<int> AvailableYears,
     IReadOnlyList<string> AvailableInstitutions,
     IReadOnlyList<string> AvailableInvoiceTypes,
-    IReadOnlyList<ArchiveStatisticsRow> Rows);
+    IReadOnlyList<ArchiveStatisticsRow> Rows,
+    IReadOnlyList<ArchiveStatisticsMonthlyRow> MonthlyRows);
