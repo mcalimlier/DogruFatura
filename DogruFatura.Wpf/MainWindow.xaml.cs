@@ -202,7 +202,12 @@ public partial class MainWindow : Window
         _suppressArchiveEvents = true;
         ArchiveTypeFilterBox.ItemsSource = AllInvoiceTypeFilterPrefix.Concat(InvoiceTypes).ToArray();
         ArchiveTypeFilterBox.SelectedIndex = 0;
-        ArchiveStatusFilterBox.ItemsSource = new[] { "Tümü", "Açık", "Kapalı" };
+        ArchiveStatusFilterBox.ItemsSource = new[]
+        {
+            "Tümü",
+            DomainValueText.ToStorageValue(ArchiveState.Open),
+            DomainValueText.ToStorageValue(ArchiveState.Closed)
+        };
         ArchiveStatusFilterBox.SelectedIndex = 0;
 
         var archiveView = CollectionViewSource.GetDefaultView(ArchivedLists);
