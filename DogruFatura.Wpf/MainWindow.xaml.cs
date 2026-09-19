@@ -222,7 +222,12 @@ public partial class MainWindow : Window
     private ICollectionView InitializeControlCenter()
     {
         _suppressControlEvents = true;
-        ControlSeverityFilterBox.ItemsSource = new[] { "Tümü", "Hata", "Uyarı" };
+        ControlSeverityFilterBox.ItemsSource = new[]
+        {
+            "Tümü",
+            DomainValueText.ToDisplayValue(ControlIssueSeverity.Error),
+            DomainValueText.ToDisplayValue(ControlIssueSeverity.Warning)
+        };
         ControlSeverityFilterBox.SelectedIndex = 0;
         ControlCategoryFilterBox.ItemsSource = new[]
         {
