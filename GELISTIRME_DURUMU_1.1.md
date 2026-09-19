@@ -788,6 +788,78 @@ Sıradaki doğrulama:
    - yeni test eklenmedi; beklenen **117/117**
 5. Bu iki kapı yeşil olmadan Paket 11'e geçilmeyecek.
 
+## 19.09.2026 — Kod temizliği / sadeleştirme paketi 10 TAMAMLANDI VE DOĞRULANDI
+
+Kullanıcının yerel doğrulaması:
+
+Build:
+- SDK: `.NET 10.0.400`
+- `DogruFatura.Core`: başarılı
+- `DogruFatura.Wpf`: başarılı
+- Toplam: **0 warning / 0 error**
+- `[3/3] DogruFatura baslatiliyor...` aşamasına ulaşıldı.
+- Toplam build: yaklaşık **8,5 sn**
+
+Tam xUnit:
+- Toplam test: **117**
+- Başarılı: **117**
+- Başarısız: **0**
+- Atlandı: **0**
+- `DogruFatura.Tests`: başarılı
+- Test çalıştırması: yaklaşık **10,9 sn**
+- Test özeti: yaklaşık **11,8 sn**
+- Toplam test build/koşu: yaklaşık **17,3 sn**
+- BAT sonucu: **[OK] TUM TESTLER BASARILI**
+
+Sonuç:
+- Paket 10 typed UI sadeleştirmesi yerel build + tam regresyon paketiyle yeşil doğrulandı.
+- Yeni güvenilir baseline: **0 warning / 0 error + 117/117 xUnit**.
+
+## 19.09.2026 — Kod temizliği / sadeleştirme paketi 11 — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Paket 10'un yeşil baseline'ından sonra mevcut `ArchiveState` typed katmanının arşiv UI filtresine uygulanması tamamlandı.
+
+Değişiklikler:
+- `DomainValueText.ParseArchiveState(string?)` eklendi.
+  - `"Açık"` → `ArchiveState.Open`
+  - `"Kapalı"` → `ArchiveState.Closed`
+  - diğer değerler / `"Tümü"` → `null`
+- `DomainValueText.ToStorageValue(ArchiveState)` eklendi.
+- `ArchivedInvoiceList.ClosureStatus` artık doğrudan `IsClosed ? "Kapalı" : "Açık"` tekrarını taşımıyor; `State` üzerinden typed kaynağı kullanıyor.
+- Arşiv durum filtresi seçenekleri `ArchiveState.Open/Closed` üzerinden üretiliyor.
+- `FilterArchivedList` içinde ham `"Açık"/"Kapalı"` karşılaştırmaları kaldırıldı; seçili değer typed olarak parse edilip `archive.State` ile karşılaştırılıyor.
+- Mevcut domain regresyon testine ArchiveState metin round-trip kontrolleri eklendi; yeni test metodu eklenmedi, bu yüzden toplam test sayısı değişmemeli.
+
+Commitler:
+- Domain metin dönüşümü: `740c5d929ede796f7a1a3af5a08783192c05f82a`
+- Arşiv model durum metni: `ec2018a744c49aa2ac35c358f4e0b384cebeba08`
+- UI durum filtre kaynağı: `ddea0eca4c6b6548b20ac78e980082b29552aa22`
+- Typed filtre karşılaştırması: `b699eb9b26bd5f4faf56a777d769934f0b82c980`
+- Regresyon assertion'ları: `d47f0d2a48703b9d4187bf5ab2bafa6720e71525`
+
+Statik kontrol:
+- ArchiveState parser: mevcut
+- ArchiveState storage metni: mevcut
+- `ClosureStatus` typed kaynaktan: mevcut
+- arşiv filtre seçenekleri typed kaynaktan: mevcut
+- filtre karşılaştırması `archive.State` üzerinden: mevcut
+- eski `selectedStatus == "Açık"/"Kapalı"` karşılaştırmaları: **0**
+- veri modeli JSON şeması, restore, SHA-256/manifest, SchoolId ve PDF/arşiv dosya akışı değiştirilmedi.
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+   - normal başlatma
+3. Hızlı smoke:
+   - İşlem Arşivi → durum filtresi: Tümü / Açık / Kapalı
+   - Açık filtresi yalnız açık listeleri göstermeli
+   - Kapalı filtresi yalnız kapalı listeleri göstermeli
+   - arşiv listesinde durum metni aynı görünmeli
+4. `TESTLERI_CALISTIR.bat`
+   - yeni test metodu eklenmedi; beklenen toplam **117/117**
+5. Bu iki kapı yeşil olmadan Paket 12'ye geçilmeyecek.
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
