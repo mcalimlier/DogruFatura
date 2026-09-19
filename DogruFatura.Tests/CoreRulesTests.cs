@@ -16,6 +16,10 @@ public sealed class CoreRulesTests
         Assert.Equal(4137.57m, result.VatBase);
         Assert.Equal(4137.57m * TaxCalculationService.StampDutyRate, result.StampDuty);
         Assert.Equal(4965.10m - result.StampDuty, result.PaymentAmount);
+        Assert.Equal(TaxRuleCatalog.CurrentVersion, result.RuleVersion);
+        Assert.Null(result.RuleEffectiveFrom);
+        Assert.Equal(TaxCalculationService.StampDutyRate, result.AppliedStampDutyRate);
+        Assert.Equal(TaxRuleCatalog.Current, service.ActiveRule);
     }
 
     [Fact]
