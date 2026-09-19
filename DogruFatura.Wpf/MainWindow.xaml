@@ -1035,7 +1035,6 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
 
@@ -1099,85 +1098,129 @@
                                 </Grid>
                             </Border>
 
-                            <Border Grid.Row="3" Style="{StaticResource PremiumPanel}" Padding="16" Margin="0,0,0,9">
+                            <Border Grid.Row="3"
+                                    Background="#F7F9FC"
+                                    BorderBrush="#DCE5EE"
+                                    BorderThickness="1"
+                                    CornerRadius="20"
+                                    Padding="18"
+                                    ClipToBounds="True">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="390"/>
-                                        <ColumnDefinition Width="18"/>
+                                        <ColumnDefinition Width="520"/>
+                                        <ColumnDefinition Width="20"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <StackPanel>
-                                        <TextBlock Text="FATURA TÜRÜ DAĞILIMI" Style="{StaticResource PremiumSectionTitle}"/>
-                                        <TextBlock Text="Seçili filtrelere göre ödeme tutarının fatura türlerine dağılımı."
-                                                   Style="{StaticResource PremiumSectionSubtitle}" Margin="0,3,0,9"/>
-                                        <Grid Width="300" Height="300" HorizontalAlignment="Center">
-                                            <lvc:PieChart x:Name="StatisticsDonutChart"
-                                                          Width="300" Height="300"
-                                                          LegendPosition="Hidden"
-                                                          InitialRotation="-90"/>
-                                            <Border Width="136" Height="136" Background="#F7F9FC"
-                                                    BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="68"
-                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                    IsHitTestVisible="False">
-                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="116">
-                                                    <TextBlock Text="TOPLAM ÖDEME" Foreground="#64778B" FontSize="12"
-                                                               FontWeight="Bold" HorizontalAlignment="Center"/>
-                                                    <TextBlock x:Name="StatisticsDonutTotalText" Text="0,00 TL"
-                                                               Foreground="#031C38" FontSize="20" FontWeight="Bold"
-                                                               TextAlignment="Center" TextWrapping="Wrap" Margin="0,5,0,0"/>
-                                                </StackPanel>
-                                            </Border>
-                                        </Grid>
-                                    </StackPanel>
-
-                                    <Border Grid.Column="2" Background="#F7F9FC" BorderBrush="#DCE5EE"
-                                            BorderThickness="1" CornerRadius="9" Padding="16">
+                                    <Border Background="#FFFFFF"
+                                            BorderBrush="#DCE5EE"
+                                            BorderThickness="1"
+                                            CornerRadius="20"
+                                            Padding="18"
+                                            ClipToBounds="True">
                                         <Grid>
-                                            <StackPanel x:Name="StatisticsDonutLegendPanel"/>
-                                            <StackPanel x:Name="StatisticsDonutEmptyState"
-                                                        HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D2;"
-                                                           Foreground="#9BB0C2" FontSize="34" HorizontalAlignment="Center"/>
-                                                <TextBlock Text="Dağılım verisi yok" Foreground="#526277"
-                                                           FontSize="16" FontWeight="SemiBold"
-                                                           HorizontalAlignment="Center" Margin="0,8,0,0"/>
-                                                <TextBlock Text="Filtreleri değiştirerek başka bir dönem veya kurum seçebilirsiniz."
-                                                           Foreground="#7A8B9E" FontSize="13"
-                                                           TextWrapping="Wrap" TextAlignment="Center" Margin="0,3,0,0"/>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                            </Grid.RowDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Text="FATURA TÜRÜ DAĞILIMI" Style="{StaticResource PremiumSectionTitle}"/>
+                                                <TextBlock Text="Seçili filtrelere göre ödeme tutarının fatura türlerine dağılımı."
+                                                           Style="{StaticResource PremiumSectionSubtitle}" Margin="0,3,0,12"/>
                                             </StackPanel>
+
+                                            <Grid Grid.Row="1" Width="420" Height="420"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <lvc:PieChart x:Name="StatisticsDonutChart"
+                                                              Width="420" Height="420"
+                                                              Background="Transparent"
+                                                              LegendPosition="Hidden"
+                                                              InitialRotation="-90"/>
+                                                <Border Width="176" Height="176"
+                                                        Background="#FFFFFF"
+                                                        BorderBrush="#DCE5EE"
+                                                        BorderThickness="1"
+                                                        CornerRadius="88"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        IsHitTestVisible="False">
+                                                    <StackPanel HorizontalAlignment="Center"
+                                                                VerticalAlignment="Center"
+                                                                Width="148">
+                                                        <TextBlock Text="TOPLAM ÖDEME"
+                                                                   Foreground="#64778B"
+                                                                   FontSize="13"
+                                                                   FontWeight="Bold"
+                                                                   HorizontalAlignment="Center"/>
+                                                        <TextBlock x:Name="StatisticsDonutTotalText"
+                                                                   Text="0,00 TL"
+                                                                   Foreground="#031C38"
+                                                                   FontSize="23"
+                                                                   FontWeight="Bold"
+                                                                   TextAlignment="Center"
+                                                                   TextWrapping="Wrap"
+                                                                   Margin="0,6,0,0"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Grid.Column="2"
+                                            Background="#FFFFFF"
+                                            BorderBrush="#DCE5EE"
+                                            BorderThickness="1"
+                                            CornerRadius="20"
+                                            Padding="22"
+                                            ClipToBounds="True">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                            </Grid.RowDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Text="DAĞILIM DETAYI"
+                                                           Foreground="#031C38"
+                                                           FontSize="17"
+                                                           FontWeight="Bold"/>
+                                                <TextBlock Text="Tür bazında fatura adedi, ödeme tutarı ve toplam içindeki pay."
+                                                           Foreground="#70839A"
+                                                           FontSize="13.5"
+                                                           TextWrapping="Wrap"
+                                                           Margin="0,4,0,16"/>
+                                            </StackPanel>
+
+                                            <Grid Grid.Row="1">
+                                                <StackPanel x:Name="StatisticsDonutLegendPanel"
+                                                            VerticalAlignment="Top"/>
+                                                <StackPanel x:Name="StatisticsDonutEmptyState"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                                                               Text="&#xE9D2;"
+                                                               Foreground="#9BB0C2"
+                                                               FontSize="38"
+                                                               HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="Dağılım verisi yok"
+                                                               Foreground="#526277"
+                                                               FontSize="17"
+                                                               FontWeight="SemiBold"
+                                                               HorizontalAlignment="Center"
+                                                               Margin="0,9,0,0"/>
+                                                    <TextBlock Text="Filtreleri değiştirerek başka bir dönem veya kurum seçebilirsiniz."
+                                                               Foreground="#7A8B9E"
+                                                               FontSize="13.5"
+                                                               TextWrapping="Wrap"
+                                                               TextAlignment="Center"
+                                                               Margin="0,4,0,0"/>
+                                                </StackPanel>
+                                            </Grid>
                                         </Grid>
                                     </Border>
                                 </Grid>
                             </Border>
 
-                            <Border Grid.Row="4" Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="10">
-                                <Grid>
-                                    <DataGrid x:Name="StatisticsGrid" Style="{StaticResource ModernDataGrid}" AutoGenerateColumns="False"
-                                              IsReadOnly="True" SelectionMode="Single" SelectionUnit="FullRow"
-                                              CanUserSortColumns="True" CanUserReorderColumns="False">
-                                        <DataGrid.Columns>
-                                            <DataGridTextColumn Header="Kurum" Binding="{Binding InstitutionName}" Width="2*"/>
-                                            <DataGridTextColumn Header="Yıl" Binding="{Binding Year}" Width="72"/>
-                                            <DataGridTextColumn Header="Tür" Binding="{Binding InvoiceType}" Width="100"/>
-                                            <DataGridTextColumn Header="Adet" Binding="{Binding InvoiceCount}" Width="68"/>
-                                            <DataGridTextColumn Header="Fatura Tutarı" Binding="{Binding PayableTotal, StringFormat={}{0:N2} TL}" Width="125"/>
-                                            <DataGridTextColumn Header="KDV" Binding="{Binding VatTotal, StringFormat={}{0:N2} TL}" Width="105"/>
-                                            <DataGridTextColumn Header="Damga" Binding="{Binding StampDutyTotal, StringFormat={}{0:N2} TL}" Width="105"/>
-                                            <DataGridTextColumn Header="Ödeme" Binding="{Binding PaymentTotal, StringFormat={}{0:N2} TL}" Width="125"/>
-                                        </DataGrid.Columns>
-                                    </DataGrid>
-                                    <Border x:Name="StatisticsEmptyState" Background="#F7F9FC" IsHitTestVisible="False">
-                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D2;" Foreground="#9BB0C2" FontSize="42" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="Seçili filtrelerde istatistik verisi yok" Foreground="#526277" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,10,0,0"/>
-                                            <TextBlock Text="İstatistikler HYS ile kapanmış arşiv kayıtlarındaki faturalardan hesaplanır." Foreground="#7A8B9E" FontSize="14.5" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                        </StackPanel>
-                                    </Border>
-                                </Grid>
-                            </Border>
-                        </Grid>
-                        <ScrollViewer x:Name="AboutView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+<ScrollViewer x:Name="AboutView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                             <StackPanel Margin="0,0,8,16">
                                 <TextBlock Text="HAKKINDA / GÜVENLİK" Style="{StaticResource PageTitle}"/>
                                 <TextBlock Text="Sürüm, veri sağlığı, yedekleme ve destek araçları." Style="{StaticResource PageSubtitle}"/>
