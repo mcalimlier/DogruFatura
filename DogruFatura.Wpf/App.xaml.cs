@@ -92,6 +92,7 @@ public partial class App : Application
             var invoiceDataStore = new InvoiceDataStore();
             var authorityProfileDataStore = new AuthorityProfileDataStore();
             var archiveDataStore = new ArchivedInvoiceListDataStore();
+            var auditTrailStore = new AuditTrailStore();
             var archivePdfSynchronizationService = new ArchivePdfSynchronizationService(
                 documentArchiveStorageService,
                 finalReportPdfService.Save);
@@ -114,6 +115,7 @@ public partial class App : Application
                 documentArchiveStorageService,
                 historicalPdfImportService,
                 archivePdfSynchronizationService,
+                auditTrailStore,
                 startupState);
             UiPolishService.Apply(main);
 
