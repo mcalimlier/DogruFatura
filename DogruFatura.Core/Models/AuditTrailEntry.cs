@@ -14,6 +14,7 @@ public enum AuditTrailEventType
     ArchiveCreated,
     ArchiveClosed,
     ArchiveReopened,
+    ArchiveDeleted,
     ArchiveImported
 }
 
