@@ -120,15 +120,16 @@ public partial class MainWindow
 
             if (sweepAngle >= 359.999d)
             {
-                StatisticsDonutCanvas.Children.Add(new Ellipse
+                var ring = new Ellipse
                 {
                     Width = radius * 2d,
                     Height = radius * 2d,
                     Stroke = brush,
                     StrokeThickness = thickness
-                });
-                Canvas.SetLeft(StatisticsDonutCanvas.Children[^1], center - radius);
-                Canvas.SetTop(StatisticsDonutCanvas.Children[^1], center - radius);
+                };
+                Canvas.SetLeft(ring, center - radius);
+                Canvas.SetTop(ring, center - radius);
+                StatisticsDonutCanvas.Children.Add(ring);
             }
             else
             {
@@ -221,7 +222,7 @@ public partial class MainWindow
         });
         value.Children.Add(new TextBlock
         {
-            Text = $"%{percentage:N1}",
+            Text = "%" + percentage.ToString("N1", CultureInfo.GetCultureInfo("tr-TR")),
             Foreground = new SolidColorBrush(Color.FromRgb(84, 112, 141)),
             FontSize = 12.5,
             HorizontalAlignment = HorizontalAlignment.Right
