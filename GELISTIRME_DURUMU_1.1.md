@@ -80,7 +80,7 @@ Kalan ana işler:
 - `MainWindow` sorumluluk ayrımı yalnız yeni davranış eklenirken gerçek bir uygulama-servisi sınırı oluşursa sürdürülecek.
 - Typed domain geçişi gerekli alanlarda tamamlandı: fatura türü, kurum türü, arşiv durumu ve kontrol önem derecesi typed katmanı kullanıyor.
 - `SchoolId` işi tamamlandı; yeni/güncellenen faturalar ID bağı kullanıyor, legacy kayıtlar uyumlu fallback ile korunuyor.
-- Aşama 3 başladı: vergi kural sürümü/yürürlük metadata'sı ve InvoiceRecord kalıcılığı tamamlandı; append-only audit trail kodlandı. Sırada transaction journal ve kapalı HYS arşivinin değişmez belge modeli var.
+- Aşama 3 ilerliyor: vergi kural metadata'sı + InvoiceRecord kalıcılığı ve append-only audit trail doğrulandı; transaction journal kodlandı. Sırada kapalı HYS arşivinin değişmez belge modeli var.
 
 ## Aşama 4 — Warning temizliği
 
@@ -1428,6 +1428,138 @@ Sıradaki kapı:
 3. Başarılıysa audit smoke
 4. `TESTLERI_CALISTIR.bat`
 5. Beklenen: **0 warning / 0 error + 118/118**
+
+## 19.09.2026 — Aşama 3.3 kullanıcı doğrulaması BAŞARILI
+
+Kullanıcı compile fix sonrasında Aşama 3.3 için tüm doğrulama akışlarının başarılı olduğunu bildirdi.
+
+- Build: başarılı
+- Audit smoke: başarılı
+- Test kapısı: **118/118**
+- Append-only `DenetimKaydi.jsonl` paketi doğrulandı.
+
+## 19.09.2026 — Aşama 3.4 transaction journal — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Amaç:
+- gerçek çok-dosyalı kritik işlem olan **aktif listeyi işlem arşivine taşıma** akışını journal ile izlenebilir/güvenli hale getirmek,
+- audit trail'den farklı olarak transaction'ın hangi kalıcı adımda kaldığını bilmek,
+- uygulama kapanması veya I/O sorunu sonrasında yarım kalmış işlemi otomatik veri değişikliği yapmadan tespit etmek.
+
+Yeni model:
+- `TransactionJournalOperation`
+  - `ArchiveActiveList`
+- `TransactionJournalState`
+  - `Started`
+  - `ArchivePersisted`
+  - `ActiveListCleared`
+  - `Completed`
+  - `RolledBack`
+  - `RecoveryRequired`
+- `TransactionJournalEntry`
+  - `EntryId`
+  - `TransactionId`
+  - `OccurredAtUtc`
+  - `Operation`
+  - `State`
+  - `EntityId`
+  - `Detail`
+  - `IsTerminal`
+
+Yeni store:
+- `TransactionJournalStore`
+- varsayılan dosya: `DoğruFatura/Veri/IslemJournal.jsonl`
+- JSON Lines / append-only
+- `FileMode.Append`
+- `FileOptions.WriteThrough`
+- `Flush(flushToDisk: true)`
+- `ReadAll()`
+- `GetIncompleteTransactions()`
+- ani kapanmada son append satırı yarım kalırsa yalnız **son bozuk satır** tolere edilir; önceki sağlam journal prefix'i kullanılarak yarım işlem tespiti sürdürülür.
+
+Composition:
+- `App.xaml.cs` `TransactionJournalStore` oluşturuyor.
+- `MainWindow` constructor injection ile store'u alıyor.
+- açılışta `ShowPendingTransactionJournalWarning()` çalışıyor.
+
+Açılış güvenliği:
+- terminal state'i olmayan transaction bulunursa kullanıcıya uyarı gösteriliyor.
+- uygulama **otomatik veri değiştirmiyor**.
+- kullanıcıdan Aktif Fatura Listesi ile İşlem Arşivi'ni karşılaştırması ve yeni işlemden önce güvenlik yedeği alması isteniyor.
+- journal okunamazsa teknik hata crash log'a yazılıyor ve güvenli uyarı gösteriliyor.
+
+Aktif liste → arşiv transaction akışı:
+1. Arşiv modeli doğrulanır.
+2. Veri dosyalarında hiçbir değişiklik yapılmadan önce journal `Started` yazılır.
+3. `IslemArsivi.json` başarıyla yazılır.
+4. journal `ArchivePersisted` yazılır.
+5. `AktifFaturalar.json` boş liste olarak başarıyla yazılır.
+6. journal `ActiveListCleared` yazılır.
+7. journal `Completed` yazılır.
+8. mevcut audit trail `ArchiveCreated` olayı üretilir.
+
+Hata/rollback davranışı:
+- `Started` yazılamazsa transaction **hiç başlamaz**.
+- arşiv store yazımı başarısızsa in-memory ekleme geri alınır ve `RolledBack` best-effort yazılır.
+- arşiv kalıcılaştıktan sonra journal ilerletilemezse arşiv yazımı geri alınmaya çalışılır:
+  - rollback başarılı → `RolledBack`
+  - rollback başarısız → `RecoveryRequired`
+- aktif liste temizleme başarısızsa mevcut arşiv rollback semantiği korunur:
+  - rollback başarılı → `RolledBack`
+  - rollback başarısız → `RecoveryRequired`
+- iki veri dosyası başarıyla tamamlandıktan sonra journal kapanış satırı yazılamazsa ana veri işlemi geri çevrilmez; kullanıcıya journal uyarısı gösterilir ve sonraki açılışta incomplete transaction tespiti devreye girer.
+
+PII:
+- journal detail içinde kurum adı, VKN, fatura numarası veya yetkili adı tutulmuyor.
+- yalnız archive GUID, invoice count ve invoice type gibi teknik transaction özeti bulunuyor.
+
+Yedekleme:
+- journal dosyası `Veri` klasöründe olduğu için mevcut `ApplicationSafetyService` tam güvenlik ZIP'lerine otomatik dahil olur.
+
+Yeni test:
+- `TransactionJournalStoreTests.IncompleteTransactionIsDetectedUntilCompleted`
+- append-only prefix korumasını doğruluyor.
+- `Started -> ArchivePersisted` sonrası transaction'ın incomplete bulunduğunu doğruluyor.
+- `Completed` sonrası incomplete listesinden çıktığını doğruluyor.
+- UTC timestamp davranışını doğruluyor.
+
+Test sayısı:
+- önce: **118**
+- yeni: **119**
+
+Commitler:
+- transaction model: `8a4bb8cdbedff224c80fcb92e189dfc98cd1ed9b`
+- journal store: `e3a8652aa02487579ed48745595aa66b5676d814`
+- composition root: `b1223976799166afdcef2a9eea94b5204d3f74ff`
+- MainWindow DI: `d6d40d7b635be4d940775e569f3ba010efd0fa2e`
+- helper + startup warning: `79e4ea9f8829aa31d69f5206eb150768e55abd0c`
+- startup warning çağrısı: `59612e50792da6f14e5b81803b7aab62481b2080`
+- archive transaction entegrasyonu: `9b74b474500496af2c8d71af18bbcceae1038b4c`
+- regression test: `6bfc14f8cfa6bc8b5c636c84a954123f2d7ca3bd`
+
+Statik kontrol:
+- composition wiring: geçti
+- `Started` kalıcı veri değişikliğinden önce: geçti
+- `Completed` aktif liste kalıcı temizliğinden sonra: geçti
+- rollback / recovery-required yolları: mevcut
+- append-only + disk flush: mevcut
+- incomplete detection: mevcut
+- son yarım satır toleransı: mevcut
+- otomatik recovery/veri değiştirme: **yok**
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+3. Smoke:
+   - aktif listede geçerli birkaç fatura oluştur
+   - **İşlem Arşivine Al** akışını tamamla
+   - `Veri/IslemJournal.jsonl` oluşmalı
+   - aynı transaction için sırasıyla `Started`, `ArchivePersisted`, `ActiveListCleared`, `Completed` satırları görünmeli
+   - arşiv kaydı oluşmalı ve aktif liste boşalmalı
+   - uygulamayı kapat/aç; tamamlanmış transaction için yarım işlem uyarısı **çıkmamalı**
+4. `TESTLERI_CALISTIR.bat`
+   - beklenen: **119/119**
+5. Yeşil olursa Aşama 3.5 olarak **kapalı HYS arşivini değişmez belge modeliyle güçlendirme** işine geçilecek.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
