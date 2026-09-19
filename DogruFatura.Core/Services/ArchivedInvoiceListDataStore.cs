@@ -115,7 +115,6 @@ public sealed class ArchivedInvoiceListDataStore
         ArgumentNullException.ThrowIfNull(archives);
         var normalized = archives.Select(archive => archive.Normalize()).ToList();
         ValidateArchiveSet(normalized, saving: true);
-        ValidateSealedArchiveImmutability(normalized);
 
         var folder = Path.GetDirectoryName(DataFilePath) ?? throw new InvalidOperationException("İşlem arşivi veri klasörü belirlenemedi.");
         Directory.CreateDirectory(folder);
@@ -126,50 +125,6 @@ public sealed class ArchivedInvoiceListDataStore
             _jsonOptions);
         File.WriteAllText(temporaryPath, json, new UTF8Encoding(false));
         File.Move(temporaryPath, DataFilePath, true);
-    }
-
-    private void ValidateSealedArchiveImmutability(List<ArchivedInvoiceList> candidates)
-    {
-        if (!File.Exists(DataFilePath))
-            return;
-
-        List<ArchivedInvoiceList> existing;
-        try
-        {
-            var json = File.ReadAllText(DataFilePath, Encoding.UTF8);
-            var schema = DataFileSchemaService.Read(json, DataFileKinds.InvoiceArchive);
-            existing = schema.Data.Deserialize<List<ArchivedInvoiceList>>(_jsonOptions)
-                       ?.Where(archive => archive is not null)
-                       .Select(archive => archive!.Normalize())
-                       .ToList()
-                       ?? new List<ArchivedInvoiceList>();
-        }
-        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
-        {
-            throw new InvalidOperationException(
-                "Mevcut arşiv mühürleri doğrulanamadığı için arşiv dosyasının üzerine yazılmadı.",
-                ex);
-        }
-
-        foreach (var sealedArchive in existing.Where(archive => archive.HasClosedSnapshot))
-        {
-            if (!ClosedArchiveSnapshotService.Matches(sealedArchive))
-                throw new InvalidOperationException(
-                    $"{sealedArchive.ArchiveNumber} mühürlü arşiv kaydının mevcut içeriği değişmiş; üzerine yazılmadı.");
-
-            var candidate = candidates.FirstOrDefault(archive => archive.Id == sealedArchive.Id);
-            if (candidate is null)
-                throw new InvalidOperationException(
-                    $"{sealedArchive.ArchiveNumber} mühürlü HYS arşivi silinemez.");
-
-            if (!string.Equals(
-                    candidate.ClosedSnapshotSha256,
-                    sealedArchive.ClosedSnapshotSha256,
-                    StringComparison.OrdinalIgnoreCase)
-                || !ClosedArchiveSnapshotService.Matches(candidate))
-                throw new InvalidOperationException(
-                    $"{sealedArchive.ArchiveNumber} mühürlü HYS arşivinin iş/veri içeriği değiştirilemez.");
-        }
     }
 
     private static void ValidateArchiveSet(List<ArchivedInvoiceList> archives, bool saving = false)
