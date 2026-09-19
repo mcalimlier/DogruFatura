@@ -104,7 +104,8 @@ public partial class MainWindow
         ArchiveSelectedNumberText.Text = archive.ArchiveNumber;
         ArchiveSelectedPaymentText.Text = NumberParser.Money(archive.PaymentTotal);
         ArchiveSelectedInfoText.Text = $"{archive.InvoiceType} • {archive.InvoiceCount} fatura"
-            + (string.IsNullOrWhiteSpace(archive.PdfFileName) ? string.Empty : " • PDF kayıtlı");
+            + (string.IsNullOrWhiteSpace(archive.PdfFileName) ? string.Empty : " • PDF kayıtlı")
+            + (archive.HasClosedSnapshot ? " • Mühürlü" : string.Empty);
         ArchiveSelectedDateText.Text = archive.ArchivedAt.ToString("dd.MM.yyyy HH:mm", CultureInfo.CurrentCulture);
         ArchiveSelectedClosureStateText.Text = archive.IsClosed ? "KAPALI" : "AÇIK";
         ArchiveSelectedClosureStateText.Foreground = new SolidColorBrush(archive.IsClosed
@@ -112,15 +113,23 @@ public partial class MainWindow
             : Color.FromRgb(255, 180, 31));
         ArchiveHysNumberBox.Text = archive.HysPaymentOrderDocumentNumber;
         ArchiveHysNumberBox.IsReadOnly = archive.IsClosed;
-        ArchiveClosureButton.Content = archive.IsClosed ? "KAPANIŞI GERİ AL" : "HYS İLE KAPAT";
-        ArchiveClosureButton.Background = new SolidColorBrush(archive.IsClosed
-            ? Color.FromRgb(145, 63, 72)
-            : Color.FromRgb(36, 138, 80));
-        ArchiveClosureButton.IsEnabled = true;
+        ArchiveClosureButton.Content = archive.HasClosedSnapshot
+            ? "MÜHÜRLÜ"
+            : archive.IsClosed
+                ? "KAPANIŞI GERİ AL"
+                : "HYS İLE KAPAT";
+        ArchiveClosureButton.Background = new SolidColorBrush(archive.HasClosedSnapshot
+            ? Color.FromRgb(49, 83, 113)
+            : archive.IsClosed
+                ? Color.FromRgb(145, 63, 72)
+                : Color.FromRgb(36, 138, 80));
+        ArchiveClosureButton.IsEnabled = !archive.HasClosedSnapshot;
         ArchiveInvoiceDetailGrid.ItemsSource = archive.Invoices;
         ArchiveDetailEmptyState.Visibility = Visibility.Collapsed;
         OpenArchivedListButton.IsEnabled = true;
-        SetArchiveStatus("Seçili listeyi açtığınızda arşiv çıktısı gösterilir; aktif listeniz değişmez.");
+        SetArchiveStatus(archive.HasClosedSnapshot
+            ? "Seçili HYS arşivi mühürlüdür; iş/veri içeriği değiştirilemez. Arşiv çıktısını güvenle görüntüleyebilirsiniz."
+            : "Seçili listeyi açtığınızda arşiv çıktısı gösterilir; aktif listeniz değişmez.");
     }
 
     private void UpdateArchiveActiveListState()
