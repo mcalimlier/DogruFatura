@@ -50,6 +50,8 @@ public static class ArchiveStatisticsService
 
         var filtered = source
             .Where(item => !filter.Year.HasValue || item.Invoice.InvoiceDate.Year == filter.Year.Value)
+            .Where(item => !filter.StartDate.HasValue || item.Invoice.InvoiceDate.Date >= filter.StartDate.Value.Date)
+            .Where(item => !filter.EndDate.HasValue || item.Invoice.InvoiceDate.Date <= filter.EndDate.Value.Date)
             .Where(item => string.IsNullOrWhiteSpace(filter.InstitutionName)
                 || string.Equals(
                     item.Invoice.InstitutionName?.Trim(),
@@ -83,6 +85,22 @@ public static class ArchiveStatisticsService
             .ThenBy(row => row.InvoiceType, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
+        var monthlyRows = filtered
+            .GroupBy(item => new
+            {
+                item.Invoice.InvoiceDate.Year,
+                item.Invoice.InvoiceDate.Month
+            })
+            .Select(group => new ArchiveStatisticsMonthlyRow(
+                group.Key.Year,
+                group.Key.Month,
+                group.Count(),
+                group.Sum(item => item.Invoice.PayableAmount),
+                group.Sum(item => item.Invoice.PaymentAmount)))
+            .OrderBy(row => row.Year)
+            .ThenBy(row => row.Month)
+            .ToArray();
+
         return new ArchiveStatisticsResult(
             filtered.Select(item => item.ArchiveId).Distinct().Count(),
             filtered.Length,
@@ -95,10 +113,13 @@ public static class ArchiveStatisticsService
             filtered.Sum(item => item.Invoice.VatAmount),
             filtered.Sum(item => item.Invoice.StampDuty),
             filtered.Sum(item => item.Invoice.PaymentAmount),
+            filtered.Length == 0 ? 0m : filtered.Average(item => item.Invoice.PayableAmount),
+            filtered.Length == 0 ? 0m : filtered.Average(item => item.Invoice.PaymentAmount),
             availableYears,
             availableInstitutions,
             availableInvoiceTypes,
-            rows);
+            rows,
+            monthlyRows);
     }
 
     private sealed record ArchiveInvoice(Guid ArchiveId, InvoiceRecord Invoice);
