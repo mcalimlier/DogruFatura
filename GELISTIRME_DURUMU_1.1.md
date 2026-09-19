@@ -1394,6 +1394,41 @@ Sıradaki doğrulama:
    - beklenen: **118/118**
 5. Yeşil olursa Aşama 3.4 olarak **transaction journal** tasarım/uygulama dilimine geçilecek.
 
+## 19.09.2026 — Aşama 3.3 ilk derleme hatası ve düzeltmesi
+
+Kullanıcının ilk Aşama 3.3 build çıktısı:
+
+- Core: başarılı
+- WPF: **4 hata**
+- Testler: derleme başarısız olduğu için çalışmadı
+
+Hatalar:
+- `MainWindow.InvoiceList.cs(142,13)` CS0103: `AuditTrailEventType`
+- `MainWindow.InvoiceList.cs(143,13)` CS0103: `AuditTrailEntityType`
+- `MainWindow.InvoiceList.cs(178,13)` CS0103: `AuditTrailEventType`
+- `MainWindow.InvoiceList.cs(179,13)` CS0103: `AuditTrailEntityType`
+
+Neden:
+- `MainWindow.InvoiceList.cs` audit enum'larını kullanıyordu ancak `using DogruFatura.Core.Models;` importu eksikti.
+
+Düzeltme:
+- eksik Models namespace importu eklendi.
+- aynı dosyada eski `{    private` biçimleme artığı da temizlendi.
+
+Fix commit:
+- `37050a07d1e743be678db4299ddbeca48965daa5`
+
+Statik kontrol:
+- AuditTrail kullanan WPF dosyalarının Models importları kontrol edildi.
+- Paket/Aşama ilerletilmedi; Aşama 3.3 hâlâ doğrulama bekliyor.
+
+Sıradaki kapı:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+3. Başarılıysa audit smoke
+4. `TESTLERI_CALISTIR.bat`
+5. Beklenen: **0 warning / 0 error + 118/118**
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
