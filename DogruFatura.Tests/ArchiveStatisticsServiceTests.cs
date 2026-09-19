@@ -51,6 +51,43 @@ public sealed class ArchiveStatisticsServiceTests
         Assert.Contains("Elektrik", result.AvailableInvoiceTypes);
     }
 
+    [Fact]
+    public void BuildAppliesDateRangeAndCreatesMonthlyBreakdown()
+    {
+        var archive = new ArchivedInvoiceList(
+            Guid.NewGuid(),
+            "STAT-DATE-001",
+            new DateTime(2025, 12, 31),
+            "Elektrik",
+            new List<InvoiceRecord>
+            {
+                Invoice("A Kurumu", "Elektrik", new DateTime(2025, 1, 10), 1000m, 180m, 7m, 993m),
+                Invoice("A Kurumu", "Elektrik", new DateTime(2025, 2, 10), 2000m, 360m, 14m, 1986m),
+                Invoice("A Kurumu", "Elektrik", new DateTime(2025, 3, 10), 3000m, 540m, 21m, 2979m)
+            },
+            AuthorityProfileDefaults.Create(),
+            "HYS-2025987654",
+            true,
+            new DateTime(2025, 12, 31));
+
+        var result = ArchiveStatisticsService.Build(
+            new[] { archive },
+            new ArchiveStatisticsFilter(
+                InstitutionName: "A Kurumu",
+                InvoiceType: "Elektrik",
+                StartDate: new DateTime(2025, 2, 1),
+                EndDate: new DateTime(2025, 3, 31)));
+
+        Assert.Equal(2, result.InvoiceCount);
+        Assert.Equal(2500m, result.AveragePayableAmount);
+        Assert.Equal(2482.5m, result.AveragePaymentAmount);
+        Assert.Equal(2, result.MonthlyRows.Count);
+        Assert.Equal(2, result.MonthlyRows[0].Month);
+        Assert.Equal(1986m, result.MonthlyRows[0].PaymentTotal);
+        Assert.Equal(3, result.MonthlyRows[1].Month);
+        Assert.Equal(2979m, result.MonthlyRows[1].PaymentTotal);
+    }
+
     private static InvoiceRecord Invoice(
         string institutionName,
         string invoiceType,
