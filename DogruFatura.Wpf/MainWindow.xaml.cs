@@ -116,9 +116,17 @@ public partial class MainWindow : Window
         EnsureDocumentArchiveDirectories();
         InitializeWindowShell();
         InitializeInvoiceEntrySources();
-        InitializeSchoolView();
-        InitializeArchiveView();
-        InitializeControlCenter();
+        _schoolView = InitializeSchoolView();
+        StartNewSchool();
+        RefreshSchoolView();
+        LoadAuthorityProfileToForm(_authorityProfile);
+
+        _archiveView = InitializeArchiveView();
+        RefreshArchiveView();
+
+        _controlView = InitializeControlCenter();
+        RefreshControlCenter();
+
         RunCalculationEngineSelfTest();
         InitializeInitialUiState();
         ShowStartupWarnings(startupState);
@@ -157,39 +165,41 @@ public partial class MainWindow : Window
         _suppressFormEvents = false;
     }
 
-    private void InitializeSchoolView()
+    private ICollectionView InitializeSchoolView()
     {
         _suppressSchoolEvents = true;
         SchoolFilterTypeBox.ItemsSource = AllInstitutionTypeFilterPrefix.Concat(InstitutionTypes).ToArray();
         SchoolFilterTypeBox.SelectedIndex = 0;
         SchoolTypeEditorBox.ItemsSource = InstitutionTypes;
-        _schoolView = CollectionViewSource.GetDefaultView(AllSchools);
-        _schoolView.Filter = FilterSchool;
-        _schoolView.SortDescriptions.Add(new SortDescription(nameof(SchoolRecord.InstitutionType), ListSortDirection.Ascending));
-        _schoolView.SortDescriptions.Add(new SortDescription(nameof(SchoolRecord.Name), ListSortDirection.Ascending));
-        SchoolsGrid.ItemsSource = _schoolView;
+
+        var schoolView = CollectionViewSource.GetDefaultView(AllSchools);
+        schoolView.Filter = FilterSchool;
+        schoolView.SortDescriptions.Add(new SortDescription(nameof(SchoolRecord.InstitutionType), ListSortDirection.Ascending));
+        schoolView.SortDescriptions.Add(new SortDescription(nameof(SchoolRecord.Name), ListSortDirection.Ascending));
+        SchoolsGrid.ItemsSource = schoolView;
+
         _suppressSchoolEvents = false;
-        StartNewSchool();
-        RefreshSchoolView();
-        LoadAuthorityProfileToForm(_authorityProfile);
+        return schoolView;
     }
 
-    private void InitializeArchiveView()
+    private ICollectionView InitializeArchiveView()
     {
         _suppressArchiveEvents = true;
         ArchiveTypeFilterBox.ItemsSource = new[] { "Tümü", "Elektrik", "Telefon", "İnternet", "Su" };
         ArchiveTypeFilterBox.SelectedIndex = 0;
         ArchiveStatusFilterBox.ItemsSource = new[] { "Tümü", "Açık", "Kapalı" };
         ArchiveStatusFilterBox.SelectedIndex = 0;
-        _archiveView = CollectionViewSource.GetDefaultView(ArchivedLists);
-        _archiveView.Filter = FilterArchivedList;
-        ArchiveGrid.ItemsSource = _archiveView;
+
+        var archiveView = CollectionViewSource.GetDefaultView(ArchivedLists);
+        archiveView.Filter = FilterArchivedList;
+        ArchiveGrid.ItemsSource = archiveView;
         ArchiveInvoiceDetailGrid.ItemsSource = Array.Empty<InvoiceRecord>();
+
         _suppressArchiveEvents = false;
-        RefreshArchiveView();
+        return archiveView;
     }
 
-    private void InitializeControlCenter()
+    private ICollectionView InitializeControlCenter()
     {
         _suppressControlEvents = true;
         ControlSeverityFilterBox.ItemsSource = new[] { "Tümü", "Hata", "Uyarı" };
@@ -205,11 +215,13 @@ public partial class MainWindow : Window
             "Kurum Bilgisi"
         };
         ControlCategoryFilterBox.SelectedIndex = 0;
-        _controlView = CollectionViewSource.GetDefaultView(ControlIssues);
-        _controlView.Filter = FilterControlIssue;
-        ControlIssuesGrid.ItemsSource = _controlView;
+
+        var controlView = CollectionViewSource.GetDefaultView(ControlIssues);
+        controlView.Filter = FilterControlIssue;
+        ControlIssuesGrid.ItemsSource = controlView;
+
         _suppressControlEvents = false;
-        RefreshControlCenter();
+        return controlView;
     }
 
     private void RunCalculationEngineSelfTest()
