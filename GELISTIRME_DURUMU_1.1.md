@@ -2075,6 +2075,214 @@ Doğrulama:
    - kod tarafındaki son hedef **122/122**
    - gerçek PDF import smoke'u uygun test dosyası bulunduğunda ayrıca yapılacak
 
+## 19.09.2026 — Aşama 5.2 Fatura Listesi arşivleme + İstatistik ekranı + UI ölçü rev2 — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Kullanıcı talepleri:
+1. `PDF KONTROL` yazısı hâlâ kesildiği için düğmenin biraz daha genişletilmesi.
+2. Fatura Listesi ekranından doğrudan arşiv kaydı oluşturulması ve başarılı arşivleme sonrası aktif listenin kapanması.
+3. Kontrol Merkezi ile Hakkında / Güvenlik arasına yeni **İSTATİSTİK** bölümü eklenmesi.
+4. İstatistiklerde örneğin “A Kurumu / 2025 / Elektrik” toplamı ve genel toplamların görülebilmesi.
+
+### PDF KONTROL rev2
+
+- `ArchivePdfSyncButton.Width`:
+  - önce: `132`
+  - yeni: `160`
+- amaç: mevcut ModernButton padding/font yapısında `PDF KONTROL` metninin yatayda kesilmemesi.
+
+### Fatura Listesi → doğrudan ARŞİVLE
+
+Aktif Fatura Listesi araç çubuğuna:
+- `ArchiveFromListButton`
+- metin: `ARŞİVLE`
+- yeşil aksiyon rengi
+eklendi.
+
+Davranış:
+- aktif liste boşsa düğme disabled.
+- kayıt varsa enabled.
+- tıklama mevcut güvenli `TryArchiveActiveList(true)` akışını kullanır.
+- bu nedenle mevcut:
+  - doğrulama,
+  - kullanıcı onayı,
+  - transaction journal,
+  - archive store save,
+  - aktif liste kalıcı temizliği,
+  - audit trail,
+  - PDF eşitleme
+  semantiği aynen korunur.
+- başarılı arşivleme sonrası `ActiveInvoices.Clear()` mevcut akıştan çalışır; yani aktif liste kapanır/boşalır.
+- Fatura Listesi status alanında başarılı arşivleme mesajı gösterilir.
+
+### Yeni İSTATİSTİK bölümü
+
+Sol menü sırası:
+- KONTROL MERKEZİ
+- **İSTATİSTİK**
+- HAKKINDA / GÜVENLİK
+
+Yeni görünüm:
+- `StatisticsView`
+- navigasyon: `NavStatistics`
+- ekran açıldığında `RefreshStatistics()` çalışır.
+
+Veri kaynağı:
+- PDF dosyasını tekrar parse etmek yerine PDF'yi oluşturan/temsil eden yapılandırılmış `ArchivedInvoiceList -> InvoiceRecord` verileri kullanılır.
+- yalnız `IsStatisticsEligible` olan kayıtlar:
+  - HYS ile kapalı,
+  - istatistiğe dahil olmaya uygun
+  arşivler mali istatistiğe katılır.
+- bu yaklaşım PDF metni parse etmeye göre daha hızlı ve deterministiktir.
+- fiziksel PDF'nin geçici eksik olması mali arşiv kaydını istatistikten yanlışlıkla düşürmez.
+
+Yeni Core modeller:
+- `ArchiveStatisticsFilter`
+  - `Year`
+  - `InstitutionName`
+  - `InvoiceType`
+- `ArchiveStatisticsRow`
+  - kurum
+  - yıl
+  - fatura türü
+  - fatura sayısı
+  - fatura toplamı
+  - KDV toplamı
+  - damga toplamı
+  - ödeme toplamı
+- `ArchiveStatisticsResult`
+  - arşiv sayısı
+  - fatura sayısı
+  - kurum sayısı
+  - genel mali toplamlar
+  - mevcut yıl/kurum/tür seçenekleri
+  - kırılım satırları
+
+Yeni servis:
+- `ArchiveStatisticsService.Build(...)`
+
+Filtreler:
+- **Yıl**
+- **Kurum**
+- **Fatura Türü**
+- her biri `Tümü` seçeneğine sahip.
+- `TEMİZLE` tüm filtreleri sıfırlar.
+- `YENİLE` arşiv verisini yeniden hesaplar.
+
+Örnek kullanım:
+- Yıl = `2025`
+- Kurum = `A Kurumu`
+- Fatura Türü = `Elektrik`
+
+sonucunda üst kartlar ve tablo yalnız bu seçime ait:
+- fatura sayısı,
+- fatura toplamı,
+- KDV,
+- damga,
+- ödeme toplamını
+gösterir.
+
+Genel görünüm:
+- filtreler `Tümü` olduğunda tüm uygun kapalı arşivlerin genel toplamı gösterilir.
+
+Özet kartları:
+- ARŞİV
+- FATURA
+- KURUM
+- TOPLAM ÖDEME
+
+Ek toplam satırı:
+- Fatura toplamı
+- KDV
+- Damga
+- Ödeme
+
+Detay tablosu:
+- Kurum
+- Yıl
+- Tür
+- Adet
+- Fatura Tutarı
+- KDV
+- Damga
+- Ödeme
+
+Legacy / mükerrer güvenliği:
+- aynı non-empty `Invoice.Id` birden fazla uygun arşivde görülürse bir kez sayılır.
+- legacy `Guid.Empty` fatura kimlikleri birbirine yanlışlıkla tek kayıt olarak birleştirilmez.
+
+### Sadeleştirme kararı
+
+Bu ilk istatistik paketinde yeni chart/graph kütüphanesi eklenmedi.
+Neden:
+- gereksiz bağımlılık oluşturmamak,
+- mali hesapları önce test edilebilir Core servisinde sabitlemek,
+- grafik ihtiyacını daha sonra aynı sonuç modeli üzerinden eklemek.
+
+### Yeni test
+
+- `ArchiveStatisticsServiceTests.BuildFiltersByInstitutionYearAndInvoiceType`
+- doğrulanan örnek:
+  - A Kurumu
+  - 2025
+  - Elektrik
+- fatura sayısı ve Payable/KDV/Damga/Payment toplamları kontrol ediliyor.
+- filtre seçeneklerinin de üretildiği doğrulanıyor.
+
+Test sayısı:
+- önce hedef: **122**
+- yeni hedef: **123**
+
+Commitler:
+- istatistik modelleri: `53f8a18a6f282d40a203d8fcc83b7e58a731c2e0`
+- istatistik servis: `c7aeb54fc1c576b2ba3bb9f5fb65694c1f10a0bb`
+- istatistik test: `eb876b224f770b43e443982c61edc439826f259e`
+- legacy empty ID düzeltmesi: `0253ed6df501b72ac879983569dbf34116d41943`
+- XAML / PDF width / ARŞİVLE / İSTATİSTİK görünümü: `35fd31b924be0ee3d1d37077c3953bcfa1edc968`
+- statistics code-behind: `b3eb2881c2bbea15fd5310d62ef8af718fb5e872`
+- statistics navigation: `5ef0ed6425c4e42a5c28027309991cac97741b57`
+- Fatura Listesi ARŞİVLE state: `30bfa290feef088dd6f71f2566b92ce99b75e1bf`
+- Fatura Listesi ARŞİVLE handler: `f882fe14d506b9e61fc8df1571a5ebbd730b1762`
+
+Statik kontrol:
+- PDF KONTROL width 160: geçti
+- İSTATİSTİK menüsü Control/About arasında: geçti
+- StatisticsView XAML/code-behind isimleri: geçti
+- filtre event bağlantıları: geçti
+- Fatura Listesi ARŞİVLE → mevcut güvenli arşiv akışı: geçti
+- ARŞİVLE aktif liste boşken disabled: geçti
+- istatistik yalnız kapalı/HYS uygun arşivlerden: geçti
+- legacy empty Invoice.Id davranışı: geçti
+
+### İstatistik için sonraki öneriler
+
+İlk sürüm doğrulandıktan sonra en faydalı genişletmeler:
+1. **Aylık trend**: seçili kurum/yıl/türde Ocak–Aralık ödeme grafiği.
+2. **Yıllar arası karşılaştırma**: ör. A Kurumu Elektrik 2024 vs 2025 toplam ve yüzde fark.
+3. **Kurum sıralaması**: seçili yılda en yüksek ödeme toplamına sahip kurumlar.
+4. **Fatura türü dağılımı**: Elektrik / Su / Telefon / İnternet oranları.
+5. **Ortalama fatura**: kurum/tür bazında adet başına ortalama ödeme.
+6. **CSV/Excel dışa aktarım**: filtrelenmiş tabloyu analiz için dışarı verme.
+7. **Anomali görünümü**: kurumun kendi geçmişine göre olağandışı yüksek aylık tutarları sadece işaretleme; otomatik karar/vergi yorumu yapmadan.
+8. **PDF kapsam göstergesi**: mali kayıt var ama fiziksel PDF eksik olan arşivleri ayrı sayaçla göstermek.
+
+### Zorunlu doğrulama
+
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+3. Görsel/işlev smoke:
+   - `PDF KONTROL` metni tam görünmeli.
+   - Fatura Listesi'nde `ARŞİVLE` görünmeli.
+   - aktif liste doluyken `ARŞİVLE` → mevcut onay → arşiv kaydı oluşmalı → aktif liste boşalmalı.
+   - sol menüde KONTROL MERKEZİ ile HAKKINDA / GÜVENLİK arasında `İSTATİSTİK` görünmeli.
+   - İSTATİSTİK açılmalı.
+   - Yıl / Kurum / Fatura Türü filtreleri çalışmalı.
+   - filtre `Tümü` iken genel toplamlar görünmeli.
+   - örnek kurum + yıl + tür seçildiğinde tablo/özet yalnız seçili veriyi göstermeli.
+4. `TESTLERI_CALISTIR.bat`
+   - beklenen: **123/123**
+5. Aşama 5.1 gerçek tarihsel PDF smoke, uygun test PDF'leri bulunduğunda ayrıca yapılacak.
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
