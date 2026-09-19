@@ -22,6 +22,7 @@
     <ProjectReference Include="..\DogruFatura.Core\DogruFatura.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.5" />
     <PackageReference Include="PDFsharp-WPF" Version="6.2.4" />
     <PackageReference Include="PdfPig" Version="0.1.12" />
   </ItemGroup>
