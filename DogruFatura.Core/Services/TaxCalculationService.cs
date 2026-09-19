@@ -1,4 +1,5 @@
 using DogruFatura.Core.Models;
+using System.Globalization;
 
 namespace DogruFatura.Core.Services;
 
@@ -45,6 +46,10 @@ public sealed class TaxCalculationService
         if (paymentAmount < 0m)
             return Invalid("Hesaplanan damga vergisi fatura tutarından büyük olamaz.");
 
+        var stampDutyRateText = _activeRule.StampDutyRate.ToString(
+            "0.00000",
+            CultureInfo.GetCultureInfo("tr-TR"));
+
         return new TaxCalculationResult(
             true,
             vatBase,
@@ -54,7 +59,7 @@ public sealed class TaxCalculationService
                 ? "Elektrik kesinti tazminatı KDV matrahına eklenerek hesaplandı."
                 : stampDutyExempt
                 ? "Su faturası damga vergisi istisnasıyla hesaplandı."
-                : "Hesaplama 0,00948 damga vergisi oranıyla yapıldı.",
+                : $"Hesaplama {stampDutyRateText} damga vergisi oranıyla yapıldı.",
             _activeRule.Version,
             _activeRule.EffectiveFrom,
             _activeRule.StampDutyRate);
