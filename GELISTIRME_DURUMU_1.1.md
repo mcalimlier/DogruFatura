@@ -942,6 +942,31 @@ Sıradaki doğrulama:
 5. `TESTLERI_CALISTIR.bat`
 6. Beklenen: **0 warning / 0 error + 117/117**
 
+## 19.09.2026 — Üst şerit sürüm konumu revizyonu — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Kullanıcının ekran görüntüsündeki kırmızı işarete göre küçük sürüm etiketi sağ pencere kontrollerinin yanından alınarak orta boş alana taşındı.
+
+Yeni yerleşim:
+- `AKTİF KURUM` kartı solda kompakt kalıyor.
+- `HeaderVersionText` artık `AKTİF KURUM` ile `FORM HAZIRLIK` arasındaki esnek boş kolonda ortalanıyor.
+- Sürüm etiketi `11.5` font boyutuyla küçük ama daha rahat okunur.
+- `FORM HAZIRLIK` ve `TEMİZLE` sağ grupta korunuyor.
+- Minimize / maximize / close düğmeleri yeniden doğrudan sağ kenarda yan yana.
+- Dinamik sürüm kaynağı ve tooltip mantığı değiştirilmedi.
+
+Commit:
+- `9932899665ea93d15bdb40ee90ee65989e3acd7b`
+
+Bu değişiklik de Paket 11 doğrulama kapısına dahildir.
+
+Doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+3. Üst şeritte sürüm etiketinin orta boşlukta dengeli görünmesini kontrol et
+4. İşlem Arşivi Tümü / Açık / Kapalı filtresini kontrol et
+5. `TESTLERI_CALISTIR.bat`
+6. Beklenen: **0 warning / 0 error + 117/117**
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
