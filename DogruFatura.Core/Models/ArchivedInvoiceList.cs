@@ -33,7 +33,7 @@ public sealed record ArchivedInvoiceList(
         : HysPaymentOrderDocumentNumber;
 
     [JsonIgnore]
-    public string ClosureStatus => IsClosed ? "Kapalı" : "Açık";
+    public string ClosureStatus => DomainValueText.ToStorageValue(State);
 
     [JsonIgnore]
     public bool IsStatisticsEligible => IsClosed && !string.IsNullOrWhiteSpace(HysPaymentOrderDocumentNumber);
