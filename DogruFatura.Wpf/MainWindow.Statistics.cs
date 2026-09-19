@@ -163,12 +163,7 @@ public partial class MainWindow
         if (current.Year.HasValue)
             return current with { Year = current.Year.Value - 1 };
 
-        var availableYears = _statisticsResult?.AvailableYears ?? Array.Empty<int>();
-        if (availableYears.Count < 2)
-            return null;
-
-        var latestYear = availableYears.Max();
-        return current with { Year = latestYear - 1 };
+        return null;
     }
 
     private void RefreshStatisticsPdfHealth()
@@ -299,6 +294,7 @@ public partial class MainWindow
                 Values = rows.Select(row => (double)row.PaymentTotal).ToArray(),
                 Fill = new SolidColorPaint(new SKColor(138, 94, 216)),
                 Stroke = null,
+                ShowDataLabels = true,
                 DataLabelsPaint = new SolidColorPaint(new SKColor(3, 28, 56)),
                 DataLabelsSize = 12,
                 DataLabelsPosition = DataLabelsPosition.Top,
@@ -361,6 +357,7 @@ public partial class MainWindow
                 HoverPushout = 8,
                 Fill = new SolidColorPaint(skColor),
                 Stroke = new SolidColorPaint(SKColors.White) { StrokeThickness = 2 },
+                ShowDataLabels = true,
                 DataLabelsPaint = new SolidColorPaint(SKColors.White),
                 DataLabelsSize = 18,
                 DataLabelsPosition = PolarLabelsPosition.Middle,
