@@ -74,6 +74,34 @@ public sealed class ArchiveStorageIntegrationTests
         Assert.Contains("existing", Encoding.ASCII.GetString(File.ReadAllBytes(destination)), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void DeleteStoredPdfRemovesArchiveFileWithoutBackupCopy()
+    {
+        using var temp = new TempFolder();
+        var storage = new DocumentArchiveStorageService(temp.Path);
+        const string hys = "HYS-2026888888";
+        var archivedPath = storage.GetArchivedOutputPath(hys);
+        File.WriteAllBytes(archivedPath, Encoding.ASCII.GetBytes("%PDF-1.4\ndelete-test"));
+
+        var archive = new ArchivedInvoiceList(
+            Guid.NewGuid(),
+            "ARS-DELETE-001",
+            new DateTime(2026, 9, 19),
+            "Elektrik",
+            new List<InvoiceRecord> { Invoice() },
+            AuthorityProfileDefaults.Create(),
+            hys,
+            true,
+            new DateTime(2026, 9, 19),
+            Path.GetFileName(archivedPath));
+
+        var deleted = storage.DeleteStoredPdf(archive);
+
+        Assert.True(deleted);
+        Assert.False(File.Exists(archivedPath));
+        Assert.Empty(Directory.EnumerateFiles(temp.Path, "*", SearchOption.AllDirectories));
+    }
+
     private static InvoiceRecord Invoice()
     {
         var calculation = new TaxCalculationService().Calculate(1500m, 250m, "Elektrik");
