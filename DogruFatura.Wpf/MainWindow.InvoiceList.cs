@@ -1,3 +1,4 @@
+using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
 using System.Globalization;
 using System.Windows;
@@ -8,7 +9,8 @@ using System.Windows.Media;
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private int FindInvoiceIndex(Guid invoiceId)
+{
+    private int FindInvoiceIndex(Guid invoiceId)
     {
         for (var index = 0; index < ActiveInvoices.Count; index++)
             if (ActiveInvoices[index].Id == invoiceId)
