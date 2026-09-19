@@ -19,11 +19,18 @@ public sealed record InvoiceRecord(
     decimal StampDuty,
     decimal PaymentAmount,
     decimal InterruptionCompensationAmount = 0m,
-    Guid SchoolId = default)
+    Guid SchoolId = default,
+    string TaxRuleVersion = "",
+    DateOnly? TaxRuleEffectiveFrom = null,
+    decimal AppliedStampDutyRate = 0m)
 {
     [JsonIgnore]
     public InvoiceKind Kind => DomainValueText.ParseInvoiceKind(InvoiceType);
 
     [JsonIgnore]
     public InstitutionKind InstitutionKind => DomainValueText.ParseInstitutionKind(InstitutionType);
+
+    [JsonIgnore]
+    public bool HasTaxRuleMetadata =>
+        !string.IsNullOrWhiteSpace(TaxRuleVersion) && AppliedStampDutyRate > 0m;
 }
