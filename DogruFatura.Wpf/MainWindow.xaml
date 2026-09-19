@@ -635,6 +635,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
                             <StackPanel>
@@ -1097,7 +1098,51 @@
                                 </Grid>
                             </Border>
 
-                            <Border Grid.Row="3" Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="10">
+                            <Border Grid.Row="3" Style="{StaticResource PremiumPanel}" Padding="16" Margin="0,0,0,9">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="330"/>
+                                        <ColumnDefinition Width="18"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel>
+                                        <TextBlock Text="FATURA TÜRÜ DAĞILIMI" Style="{StaticResource PremiumSectionTitle}"/>
+                                        <TextBlock Text="Seçili filtrelere göre ödeme tutarının fatura türlerine dağılımı."
+                                                   Style="{StaticResource PremiumSectionSubtitle}" Margin="0,3,0,9"/>
+                                        <Grid Width="220" Height="220" HorizontalAlignment="Center">
+                                            <Canvas x:Name="StatisticsDonutCanvas" Width="220" Height="220"/>
+                                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="122">
+                                                <TextBlock Text="TOPLAM ÖDEME" Foreground="#64778B" FontSize="11.5"
+                                                           FontWeight="Bold" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="StatisticsDonutTotalText" Text="0,00 TL"
+                                                           Foreground="#031C38" FontSize="18" FontWeight="Bold"
+                                                           TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <Border Grid.Column="2" Background="#F7F9FC" BorderBrush="#DCE5EE"
+                                            BorderThickness="1" CornerRadius="9" Padding="16">
+                                        <Grid>
+                                            <StackPanel x:Name="StatisticsDonutLegendPanel"/>
+                                            <StackPanel x:Name="StatisticsDonutEmptyState"
+                                                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D2;"
+                                                           Foreground="#9BB0C2" FontSize="34" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Dağılım verisi yok" Foreground="#526277"
+                                                           FontSize="16" FontWeight="SemiBold"
+                                                           HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                                                <TextBlock Text="Filtreleri değiştirerek başka bir dönem veya kurum seçebilirsiniz."
+                                                           Foreground="#7A8B9E" FontSize="13"
+                                                           TextWrapping="Wrap" TextAlignment="Center" Margin="0,3,0,0"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </Border>
+
+                            <Border Grid.Row="4" Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="10">
                                 <Grid>
                                     <DataGrid x:Name="StatisticsGrid" Style="{StaticResource ModernDataGrid}" AutoGenerateColumns="False"
                                               IsReadOnly="True" SelectionMode="Single" SelectionUnit="FullRow"
