@@ -44,6 +44,13 @@ public static class DomainValueText
         _ => InstitutionKind.Unknown
     };
 
+    public static ArchiveState? ParseArchiveState(string? value) => value?.Trim() switch
+    {
+        "Açık" => ArchiveState.Open,
+        "Kapalı" => ArchiveState.Closed,
+        _ => null
+    };
+
     public static string ToStorageValue(InvoiceKind value) => value switch
     {
         InvoiceKind.Electricity => "Elektrik",
@@ -59,6 +66,13 @@ public static class DomainValueText
         InstitutionKind.MiddleSchool => "Ortaokul",
         InstitutionKind.Preschool => "Anasınıfı/Anaokulu",
         InstitutionKind.Institution => "Kurum",
+        _ => string.Empty
+    };
+
+    public static string ToStorageValue(ArchiveState value) => value switch
+    {
+        ArchiveState.Open => "Açık",
+        ArchiveState.Closed => "Kapalı",
         _ => string.Empty
     };
 }
