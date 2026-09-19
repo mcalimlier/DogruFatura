@@ -78,8 +78,9 @@ Kalan ana işler:
 
 - DI kapsamını kalan uygulama/rapor/arşiv servislerine kontrollü genişletmek.
 - `MainWindow` sorumluluklarını ViewModel/application-service katmanlarına ayırmak.
-- Tür/status alanlarını enum/value object yapısına taşımak.
-- `SchoolRecord` için değişmez `SchoolId` eklemek ve fatura-kurum bağını ID üzerinden güçlendirmek.
+- Typed domain geçişini yalnız gerçekten tekrar/riski azaltan alanlarda tamamlamak; fatura türü, kurum türü, arşiv durumu ve kontrol önem derecesi artık typed katmanı kullanıyor.
+- `SchoolId` işi tamamlandı; yeni/güncellenen faturalar ID bağı kullanıyor, legacy kayıtlar uyumlu fallback ile korunuyor.
+- Aşama 3 mali denetim/izlenebilirlik işlerine geçmek: vergi kural sürümü, append-only audit trail, transaction journal ve kapalı HYS arşivinin değişmez belge modeli.
 
 ## Aşama 4 — Warning temizliği
 
@@ -1057,6 +1058,56 @@ Sıradaki doğrulama:
 4. İşlem Arşivi → Tümü / Açık / Kapalı filtresini de hızlıca kontrol et
 5. `TESTLERI_CALISTIR.bat`
 6. Beklenen: **0 warning / 0 error + 117/117**
+
+## 19.09.2026 — Paket 11–12 kullanıcı doğrulaması BAŞARILI
+
+Kullanıcı build, görsel/smoke ve test akışlarının başarılı olduğunu bildirdi.
+
+- Üst şerit sürüm kartı çalışıyor.
+- Paket 11 ArchiveState filtresi çalışıyor.
+- Paket 12 InstitutionKind okul/kurum filtresi çalışıyor.
+- Bu kullanıcı bildirimi başarılı doğrulama olarak kaydedildi.
+- Ayrıntılı sayaç/log bu mesajda yeniden paylaşılmadığı için önceki doğrulanmış **117/117** baseline referans olarak korunuyor.
+
+## 19.09.2026 — Kod temizliği / sadeleştirme paketi 13 — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Kontrol Merkezi önem derecesi filtresinde kalan `"Hata"/"Uyarı"` string mantığı mevcut `ControlIssueSeverity` enum'una bağlandı.
+
+Değişiklikler:
+- `DomainValueText.ParseControlIssueSeverity(string?)` eklendi.
+- `DomainValueText.ToDisplayValue(ControlIssueSeverity)` eklendi.
+- `ControlIssue.SeverityLabel` artık ortak typed metin kaynağını kullanıyor.
+- `ControlSeverityFilterBox` seçenekleri enum değerlerinden üretiliyor.
+- `FilterControlIssue` ham label/string karşılaştırması yerine `issue.Severity` enum karşılaştırması yapıyor.
+- `Tümü` seçimi `null` parse edilerek mevcut “filtre yok” davranışını koruyor.
+- Mevcut domain regresyon testine Hata/Uyarı parse + display round-trip assertion'ları eklendi; yeni test metodu eklenmedi.
+- `MainWindow.Control.cs` içindeki monolitik dönemden kalmış `{    private` biçimleme artığı temizlendi.
+
+Commitler:
+- Domain severity metinleri: `5f56c17dce4d774ea199b64691f5655f327d9f9d`
+- ControlIssue label: `78aecee0ae41443c28a0220700fd7d9d8ab46150`
+- UI severity kaynağı: `1402018baa0f0787c8d263fe36abd82f410c4f98`
+- Typed severity filtresi: `3a55718432b32319ac7bddc64b8885e0ce48db50`
+- Regresyon assertion'ları: `917606ce6e34029aa30db37063407d6d47a4f81c`
+
+Statik kontrol:
+- severity parse: mevcut
+- severity display: mevcut
+- `SeverityLabel` typed kaynaktan: mevcut
+- UI filtre seçenekleri typed kaynaktan: mevcut
+- filtre enum karşılaştırması: mevcut
+- eski `severity != "Tümü"` / label karşılaştırması: **0**
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+3. Kontrol Merkezi → önem filtresi:
+   - Tümü
+   - Hata
+   - Uyarı
+4. `TESTLERI_CALISTIR.bat`
+5. Beklenen: **0 warning / 0 error + 117/117**
+6. Bu kapı yeşil olursa sadeleştirme paketlerini burada durdurup Aşama 3'e geçilecek.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
