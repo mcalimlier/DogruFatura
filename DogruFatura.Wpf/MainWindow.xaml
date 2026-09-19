@@ -851,16 +851,23 @@
                                         <Grid Grid.Row="5">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="10"/>
-                                                <ColumnDefinition Width="132"/>
+                                                <ColumnDefinition Width="8"/>
+                                                <ColumnDefinition Width="118"/>
+                                                <ColumnDefinition Width="8"/>
+                                                <ColumnDefinition Width="104"/>
                                             </Grid.ColumnDefinitions>
                                             <Button x:Name="OpenArchivedListButton" Style="{StaticResource ModernButton}"
-                                                    Content="SEÇİLİ LİSTEYİ AÇ" Background="#2468D8" IsEnabled="False"
-                                                    Click="OpenArchivedList_Click"/>
-                                            <Button x:Name="DeleteArchivedListButton" Grid.Column="2" Style="{StaticResource ModernButton}"
-                                                    Content="ARŞİVİ SİL" Background="#C23A43" IsEnabled="False"
+                                                    Content="AÇ" Background="#2468D8" IsEnabled="False"
+                                                    Click="OpenArchivedList_Click"
+                                                    ToolTip="Seçili arşiv çıktısını rapor görünümünde aç"/>
+                                            <Button x:Name="EditArchivedListButton" Grid.Column="2" Style="{StaticResource ModernButton}"
+                                                    Content="DÜZENLE" Background="#8A5A12" IsEnabled="False"
+                                                    Click="RestoreArchivedListToActive_Click"
+                                                    ToolTip="Arşivdeki faturaları Aktif Fatura Listesi'ne geri al ve normal fatura düzenleme araçlarıyla değiştir"/>
+                                            <Button x:Name="DeleteArchivedListButton" Grid.Column="4" Style="{StaticResource ModernButton}"
+                                                    Content="SİL" Background="#C23A43" IsEnabled="False"
                                                     Click="DeleteArchivedList_Click"
-                                                    ToolTip="Arşiv kaydını listeden siler; kayıtlı PDF dosyasını güvenlik amacıyla silmez."/>
+                                                    ToolTip="Arşiv kaydını ve ona bağlı PDF dosyasını onay sonrası kalıcı olarak sil"/>
                                         </Grid>
                                     </Grid>
                                 </Border>
