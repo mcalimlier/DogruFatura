@@ -80,7 +80,7 @@ Kalan ana işler:
 - `MainWindow` sorumluluk ayrımı yalnız yeni davranış eklenirken gerçek bir uygulama-servisi sınırı oluşursa sürdürülecek.
 - Typed domain geçişi gerekli alanlarda tamamlandı: fatura türü, kurum türü, arşiv durumu ve kontrol önem derecesi typed katmanı kullanıyor.
 - `SchoolId` işi tamamlandı; yeni/güncellenen faturalar ID bağı kullanıyor, legacy kayıtlar uyumlu fallback ile korunuyor.
-- Aşama 3 başladı: vergi kural sürümü/yürürlük metadata'sı eklendi ve InvoiceRecord kalıcılığı kodlandı. Sırada append-only audit trail, transaction journal ve kapalı HYS arşivinin değişmez belge modeli var.
+- Aşama 3 başladı: vergi kural sürümü/yürürlük metadata'sı ve InvoiceRecord kalıcılığı tamamlandı; append-only audit trail kodlandı. Sırada transaction journal ve kapalı HYS arşivinin değişmez belge modeli var.
 
 ## Aşama 4 — Warning temizliği
 
@@ -1274,6 +1274,125 @@ Sıradaki doğrulama:
    - yeni test metodu yok
    - beklenen: **117/117**
 5. Bu kapı yeşil olursa Aşama 3.3 olarak **append-only audit trail** temel modeli ve güvenli store dilimine geçilecek.
+
+## 19.09.2026 — Aşama 3.2 kullanıcı doğrulaması BAŞARILI
+
+Kullanıcı Aşama 3.2 sonrasında tüm build/smoke/test akışlarının başarılı olduğunu bildirdi.
+
+- InvoiceRecord tax rule metadata kalıcılığı çalışıyor.
+- Legacy ve tarihsel kayıt davranışında sorun bildirilmedi.
+- Son açık sayısal baseline **117/117** olarak korunuyordu.
+
+## 19.09.2026 — Aşama 3.3 append-only audit trail — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Amaç:
+- kritik kullanıcı veri değişikliklerini ayrı, yalnız ekleme yapan bir denetim günlüğünde izlenebilir hale getirmek,
+- ana JSON veri dosyalarını veya kullanıcı işlemlerinin rollback semantiğini değiştirmemek,
+- PII içeriğini audit detail'e taşımamak.
+
+Yeni model:
+- `AuditTrailEventType`
+  - InvoiceCreated / InvoiceUpdated / InvoiceDeleted / InvoiceReordered
+  - SchoolCreated / SchoolUpdated / SchoolDeleted
+  - AuthorityProfileUpdated / AuthorityProfileDefaultsRestored
+  - ArchiveCreated / ArchiveClosed / ArchiveReopened / ArchiveImported
+- `AuditTrailEntityType`
+  - Invoice / School / AuthorityProfile / Archive
+- `AuditTrailEntry`
+  - `EventId`
+  - `OccurredAtUtc`
+  - `EventType`
+  - `EntityType`
+  - `EntityId`
+  - `Detail`
+
+Yeni store:
+- `AuditTrailStore`
+- varsayılan dosya: `DoğruFatura/Veri/DenetimKaydi.jsonl`
+- format: JSON Lines; her olay tek satır
+- `FileMode.Append` kullanıyor
+- `FileOptions.WriteThrough` + `Flush(flushToDisk: true)`
+- mevcut satırları rewrite etmiyor
+- `ReadAll()` denetim/test amaçlı mevcut
+- enum değerleri JSON'da string olarak saklanıyor
+
+Yedekleme:
+- `ApplicationSafetyService.CollectBackupFiles()` Veri klasöründeki **tüm dosyaları** güvenlik ZIP'ine dahil ediyor.
+- Bu nedenle `DenetimKaydi.jsonl` ayrıca özel backup kodu olmadan manuel/güncelleme öncesi/restore öncesi yedeklere girer.
+
+Composition:
+- `App.xaml.cs` `AuditTrailStore` oluşturuyor.
+- `MainWindow` store'u constructor injection ile alıyor.
+- `MainWindow.Audit.cs` içindeki `AppendAudit` helper:
+  - append hatasını yakalıyor,
+  - ana kullanıcı işlemini geri çevirmiyor,
+  - teknik hatayı `ApplicationCrashLogger` üzerinden logluyor.
+
+Audit edilen başarıyla kalıcılaşmış olaylar:
+- fatura oluşturma
+- fatura güncelleme
+- fatura silme
+- fatura sıralama
+- kurum oluşturma
+- kurum güncelleme
+- kurum silme
+- yetkili profil güncelleme
+- yetkili varsayılanlarını geri yükleme
+- aktif listeyi açık arşive alma
+- arşivi HYS ile kapatma
+- arşiv kapanışını geri alma
+- tarihsel PDF'yi kapalı arşiv olarak import etme
+
+PII koruması:
+- audit detail içinde kurum adı, VKN, fatura numarası veya yetkili adları yazılmıyor.
+- yalnız GUID/entity anahtarı ve teknik özetler tutuluyor:
+  - type
+  - rule version
+  - position
+  - institution kind
+  - archive state / invoice count
+
+Rollback güvenliği:
+- Audit çağrıları ilgili ana store yazımı başarıyla tamamlandıktan sonra çalışıyor.
+- Veri yazımı rollback olursa audit olayı üretilmiyor.
+- Audit yazımı başarısız olursa ana veri işlemi bozulmuyor.
+
+Yeni test:
+- `AuditTrailStoreTests.AppendPreservesExistingBytesAndAddsReadableEvent`
+- ilk append sonrası dosyanın byte'ları saklanıyor,
+- ikinci append sonrası ilk byte prefix'in birebir korunduğu doğrulanıyor,
+- `ReadAll()` ile iki olayın doğru sırada ve UTC offset ile okunması doğrulanıyor.
+
+Bu paketle test sayısı:
+- önce: **117**
+- yeni: **118**
+
+Commitler:
+- model: `54f262b002ba3518e8159a045c3b6e8862536ef7`
+- append-only store: `42647934ee0a3f0be20740d8639998d6e3f50893`
+- composition root: `2c3fa576f1e3adcb3517bc2dd6b58c11b1127fff`
+- MainWindow DI: `0419ec24702e595c419faba56f62e30a35df6669`
+- audit helper: `09804c2f717660d5957d9245aa26305279f85699`
+- invoice create/update audit: `8dd5e2c5b6e071f07f5e9b318f17f495d70b3c34`
+- invoice delete/reorder audit: `4f7e0ede86cc44682bef1c9b81671a1f1c0e7e1f`
+- school/authority audit: `e35ed15a270b31b58099a571426bcc7c7b8c2ce1`
+- archive state/create audit: `6e02b493ff0cc89c5e014ff77484984bbfd2a298`
+- historical import audit: `ab1e84170daf79b659d3dc1123d628732fca09ec`
+- append-only regression test: `98fa7fc02334ce7e3e2ec8778b5be4364a803994`
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+3. Smoke:
+   - bir fatura ekle veya güncelle
+   - bir kurum ekle/güncelle
+   - mümkünse arşiv oluştur/kapat akışını dene
+   - `Masaüstü/DoğruFatura/Veri/DenetimKaydi.jsonl` dosyasının oluştuğunu ve her işlemde yeni satır eklendiğini kontrol et
+   - mevcut eski satırların silinmediğini kontrol et
+4. `TESTLERI_CALISTIR.bat`
+   - beklenen: **118/118**
+5. Yeşil olursa Aşama 3.4 olarak **transaction journal** tasarım/uygulama dilimine geçilecek.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
