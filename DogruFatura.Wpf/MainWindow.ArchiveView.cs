@@ -8,7 +8,8 @@ using System.Windows.Media;
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private bool FilterArchivedList(object item)
+{
+    private bool FilterArchivedList(object item)
     {
         if (item is not ArchivedInvoiceList archive) return false;
 
@@ -18,9 +19,8 @@ public partial class MainWindow
             && !string.Equals(archive.InvoiceType, selectedType, StringComparison.Ordinal))
             return false;
 
-        var selectedStatus = ArchiveStatusFilterBox.SelectedItem as string;
-        if (selectedStatus == "Açık" && archive.IsClosed) return false;
-        if (selectedStatus == "Kapalı" && !archive.IsClosed) return false;
+        var selectedState = DomainValueText.ParseArchiveState(ArchiveStatusFilterBox.SelectedItem as string);
+        if (selectedState.HasValue && archive.State != selectedState.Value) return false;
 
         var from = ArchiveDateFromPicker.SelectedDate?.Date;
         var to = ArchiveDateToPicker.SelectedDate?.Date;
