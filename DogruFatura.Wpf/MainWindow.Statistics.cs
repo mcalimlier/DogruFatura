@@ -5,6 +5,7 @@ using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
+using System.IO;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,9 +16,13 @@ namespace DogruFatura.Wpf;
 public partial class MainWindow
 {
     private bool _suppressStatisticsEvents;
+    private ArchiveStatisticsFilter _statisticsFilter = new();
+    private ArchiveStatisticsResult? _statisticsResult;
 
     private void RefreshStatistics()
     {
+        EnsureStatisticsTemplates();
+
         var currentYear = StatisticsYearFilterBox.SelectedItem as string ?? "Tümü";
         var currentInstitution = StatisticsInstitutionFilterBox.SelectedItem as string ?? "Tümü";
         var currentType = StatisticsTypeFilterBox.SelectedItem as string ?? "Tümü";
@@ -50,8 +55,39 @@ public partial class MainWindow
 
     private void ApplyStatisticsFilters()
     {
+        _statisticsFilter = ReadStatisticsFilter();
+        var result = ArchiveStatisticsService.Build(ArchivedLists, _statisticsFilter);
+        _statisticsResult = result;
+
+        StatisticsArchiveCountText.Text = $"{result.ArchiveCount} arşiv";
+        StatisticsInvoiceCountText.Text = $"{result.InvoiceCount} fatura";
+        StatisticsInstitutionCountText.Text = $"{result.InstitutionCount} kurum";
+        StatisticsPaymentTotalText.Text = NumberParser.Money(result.PaymentTotal);
+        StatisticsAverageText.Text = NumberParser.Money(result.AveragePayableAmount);
+        StatisticsTotalsText.Text =
+            $"Fatura toplamı: {NumberParser.Money(result.PayableTotal)}"
+            + $" • KDV: {NumberParser.Money(result.VatTotal)}"
+            + $" • Damga: {NumberParser.Money(result.StampDutyTotal)}"
+            + $" • Ödeme: {NumberParser.Money(result.PaymentTotal)}";
+
+        RefreshStatisticsPreviousPeriod(result);
+        RefreshStatisticsPdfHealth();
+        RefreshStatisticsInstitutionProfile(result);
+        RefreshStatisticsDonut(result);
+        RefreshStatisticsMonthlyTrend(result);
+        RefreshStatisticsTypeComparison(result);
+    }
+
+    private ArchiveStatisticsFilter ReadStatisticsFilter()
+    {
         var yearText = StatisticsYearFilterBox.SelectedItem as string;
-        int? year = int.TryParse(yearText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedYear) ? parsedYear : null;
+        int? year = int.TryParse(
+            yearText,
+            NumberStyles.Integer,
+            CultureInfo.InvariantCulture,
+            out var parsedYear)
+            ? parsedYear
+            : null;
 
         var institution = StatisticsInstitutionFilterBox.SelectedItem as string;
         if (string.Equals(institution, "Tümü", StringComparison.OrdinalIgnoreCase))
@@ -61,24 +97,223 @@ public partial class MainWindow
         if (string.Equals(invoiceType, "Tümü", StringComparison.OrdinalIgnoreCase))
             invoiceType = string.Empty;
 
-        var result = ArchiveStatisticsService.Build(
-            ArchivedLists,
-            new ArchiveStatisticsFilter(
-                year,
-                institution ?? string.Empty,
-                invoiceType ?? string.Empty));
+        return new ArchiveStatisticsFilter(
+            year,
+            institution ?? string.Empty,
+            invoiceType ?? string.Empty,
+            StatisticsDateFromPicker.SelectedDate?.Date,
+            StatisticsDateToPicker.SelectedDate?.Date);
+    }
 
-        StatisticsArchiveCountText.Text = $"{result.ArchiveCount} arşiv";
-        StatisticsInvoiceCountText.Text = $"{result.InvoiceCount} fatura";
-        StatisticsInstitutionCountText.Text = $"{result.InstitutionCount} kurum";
-        StatisticsPaymentTotalText.Text = NumberParser.Money(result.PaymentTotal);
-        StatisticsTotalsText.Text =
-            $"Fatura toplamı: {NumberParser.Money(result.PayableTotal)}"
-            + $" • KDV: {NumberParser.Money(result.VatTotal)}"
-            + $" • Damga: {NumberParser.Money(result.StampDutyTotal)}"
-            + $" • Ödeme: {NumberParser.Money(result.PaymentTotal)}";
+    private void RefreshStatisticsPreviousPeriod(ArchiveStatisticsResult current)
+    {
+        var previousFilter = PreviousStatisticsFilter(_statisticsFilter);
+        if (previousFilter is null)
+        {
+            StatisticsPreviousPeriodText.Text = "Karşılaştırma yok";
+            StatisticsPreviousPeriodText.Foreground =
+                new SolidColorBrush(Color.FromRgb(49, 83, 113));
+            return;
+        }
 
-        RefreshStatisticsDonut(result);
+        var previous = ArchiveStatisticsService.Build(ArchivedLists, previousFilter);
+        if (previous.PaymentTotal <= 0m)
+        {
+            StatisticsPreviousPeriodText.Text = "Önceki dönemde veri yok";
+            StatisticsPreviousPeriodText.Foreground =
+                new SolidColorBrush(Color.FromRgb(49, 83, 113));
+            return;
+        }
+
+        var difference = current.PaymentTotal - previous.PaymentTotal;
+        var percent = difference / previous.PaymentTotal * 100m;
+        var direction = difference > 0m ? "↑" : difference < 0m ? "↓" : "→";
+        StatisticsPreviousPeriodText.Text =
+            $"{direction} %{Math.Abs(percent).ToString("N1", CultureInfo.GetCultureInfo("tr-TR"))}"
+            + $" • {NumberParser.Money(previous.PaymentTotal)}";
+
+        StatisticsPreviousPeriodText.Foreground = difference switch
+        {
+            > 0m => new SolidColorBrush(Color.FromRgb(183, 121, 31)),
+            < 0m => new SolidColorBrush(Color.FromRgb(36, 138, 80)),
+            _ => new SolidColorBrush(Color.FromRgb(49, 83, 113))
+        };
+    }
+
+    private ArchiveStatisticsFilter? PreviousStatisticsFilter(ArchiveStatisticsFilter current)
+    {
+        if (current.StartDate.HasValue && current.EndDate.HasValue)
+        {
+            var start = current.StartDate.Value.Date;
+            var end = current.EndDate.Value.Date;
+            if (end < start)
+                return null;
+
+            var dayCount = (end - start).Days + 1;
+            var previousEnd = start.AddDays(-1);
+            var previousStart = previousEnd.AddDays(-(dayCount - 1));
+            return current with
+            {
+                Year = null,
+                StartDate = previousStart,
+                EndDate = previousEnd
+            };
+        }
+
+        if (current.Year.HasValue)
+            return current with { Year = current.Year.Value - 1 };
+
+        var availableYears = _statisticsResult?.AvailableYears ?? Array.Empty<int>();
+        if (availableYears.Count < 2)
+            return null;
+
+        var latestYear = availableYears.Max();
+        return current with { Year = latestYear - 1 };
+    }
+
+    private void RefreshStatisticsPdfHealth()
+    {
+        var eligible = ArchivedLists
+            .Where(archive => archive.IsStatisticsEligible)
+            .ToArray();
+
+        var missing = eligible.Count(archive =>
+        {
+            var fileName = !string.IsNullOrWhiteSpace(archive.PdfFileName)
+                ? Path.GetFileName(archive.PdfFileName)
+                : !string.IsNullOrWhiteSpace(archive.HysPaymentOrderDocumentNumber)
+                    ? archive.HysPaymentOrderDocumentNumber + ".pdf"
+                    : string.Empty;
+
+            return string.IsNullOrWhiteSpace(fileName)
+                || !File.Exists(Path.Combine(_documentArchiveStorageService.ArchivedOutputDirectory, fileName));
+        });
+
+        StatisticsPdfHealthText.Text = eligible.Length == 0
+            ? "Arşiv PDF kaydı yok"
+            : missing == 0
+                ? $"{eligible.Length}/{eligible.Length} PDF mevcut"
+                : $"{missing} eksik • {eligible.Length} arşiv";
+
+        StatisticsPdfHealthText.Foreground = missing == 0
+            ? new SolidColorBrush(Color.FromRgb(36, 138, 80))
+            : new SolidColorBrush(Color.FromRgb(194, 58, 67));
+    }
+
+    private void RefreshStatisticsInstitutionProfile(ArchiveStatisticsResult result)
+    {
+        if (string.IsNullOrWhiteSpace(_statisticsFilter.InstitutionName))
+        {
+            StatisticsInstitutionProfileText.Text = "Kurum seçilmedi";
+            return;
+        }
+
+        var typeCount = result.Rows
+            .Select(row => row.InvoiceType)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+
+        StatisticsInstitutionProfileText.Text = result.InvoiceCount == 0
+            ? $"{_statisticsFilter.InstitutionName}: veri yok"
+            : $"{_statisticsFilter.InstitutionName}: {result.InvoiceCount} fatura"
+              + $" • {typeCount} tür • {NumberParser.Money(result.PaymentTotal)}";
+    }
+
+    private void RefreshStatisticsMonthlyTrend(ArchiveStatisticsResult result)
+    {
+        var rows = result.MonthlyRows;
+        if (rows.Count == 0)
+        {
+            StatisticsMonthlyTrendChart.Series = Array.Empty<ISeries>();
+            StatisticsMonthlyTrendChart.XAxes = Array.Empty<Axis>();
+            StatisticsMonthlyTrendChart.YAxes = Array.Empty<Axis>();
+            return;
+        }
+
+        var culture = CultureInfo.GetCultureInfo("tr-TR");
+        var labels = rows
+            .Select(row =>
+                culture.DateTimeFormat.GetAbbreviatedMonthName(row.Month)
+                + " "
+                + row.Year.ToString(CultureInfo.InvariantCulture))
+            .ToArray();
+
+        StatisticsMonthlyTrendChart.Series = new ISeries[]
+        {
+            new LineSeries<double>
+            {
+                Name = "Ödeme",
+                Values = rows.Select(row => (double)row.PaymentTotal).ToArray(),
+                Stroke = new SolidColorPaint(new SKColor(36, 104, 216)) { StrokeThickness = 3 },
+                Fill = null,
+                GeometryFill = new SolidColorPaint(new SKColor(255, 180, 31)),
+                GeometryStroke = new SolidColorPaint(SKColors.White) { StrokeThickness = 2 },
+                GeometrySize = 10,
+                LineSmoothness = 0.35
+            }
+        };
+        StatisticsMonthlyTrendChart.XAxes = new[]
+        {
+            new Axis
+            {
+                Labels = labels,
+                LabelsRotation = labels.Length > 8 ? 35 : 0
+            }
+        };
+        StatisticsMonthlyTrendChart.YAxes = new[]
+        {
+            new Axis
+            {
+                Labeler = value => value.ToString("N0", culture)
+            }
+        };
+    }
+
+    private void RefreshStatisticsTypeComparison(ArchiveStatisticsResult result)
+    {
+        var rows = result.Rows
+            .GroupBy(row => row.InvoiceType, StringComparer.OrdinalIgnoreCase)
+            .Select(group => new
+            {
+                InvoiceType = group.Key,
+                PaymentTotal = group.Sum(row => row.PaymentTotal)
+            })
+            .OrderBy(item => StatisticsInvoiceTypeOrder(item.InvoiceType))
+            .ThenBy(item => item.InvoiceType, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (rows.Length == 0)
+        {
+            StatisticsTypeComparisonChart.Series = Array.Empty<ISeries>();
+            StatisticsTypeComparisonChart.XAxes = Array.Empty<Axis>();
+            StatisticsTypeComparisonChart.YAxes = Array.Empty<Axis>();
+            return;
+        }
+
+        var culture = CultureInfo.GetCultureInfo("tr-TR");
+        StatisticsTypeComparisonChart.Series = new ISeries[]
+        {
+            new ColumnSeries<double>
+            {
+                Name = "Ödeme",
+                Values = rows.Select(row => (double)row.PaymentTotal).ToArray(),
+                Fill = new SolidColorPaint(new SKColor(138, 94, 216)),
+                Stroke = null,
+                DataLabelsPaint = new SolidColorPaint(new SKColor(3, 28, 56)),
+                DataLabelsSize = 12,
+                DataLabelsPosition = DataLabelsPosition.Top,
+                DataLabelsFormatter = point =>
+                    ((double)point.Coordinate.PrimaryValue).ToString("N0", culture)
+            }
+        };
+        StatisticsTypeComparisonChart.XAxes = new[]
+        {
+            new Axis { Labels = rows.Select(row => row.InvoiceType).ToArray() }
+        };
+        StatisticsTypeComparisonChart.YAxes = new[]
+        {
+            new Axis { Labeler = value => value.ToString("N0", culture) }
+        };
     }
 
     private void RefreshStatisticsDonut(ArchiveStatisticsResult result)
@@ -244,6 +479,88 @@ public partial class MainWindow
         int InvoiceCount,
         decimal PaymentTotal);
 
+    private void EnsureStatisticsTemplates()
+    {
+        if (StatisticsTemplateBox.Items.Count > 0)
+            return;
+
+        StatisticsTemplateBox.ItemsSource = new[]
+        {
+            "Seçiniz",
+            "Yıllık Genel Rapor",
+            "Kurum Bazlı Rapor",
+            "Elektrik Giderleri",
+            "Tüm Fatura Türleri"
+        };
+        StatisticsTemplateBox.SelectedIndex = 0;
+    }
+
+    private void ApplyStatisticsTemplate_Click(object sender, RoutedEventArgs e)
+    {
+        var template = StatisticsTemplateBox.SelectedItem as string ?? "Seçiniz";
+        _suppressStatisticsEvents = true;
+        try
+        {
+            switch (template)
+            {
+                case "Yıllık Genel Rapor":
+                    var latestYear = ArchiveStatisticsService.Build(ArchivedLists)
+                        .AvailableYears
+                        .FirstOrDefault();
+                    StatisticsYearFilterBox.SelectedItem = latestYear > 0
+                        ? latestYear.ToString(CultureInfo.InvariantCulture)
+                        : "Tümü";
+                    StatisticsInstitutionFilterBox.SelectedItem = "Tümü";
+                    StatisticsTypeFilterBox.SelectedItem = "Tümü";
+                    StatisticsDateFromPicker.SelectedDate = null;
+                    StatisticsDateToPicker.SelectedDate = null;
+                    break;
+
+                case "Kurum Bazlı Rapor":
+                    if (string.Equals(
+                        StatisticsInstitutionFilterBox.SelectedItem as string,
+                        "Tümü",
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        MessageBox.Show(
+                            this,
+                            "Kurum bazlı rapor için önce Kurum filtresinden bir kurum seçin.",
+                            "DoğruFatura - İstatistik",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                    StatisticsTypeFilterBox.SelectedItem = "Tümü";
+                    StatisticsDateFromPicker.SelectedDate = null;
+                    StatisticsDateToPicker.SelectedDate = null;
+                    break;
+
+                case "Elektrik Giderleri":
+                    StatisticsTypeFilterBox.SelectedItem = "Elektrik";
+                    break;
+
+                case "Tüm Fatura Türleri":
+                    StatisticsTypeFilterBox.SelectedItem = "Tümü";
+                    break;
+            }
+        }
+        finally
+        {
+            _suppressStatisticsEvents = false;
+        }
+
+        ApplyStatisticsFilters();
+    }
+
+    private void StatisticsDateFilter_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        if (_suppressStatisticsEvents)
+            return;
+
+        ApplyStatisticsFilters();
+    }
+
     private static void ReplaceStatisticsItems(
         ComboBox comboBox,
         IEnumerable<string> values,
@@ -281,6 +598,9 @@ public partial class MainWindow
             StatisticsYearFilterBox.SelectedIndex = 0;
             StatisticsInstitutionFilterBox.SelectedIndex = 0;
             StatisticsTypeFilterBox.SelectedIndex = 0;
+            StatisticsDateFromPicker.SelectedDate = null;
+            StatisticsDateToPicker.SelectedDate = null;
+            StatisticsTemplateBox.SelectedIndex = 0;
         }
         finally
         {
