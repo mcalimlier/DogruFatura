@@ -848,9 +848,20 @@
                                         <Border x:Name="ArchiveStatusBorder" Grid.Row="4" Background="#123B5B" BorderBrush="#365874" BorderThickness="1" CornerRadius="8" Padding="10,7" Margin="0,9,0,8">
                                             <TextBlock x:Name="ArchiveStatusText" Text="Arşiv işlemleri için bir liste seçin." Style="{StaticResource StatusText}"/>
                                         </Border>
-                                        <Button x:Name="OpenArchivedListButton" Grid.Row="5" Style="{StaticResource ModernButton}"
-                                                Content="SEÇİLİ LİSTEYİ AÇ" Background="#2468D8" IsEnabled="False"
-                                                Click="OpenArchivedList_Click"/>
+                                        <Grid Grid.Row="5">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="10"/>
+                                                <ColumnDefinition Width="132"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Button x:Name="OpenArchivedListButton" Style="{StaticResource ModernButton}"
+                                                    Content="SEÇİLİ LİSTEYİ AÇ" Background="#2468D8" IsEnabled="False"
+                                                    Click="OpenArchivedList_Click"/>
+                                            <Button x:Name="DeleteArchivedListButton" Grid.Column="2" Style="{StaticResource ModernButton}"
+                                                    Content="ARŞİVİ SİL" Background="#C23A43" IsEnabled="False"
+                                                    Click="DeleteArchivedList_Click"
+                                                    ToolTip="Arşiv kaydını listeden siler; kayıtlı PDF dosyasını güvenlik amacıyla silmez."/>
+                                        </Grid>
                                     </Grid>
                                 </Border>
                             </Grid>
