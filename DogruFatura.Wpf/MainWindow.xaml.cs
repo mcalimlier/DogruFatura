@@ -317,5 +317,7 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
+
+        ShowPendingTransactionJournalWarning();
     }
 }
