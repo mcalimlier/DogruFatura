@@ -71,12 +71,13 @@ public partial class MainWindow
         return Math.Max(8d, (double)(value / maximum) * availableWidth);
     }
 
-    private static SolidColorBrush DashboardInvoiceTypeBrush(string invoiceType) => invoiceType switch
-    {
-        "Elektrik" => new SolidColorBrush(Color.FromRgb(255, 180, 31)),
-        "Telefon" => new SolidColorBrush(Color.FromRgb(36, 104, 216)),
-        "İnternet" => new SolidColorBrush(Color.FromRgb(42, 169, 190)),
-        "Su" => new SolidColorBrush(Color.FromRgb(67, 199, 122)),
-        _ => new SolidColorBrush(Color.FromRgb(145, 171, 192))
-    };
+    private static SolidColorBrush DashboardInvoiceTypeBrush(string invoiceType) =>
+        DomainValueText.ParseInvoiceKind(invoiceType) switch
+        {
+            InvoiceKind.Electricity => new SolidColorBrush(Color.FromRgb(255, 180, 31)),
+            InvoiceKind.Telephone => new SolidColorBrush(Color.FromRgb(36, 104, 216)),
+            InvoiceKind.Internet => new SolidColorBrush(Color.FromRgb(42, 169, 190)),
+            InvoiceKind.Water => new SolidColorBrush(Color.FromRgb(67, 199, 122)),
+            _ => new SolidColorBrush(Color.FromRgb(145, 171, 192))
+        };
 }
