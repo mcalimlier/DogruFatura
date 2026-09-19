@@ -719,6 +719,35 @@ Sıradaki doğrulama:
    - beklenen: **117/117**
 4. Bu iki kapı yeşil olmadan Paket 10'a geçilmeyecek.
 
+## 19.09.2026 — Sadeleştirme paketi 9 TAMAMLANDI VE DOĞRULANDI
+
+Compile fix sonrasında kullanıcı yerel doğrulaması:
+
+Build:
+- SDK: `.NET 10.0.400`
+- `DogruFatura.Core`: başarılı
+- `DogruFatura.Wpf`: başarılı
+- Toplam: **0 warning / 0 error**
+- `[3/3] DogruFatura baslatiliyor...` aşamasına ulaşıldı.
+
+Tam xUnit:
+- `DogruFatura.Core`: başarılı
+- `DogruFatura.Wpf`: başarılı
+- `DogruFatura.Tests`: başarılı
+- Toplam test: **117**
+- Başarılı: **117**
+- Başarısız: **0**
+- Atlandı: **0**
+- BAT sonucu: **[OK] TUM TESTLER BASARILI**
+- Test çalıştırması: yaklaşık **13,9 sn**
+- Test özeti: yaklaşık **14,9 sn**
+- Toplam test build/koşu: yaklaşık **22,3 sn**
+
+Sonuç:
+- Paket 9 constructor sadeleştirmesi ve readonly-view compile fix'i yerel build + tam regresyon paketiyle yeşil doğrulandı.
+- Yeni güvenilir baseline: **0 warning / 0 error + 117/117 xUnit**.
+- Paket 10 için yeni küçük, geri alınabilir sadeleştirme dilimine geçilebilir.
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
