@@ -542,7 +542,7 @@ Responsive alana ayrıca 4 test vakası eklendi:
 
 Önceki tam xUnit sonucu **107/107** idi.
 Bu paket **10 yeni xUnit vakası** eklediği için, test discovery aynı kalırsa yeni beklenen toplam **117 test**tir.
-Bu sayı henüz yerel test çalıştırmasıyla doğrulanmadı.
+19.09.2026 yerel `TESTLERI_CALISTIR.bat` doğrulamasında test discovery beklendiği gibi **117** oldu ve **117/117 test başarılı, 0 başarısız, 0 atlandı** sonucu alındı.
 
 ### Statik kapanış kontrolü
 
@@ -615,6 +615,71 @@ Sıradaki tek doğrulama:
 3. Test assembly artık derlenirse gerçek xUnit sonucu alınacak.
 4. Önceki 107 teste 10 yeni vaka eklendiği için discovery aynı kalırsa beklenen toplam yaklaşık **117**.
 5. Bu rerun yeşil olmadan yeni mimari/işlevsel pakete geçilmeyecek.
+
+## 19.09.2026 — Toplu sadeleştirme test kapısı TAMAMLANDI
+
+Kullanıcının yerel `TESTLERI_CALISTIR.bat` sonucu:
+
+- Toplam test: **117**
+- Başarılı: **117**
+- Başarısız: **0**
+- Atlandı: **0**
+- `DogruFatura.Tests` (`net8.0-windows`): başarılı
+- Test özeti: yaklaşık **13,3 sn**
+- Test projesi: yaklaşık **13,6 sn**
+- Toplam build/test süresi: yaklaşık **33,0 sn**
+- BAT sonucu: **[OK] TUM TESTLER BASARILI**
+
+Böylece önceki toplu sadeleştirme + responsive + typed domain + legacy uyumlu `SchoolId` paketi için zorunlu tam xUnit kapısı kapanmıştır.
+
+### Kod temizliği / sadeleştirme paketi 9 — KODLANDI, YEREL BUILD + TAM xUNIT BEKLİYOR
+
+117/117 doğrulamasından sonra bir sonraki değişiklik küçük ve davranış koruyucu tutuldu.
+
+`MainWindow.xaml.cs` constructor'ındaki uzun başlangıç blokları aynı sıra korunarak isimlendirilmiş private adımlara ayrıldı:
+
+- belge/arşiv klasörlerinin hazırlanması,
+- pencere shell kurulumu,
+- fatura giriş kaynakları,
+- kurum görünümü,
+- arşiv görünümü,
+- Kontrol Merkezi görünümü,
+- hesap motoru self-test,
+- ilk UI durumu,
+- startup uyarılarının gösterimi.
+
+Amaç:
+- constructor okunabilirliğini artırmak,
+- başlangıç akışının sırasını görünür kılmak,
+- bir sonraki kontrollü MainWindow sorumluluk azaltmasına daha temiz zemin hazırlamak.
+
+Değiştirilmeyen alanlar:
+- veri modeli ve JSON şeması,
+- `SchoolId` uyumluluğu,
+- store/save/restore akışı,
+- SHA-256 / manifest güvenliği,
+- PDF üretimi ve arşiv davranışı,
+- kullanıcıya gösterilen başlangıç uyarılarının sırası ve metinleri,
+- engine self-test davranışı.
+
+Commit:
+- `eabebc5c9d850179c54221ef3ec6b77b15145a9f`
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+   - normal başlatma
+3. Kısa smoke test:
+   - Ana Ekran
+   - Kurumlar
+   - Fatura Girişi
+   - İşlem Arşivi
+   - Kontrol Merkezi
+   - Hakkında / Güvenlik
+4. `TESTLERI_CALISTIR.bat`
+   - beklenen: **117/117** veya yalnız bilinçli yeni test eklenmişse yeni toplamın tamamı başarılı
+5. Bu kapı yeşil olmadan bir sonraki MainWindow/DI paketi yapılmayacak.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
