@@ -2765,6 +2765,308 @@ Kullanıcı istatistiklerden çıktı alma ihtimalini belirtti.
   - ham/filtrelenmiş mali veriyi Excel'de açılabilir biçimde dışa vermek.
 - doğrudan XLSX ancak gerçek ihtiyaç oluşursa eklenmeli; ilk aşamada CSV daha sade ve bağımlılıksızdır.
 
+## 19.09.2026 — Aşama 5.3 kapsamlı İstatistik genişletmesi — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Kullanıcı önceki öneri listesinden:
+- **6 — Yıllar Arası Karşılaştırma**: istemedi.
+- **8 — En Yüksek / En Düşük Fatura**: istemedi.
+- diğer tüm maddelerin uygulanmasını istedi.
+
+Bu paket 6 ve 8 hariç aşağıdaki özellikleri içerir.
+
+### 1 — İstatistik PDF Raporu
+
+İstatistik ekranına `PDF RAPORU` düğmesi eklendi.
+
+PDF:
+- A4 yatay,
+- rapor tarihi,
+- aktif filtre açıklaması,
+- arşiv/fatura/kurum sayıları,
+- toplam fatura,
+- KDV,
+- damga,
+- toplam ödeme,
+- ortalama fatura,
+- donut grafik,
+- tür bazlı adet/tutar/yüzde,
+- PDF sağlık bilgisi,
+- önceki dönem özeti,
+- kurum profili,
+- ikinci sayfada aylık trend ve tür karşılaştırma grafikleri
+içerir.
+
+Kaynak:
+- yeniden PDF parse edilmez,
+- mevcut `ArchiveStatisticsResult` + ekrandaki LiveCharts görselleri kullanılır.
+
+### 2 — Yazdır
+
+`YAZDIR` düğmesi eklendi.
+
+- WPF `PrintDialog`
+- `FlowDocument`
+- başlık + filtre + özet + donut kartı + tür dağılım tablosu
+kullanılır.
+
+### 3 — CSV dışa aktar
+
+`CSV` düğmesi eklendi.
+
+CSV:
+- UTF-8 BOM,
+- `sep=;`,
+- aktif filtre ve özet,
+- kurum/yıl/tür/adet/tutar/KDV/damga/ödeme detayları.
+
+CSV formül enjeksiyon koruması:
+- hücre metni `=`, `+`, `-`, `@` ile başlıyorsa başına apostrof eklenir.
+
+### 4 — Excel .xlsx dışa aktar
+
+Yeni NuGet:
+- `ClosedXML 0.105.1`
+
+`EXCEL` düğmesi eklendi.
+
+Workbook:
+- `Özet` sayfası,
+- `Detay` sayfası,
+- `Aylık Trend` sayfası.
+
+Detay sayfası:
+- başlık satırı,
+- AutoFilter,
+- frozen header,
+- sayı formatları,
+- otomatik kolon genişliği.
+
+### 5 — Aylık Ödeme Trend Grafiği
+
+Core:
+- yeni `ArchiveStatisticsMonthlyRow`.
+- aylık:
+  - yıl,
+  - ay,
+  - fatura sayısı,
+  - fatura toplamı,
+  - ödeme toplamı.
+
+UI:
+- LiveCharts2 `LineSeries<double>`.
+- ay/yıl etiketleri.
+- seçili Yıl/Kurum/Tür/Tarih filtresine göre anlık güncellenir.
+
+### 7 — Ortalama Fatura
+
+`ArchiveStatisticsResult`:
+- `AveragePayableAmount`
+- `AveragePaymentAmount`
+
+UI:
+- `ORTALAMA FATURA` kartı.
+- gösterilen değer `AveragePayableAmount`.
+
+### 9 — Kurum Profil İstatistiği
+
+`KURUM PROFİLİ` kartı eklendi.
+
+Belirli kurum seçildiğinde:
+- kurum adı,
+- filtrelenmiş fatura adedi,
+- fatura türü sayısı,
+- toplam ödeme
+özetlenir.
+
+Kurum seçilmemişse:
+- `Kurum seçilmedi`.
+
+### 10 — Fatura Türü Karşılaştırması
+
+LiveCharts2 `ColumnSeries<double>` eklendi.
+
+- x ekseni: fatura türleri
+- y değeri: toplam ödeme
+- data label açık
+- donut ile aynı filtre sonucundan beslenir.
+
+### 11 — Önceki Döneme Göre Değişim
+
+`ÖNCEKİ DÖNEM` kartı eklendi.
+
+Semantik:
+- Yıl seçildiyse -> önceki yıl.
+- Başlangıç + bitiş seçildiyse -> aynı gün sayısındaki hemen önceki dönem.
+- dönem filtresi yoksa -> karşılaştırma yapılmaz.
+- tüm yıllar toplamı tek önceki yılla yanlış kıyaslanmaz.
+
+Gösterim:
+- ↑ / ↓ / →
+- yüzde fark
+- önceki dönem toplam ödeme.
+
+### 12 — PDF Eksikliği / Arşiv Sağlığı
+
+`PDF SAĞLIĞI` kartı eklendi.
+
+Yalnız istatistiğe uygun kapalı HYS arşivleri için:
+- kayıtlı `PdfFileName`,
+- fallback HYS.pdf
+kontrol edilir.
+
+Gösterim:
+- `N/N PDF mevcut`
+veya
+- `X eksik • N arşiv`.
+
+### 13 — Tarih Aralığı Filtresi
+
+`ArchiveStatisticsFilter` sonuna geriye uyumlu:
+- `DateTime? StartDate = null`
+- `DateTime? EndDate = null`
+eklendi.
+
+UI:
+- `Başlangıç Tarihi`
+- `Bitiş Tarihi`
+
+Mevcut Yıl/Kurum/Tür filtreleriyle birlikte kesişim olarak uygulanır.
+
+### 14 — Hazır Rapor Şablonları
+
+Yeni seçim:
+- `Seçiniz`
+- `Yıllık Genel Rapor`
+- `Kurum Bazlı Rapor`
+- `Elektrik Giderleri`
+- `Tüm Fatura Türleri`
+
+`UYGULA` düğmesiyle ilgili filtreler hazırlanır.
+
+Davranış:
+- Yıllık Genel -> en güncel arşiv yılını seçer, kurum/tür/tarih filtresini temizler.
+- Kurum Bazlı -> önceden kurum seçilmesini ister, tür/tarih filtrelerini temizler.
+- Elektrik -> türü Elektrik yapar.
+- Tüm Fatura Türleri -> türü Tümü yapar.
+
+### 15 — PNG grafik çıktısı
+
+`PNG` düğmesi eklendi.
+
+- `StatisticsDonutCard` yüksek çözünürlükte `RenderTargetBitmap` ile alınır.
+- PNG olarak kullanıcı seçtiği konuma kaydedilir.
+- yalnız donut değil, başlık + donut + sağ dağılım detayı birlikte görsel olur.
+
+### Yeni analiz ekran yerleşimi
+
+Üst aksiyonlar:
+- PDF RAPORU
+- YAZDIR
+- CSV
+- EXCEL
+- PNG
+- YENİLE
+
+Filtreler:
+- Yıl
+- Kurum
+- Fatura Türü
+- Başlangıç
+- Bitiş
+- Hazır Rapor
+
+İkinci özet satırı:
+- Ortalama Fatura
+- Önceki Dönem
+- PDF Sağlığı
+- Kurum Profili
+
+Kaydırılabilir analiz alanı:
+1. büyük donut + dağılım detayı
+2. Aylık Ödeme Trendi
+3. Fatura Türü Karşılaştırması
+
+### Yeni test
+
+`ArchiveStatisticsServiceTests.BuildAppliesDateRangeAndCreatesMonthlyBreakdown`
+
+Doğrular:
+- başlangıç/bitiş filtresi,
+- fatura sayısı,
+- ortalama fatura,
+- ortalama ödeme,
+- aylık satır sayısı,
+- ay ve ödeme toplamları.
+
+Test hedefi:
+- önce: **123**
+- yeni: **124/124**
+
+### Commitler
+
+Core:
+- model/date/monthly/average: `04753ac631c3c2827e23e1ce9c6125f770400136`
+- service date/monthly/average: `00f944bfb508248a6af21523a0a2ceb72a54baa0`
+- test: `ad00c027995ecab9765e2343cdf0d7764571304b`
+
+UI / analiz:
+- geniş XAML filtre/grafik/çıktı yapısı: `5dcbf5b5f66a830c0e1d960f8d96625b007cf0d5`
+- dönem karşılaştırma/PDF sağlık/profil/trend/tür grafik logic: `e23f6d0832da8230e29bed0381e45da92361589d`
+- önceki dönem semantik + data labels: `f8865ffd1b8714f986b29813fdb19902c08870e1`
+
+Çıktı:
+- ClosedXML package: `8eb724322d8fa2f1ec006aa2e0ba37fe968f8618`
+- PDF/Yazdır/CSV/Excel/PNG: `23991c154fcdc8f8880c216bef217c1751cdef2d`
+- export kültür/CSV/PdfSharp güvenlik düzeltmeleri: `45c1d961db9aeb60ea714d983b68d138b11fecb0`
+
+### Statik kontrol
+
+Geçti:
+- XAML control ↔ handler eşleşmesi
+- tarih filter model/service
+- monthly rows
+- averages
+- previous period
+- PDF health
+- institution profile
+- LineSeries
+- ColumnSeries
+- ready templates
+- PDF/Print/CSV/XLSX/PNG handlers
+- CSV injection guard
+- 6 uygulanmadı
+- 8 uygulanmadı
+
+Not:
+- çalışma ortamındaki container internet erişimi olmadığı için repo clone + yerel `dotnet build` burada çalıştırılamadı.
+- gerçek compile kapısı kullanıcı Windows ortamında zorunlu.
+
+### Zorunlu doğrulama
+
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+   - ilk restore ClosedXML bağımlılıklarını indirebilir.
+3. İSTATİSTİK smoke:
+   - mevcut donut çalışmalı,
+   - aylık trend görünmeli,
+   - tür karşılaştırma görünmeli,
+   - ortalama kartı doğru,
+   - yıl seçince önceki dönem karşılaştırması,
+   - tarih aralığı seçince eşit uzunluktaki önceki dönem karşılaştırması,
+   - PDF sağlık sayacı,
+   - kurum seçince kurum profil kartı,
+   - şablon UYGULA.
+4. Çıktı smoke:
+   - PDF RAPORU açılabilir PDF oluşturmalı,
+   - YAZDIR print dialog açmalı,
+   - CSV Excel'de açılmalı,
+   - EXCEL .xlsx üç sheet ile açılmalı,
+   - PNG donut+legend kartını kaydetmeli.
+5. `TESTLERI_CALISTIR.bat`
+   - beklenen: **124/124**
+6. Aşama 5.1 tarihsel PDF gerçek dosya smoke testi hâlâ uygun örnek PDF seti bulunduğunda ayrıca yapılacak.
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
