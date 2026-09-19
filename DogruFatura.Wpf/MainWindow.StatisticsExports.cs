@@ -26,7 +26,7 @@ public partial class MainWindow
         {
             Title = "İstatistik CSV çıktısını kaydet",
             Filter = "CSV dosyası (*.csv)|*.csv",
-            FileName = $"DogruFatura-Istatistik-{DateTime.Now:yyyyMMdd-HHmm}.csv",
+            FileName = $"DogruFatura-Istatistik-{StatisticsExportTimestamp()}.csv",
             AddExtension = true,
             DefaultExt = ".csv"
         };
@@ -89,7 +89,7 @@ public partial class MainWindow
         {
             Title = "İstatistik Excel çıktısını kaydet",
             Filter = "Excel çalışma kitabı (*.xlsx)|*.xlsx",
-            FileName = $"DogruFatura-Istatistik-{DateTime.Now:yyyyMMdd-HHmm}.xlsx",
+            FileName = $"DogruFatura-Istatistik-{StatisticsExportTimestamp()}.xlsx",
             AddExtension = true,
             DefaultExt = ".xlsx"
         };
@@ -217,7 +217,7 @@ public partial class MainWindow
         {
             Title = "İstatistik grafiğini PNG olarak kaydet",
             Filter = "PNG görseli (*.png)|*.png",
-            FileName = $"DogruFatura-Istatistik-Grafik-{DateTime.Now:yyyyMMdd-HHmm}.png",
+            FileName = $"DogruFatura-Istatistik-Grafik-{StatisticsExportTimestamp()}.png",
             AddExtension = true,
             DefaultExt = ".png"
         };
@@ -252,7 +252,7 @@ public partial class MainWindow
         {
             Title = "İstatistik PDF raporunu kaydet",
             Filter = "PDF dosyası (*.pdf)|*.pdf",
-            FileName = $"DogruFatura-Istatistik-{DateTime.Now:yyyyMMdd-HHmm}.pdf",
+            FileName = $"DogruFatura-Istatistik-{StatisticsExportTimestamp()}.pdf",
             AddExtension = true,
             DefaultExt = ".pdf"
         };
