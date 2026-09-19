@@ -1,6 +1,7 @@
 <Window x:Class="DogruFatura.Wpf.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         Icon="Assets/AppIcon.ico"
         Title="DoğruFatura - Fatura Ödeme ve Kontrol Programı"
         Width="1305" Height="850.5" SizeToContent="Manual" ResizeMode="NoResize"
@@ -1101,7 +1102,7 @@
                             <Border Grid.Row="3" Style="{StaticResource PremiumPanel}" Padding="16" Margin="0,0,0,9">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="330"/>
+                                        <ColumnDefinition Width="390"/>
                                         <ColumnDefinition Width="18"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
@@ -1110,15 +1111,23 @@
                                         <TextBlock Text="FATURA TÜRÜ DAĞILIMI" Style="{StaticResource PremiumSectionTitle}"/>
                                         <TextBlock Text="Seçili filtrelere göre ödeme tutarının fatura türlerine dağılımı."
                                                    Style="{StaticResource PremiumSectionSubtitle}" Margin="0,3,0,9"/>
-                                        <Grid Width="220" Height="220" HorizontalAlignment="Center">
-                                            <Canvas x:Name="StatisticsDonutCanvas" Width="220" Height="220"/>
-                                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="122">
-                                                <TextBlock Text="TOPLAM ÖDEME" Foreground="#64778B" FontSize="11.5"
-                                                           FontWeight="Bold" HorizontalAlignment="Center"/>
-                                                <TextBlock x:Name="StatisticsDonutTotalText" Text="0,00 TL"
-                                                           Foreground="#031C38" FontSize="18" FontWeight="Bold"
-                                                           TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                                            </StackPanel>
+                                        <Grid Width="300" Height="300" HorizontalAlignment="Center">
+                                            <lvc:PieChart x:Name="StatisticsDonutChart"
+                                                          Width="300" Height="300"
+                                                          LegendPosition="Hidden"
+                                                          InitialRotation="-90"/>
+                                            <Border Width="136" Height="136" Background="#F7F9FC"
+                                                    BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="68"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                    IsHitTestVisible="False">
+                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="116">
+                                                    <TextBlock Text="TOPLAM ÖDEME" Foreground="#64778B" FontSize="12"
+                                                               FontWeight="Bold" HorizontalAlignment="Center"/>
+                                                    <TextBlock x:Name="StatisticsDonutTotalText" Text="0,00 TL"
+                                                               Foreground="#031C38" FontSize="20" FontWeight="Bold"
+                                                               TextAlignment="Center" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                                </StackPanel>
+                                            </Border>
                                         </Grid>
                                     </StackPanel>
 
