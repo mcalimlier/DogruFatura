@@ -2687,6 +2687,84 @@ Test sayısı:
 4. `TESTLERI_CALISTIR.bat`
    - beklenen: **123/123**
 
+## 19.09.2026 — Aşama 5.2 donut üst/alt kırpılma düzeltmesi — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Kullanıcı görsel smoke sırasında:
+- LiveCharts2 donut tasarımını başarılı buldu,
+- grafiğin üst ve alt dış kenarlarının hafif kırpıldığını bildirdi.
+
+Neden:
+- 420x420 PieChart kullanılabilir maksimum dış yarıçapa kadar çiziliyordu.
+- beyaz stroke ve hover pushout, üst/alt kontrol sınırına fazla yaklaşıyordu.
+
+Düzeltme:
+- grafik kontrol boyutu **420x420 olarak korundu**.
+- `PieSeries<double>.OuterRadiusOffset = 18` eklendi.
+- `HoverPushout = 10 -> 8`.
+- `InnerRadius = 128` korundu.
+- `DataLabelsSize = 18` korundu.
+
+Sonuç hedefi:
+- donut algılanan büyük boyutunu korur,
+- normal durumda dış halka üst/alt kırpılmaz,
+- hover sırasında da dilim için güvenli kenar payı kalır.
+
+Commit:
+- `c8c4f3111ca0ca4c03e30666e368c4bd1c1723a4`
+
+Statik kontrol:
+- OuterRadiusOffset 18: geçti
+- HoverPushout 8: geçti
+- InnerRadius 128: korundu
+- DataLabelsSize 18: korundu
+- test hedefi değişmedi: **123/123**
+
+Doğrulama:
+1. Fetch origin → Pull origin
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+3. İstatistik:
+   - donut üst ve alt kenarı artık kesilmemeli,
+   - yüzde etiketleri görünür kalmalı,
+   - hover sırasında dilim kart dışına taşmamalı.
+4. `TESTLERI_CALISTIR.bat`
+   - beklenen: **123/123**
+
+### İstatistik çıktı/rapor önerisi
+
+Kullanıcı istatistiklerden çıktı alma ihtimalini belirtti.
+
+Önerilen sonraki ayrı paket:
+**Aşama 5.3 — İstatistik Raporu**
+
+Önerilen ilk kapsam:
+- İstatistik ekranına `PDF RAPORU` ve `YAZDIR` aksiyonları.
+- çıktı başlığında rapor tarihi ve aktif filtreler:
+  - yıl,
+  - kurum,
+  - fatura türü.
+- özet:
+  - arşiv sayısı,
+  - fatura sayısı,
+  - kurum sayısı,
+  - toplam fatura,
+  - KDV,
+  - damga,
+  - toplam ödeme.
+- mevcut donut görselinin rapora alınması.
+- tür dağılımı:
+  - tür,
+  - adet,
+  - ödeme,
+  - yüzde.
+- rapor yalnız hesaplanmış istatistik verisinden üretilmeli; PDF'ler tekrar parse edilmemeli.
+- mevcut rapor/PDF altyapısı mümkün olduğunca yeniden kullanılmalı; ayrı ağır rapor bağımlılığı eklenmemeli.
+
+İkinci aşama için aday:
+- `CSV DIŞA AKTAR`:
+  - ham/filtrelenmiş mali veriyi Excel'de açılabilir biçimde dışa vermek.
+- doğrudan XLSX ancak gerçek ihtiyaç oluşursa eklenmeli; ilk aşamada CSV daha sade ve bağımlılıksızdır.
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
