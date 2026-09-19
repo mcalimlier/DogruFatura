@@ -681,6 +681,44 @@ Sıradaki doğrulama:
    - beklenen: **117/117** veya yalnız bilinçli yeni test eklenmişse yeni toplamın tamamı başarılı
 5. Bu kapı yeşil olmadan bir sonraki MainWindow/DI paketi yapılmayacak.
 
+## 19.09.2026 — Sadeleştirme paketi 9 ilk doğrulama ve compile fix
+
+Kullanıcının yerel doğrulamasında Paket 9'un ilk sürümü WPF derleme aşamasında durdu.
+
+İlk sonuç:
+- SDK: `.NET 10.0.400`
+- Core: başarılı
+- WPF: **3 hata + 3 uyarı**
+- xUnit gerçek test çalışması başlamadı; test projesi WPF derleme hatası nedeniyle çalıştırılamadı.
+- Bu sonuç bir assertion/test başarısızlığı değildir.
+
+Hatalar:
+- `CS0191`: `_schoolView`, `_archiveView`, `_controlView` readonly alanlarına yardımcı metotlardan atama yapılmaya çalışıldı.
+- `CS8618`: aynı üç alanın constructor çıkışında atanmış olduğu derleyici tarafından kanıtlanamadı.
+
+Kök neden:
+- Paket 9 constructor sadeleştirmesinde bu üç `readonly ICollectionView` alanının ataması constructor gövdesinden private yardımcı metotların içine taşınmıştı.
+- C# readonly alan atamalarına yalnız alan başlatıcısında veya doğrudan constructor gövdesinde izin verir.
+
+Düzeltme:
+- `readonly` koruması kaldırılmadı.
+- `InitializeSchoolView`, `InitializeArchiveView`, `InitializeControlCenter` artık oluşturdukları `ICollectionView` nesnesini döndürüyor.
+- `_schoolView`, `_archiveView`, `_controlView` atamaları yeniden doğrudan constructor içinde yapılıyor.
+- `StartNewSchool`, `RefreshSchoolView`, `LoadAuthorityProfileToForm`, `RefreshArchiveView` ve `RefreshControlCenter` çağrıları alan atamalarından sonra ve önceki davranış sırasıyla çalışıyor.
+- Veri modeli, JSON, restore, SHA-256/manifest, SchoolId ve PDF/arşiv davranışına dokunulmadı.
+
+Fix commit:
+- `74eb97dc123ca2e80325bbd4ee9456eb10de1c91`
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+   - normal başlatma
+3. Yalnız build yeşil olursa `TESTLERI_CALISTIR.bat`
+   - beklenen: **117/117**
+4. Bu iki kapı yeşil olmadan Paket 10'a geçilmeyecek.
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
