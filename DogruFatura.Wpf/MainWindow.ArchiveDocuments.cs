@@ -211,6 +211,15 @@ public partial class MainWindow
             return;
         }
 
+        foreach (var importedArchive in addedArchives)
+        {
+            AppendAudit(
+                AuditTrailEventType.ArchiveImported,
+                AuditTrailEntityType.Archive,
+                importedArchive.Id.ToString("D"),
+                $"State={importedArchive.State};InvoiceCount={importedArchive.InvoiceCount};Type={importedArchive.InvoiceType}");
+        }
+
         var firstArchive = addedArchives.First();
         RefreshArchiveView(firstArchive.Id);
         RefreshDashboard();
