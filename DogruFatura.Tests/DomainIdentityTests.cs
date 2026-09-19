@@ -76,6 +76,9 @@ public sealed class DomainIdentityTests
         Assert.Equal(InstitutionKind.PrimarySchool, school.Kind);
         Assert.Equal(InvoiceKind.Electricity, invoice.Kind);
         Assert.Equal(InstitutionKind.PrimarySchool, invoice.InstitutionKind);
+        Assert.True(invoice.HasTaxRuleMetadata);
+        Assert.Equal(TaxRuleCatalog.CurrentVersion, invoice.TaxRuleVersion);
+        Assert.Equal(TaxCalculationService.StampDutyRate, invoice.AppliedStampDutyRate);
         Assert.Equal(InvoiceKind.Electricity, archive.Kind);
         Assert.Equal(ArchiveState.Closed, archive.State);
         Assert.Equal("Elektrik", DomainValueText.ToStorageValue(invoice.Kind));
@@ -152,7 +155,10 @@ public sealed class DomainIdentityTests
             calculation.StampDuty,
             calculation.PaymentAmount,
             0m,
-            school.SchoolId);
+            school.SchoolId,
+            calculation.RuleVersion,
+            calculation.RuleEffectiveFrom,
+            calculation.AppliedStampDutyRate);
     }
 
     private sealed class TempFolder : IDisposable
