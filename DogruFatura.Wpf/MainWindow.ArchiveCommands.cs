@@ -16,14 +16,6 @@ public partial class MainWindow
             return;
         }
 
-        if (archive.IsClosed && archive.HasClosedSnapshot)
-        {
-            SetArchiveStatus(
-                "Bu HYS arşivi SHA-256 snapshot ile mühürlenmiştir; kapanışı geri alınamaz ve iş/veri içeriği değiştirilemez.",
-                true);
-            return;
-        }
-
         ArchivedInvoiceList updated;
         var pdfMove = PdfMoveResult.None(archive.PdfFileName);
         string successMessage;
@@ -52,7 +44,8 @@ public partial class MainWindow
             {
                 IsClosed = false,
                 ClosedAt = null,
-                PdfFileName = pdfMove.PdfFileName
+                PdfFileName = pdfMove.PdfFileName,
+                ClosedSnapshotSha256 = string.Empty
             };
             successMessage = pdfMove.Moved
                 ? $"{archive.HysPaymentOrderDocumentNumber} kapanışı geri alındı; PDF Aktif Çıktılar klasörüne taşındı."
@@ -413,6 +406,64 @@ public partial class MainWindow
         _openedArchiveForReport = archive;
         ShowView("Reports");
         RefreshFinalReportPreview();
+    }
+
+    private void DeleteArchivedList_Click(object sender, RoutedEventArgs e)
+    {
+        if (ArchiveGrid.SelectedItem is not ArchivedInvoiceList archive)
+        {
+            SetArchiveStatus("Silmek için arşivden bir liste seçin.", true);
+            return;
+        }
+
+        var pdfNote = string.IsNullOrWhiteSpace(archive.PdfFileName)
+            ? string.Empty
+            : "\n\nKayıtlı PDF dosyası güvenlik amacıyla diskten silinmeyecek.";
+
+        var confirmation = MessageBox.Show(
+            this,
+            $"{archive.ArchiveNumber} arşiv kaydı kalıcı listeden silinsin mi?{pdfNote}",
+            "DoğruFatura - Arşiv Silme Onayı",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+        if (confirmation != MessageBoxResult.Yes)
+            return;
+
+        var index = ArchivedLists.IndexOf(archive);
+        if (index < 0)
+            return;
+
+        ArchivedLists.RemoveAt(index);
+        try
+        {
+            _archiveDataStore.Save(ArchivedLists);
+        }
+        catch (Exception ex)
+        {
+            ArchivedLists.Insert(Math.Clamp(index, 0, ArchivedLists.Count), archive);
+            RefreshArchiveView(archive.Id);
+            SetArchiveStatus("Arşiv kaydı silinemedi: " + ex.Message, true);
+            return;
+        }
+
+        AppendAudit(
+            AuditTrailEventType.ArchiveDeleted,
+            AuditTrailEntityType.Archive,
+            archive.Id.ToString("D"),
+            $"State={archive.State};InvoiceCount={archive.InvoiceCount};Type={archive.InvoiceType}");
+
+        if (_openedArchiveForReport?.Id == archive.Id)
+            _openedArchiveForReport = null;
+
+        RefreshArchiveView();
+        RefreshDashboard();
+        SetArchiveStatus(
+            string.IsNullOrWhiteSpace(archive.PdfFileName)
+                ? $"{archive.ArchiveNumber} arşiv kaydı silindi."
+                : $"{archive.ArchiveNumber} arşiv kaydı silindi; PDF dosyası güvenlik amacıyla korundu.",
+            false,
+            true);
     }
 
     private void SetArchiveStatus(string message, bool isError = false, bool isSuccess = false)
