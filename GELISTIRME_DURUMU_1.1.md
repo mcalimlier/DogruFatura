@@ -860,6 +860,40 @@ Sıradaki doğrulama:
    - yeni test metodu eklenmedi; beklenen toplam **117/117**
 5. Bu iki kapı yeşil olmadan Paket 12'ye geçilmeyecek.
 
+## 19.09.2026 — Üst şerit kompakt sürüm bilgisi — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Kullanıcı talebiyle ana pencerenin üst şeridine küçük sürüm bilgisi eklendi.
+
+Uygulama:
+- Eski büyük `SÜRÜM` kartı geri getirilmedi.
+- `TEMİZLE` düğmesinin üstünde küçük, pasif `HeaderVersionText` etiketi eklendi.
+- Görünür metin `AppVersionInfo.DisplayVersion` üzerinden geliyor.
+- Tooltip tam `ApplicationSafetyService.InformationalVersion` değerini gösteriyor.
+- Mevcut tek sürüm kaynağı `Directory.Build.props`; şu an `VersionPrefix=1.0.1`, dolayısıyla etiket mevcut build'de **v1.0.1** gösterir.
+- Branch adı/1.1 geliştirme çalışması nedeniyle sürüm numarası otomatik olarak 1.1'e yükseltilmedi; sürüm bump ayrı yayın kararı olarak bırakıldı.
+- Hakkında ekranındaki sürüm alanı korunuyor.
+
+Commitler:
+- XAML kompakt etiket: `753ba4cce7cbbcf40bb83d35f2b6d2dc5bbd0933`
+- Dinamik sürüm doldurma: `96c76ed5a72332a38b23f7eedf299c9b094a5d46`
+
+Statik kontrol:
+- `HeaderVersionText`: mevcut
+- kompakt font: 10.5
+- görünür sürüm: `AppVersionInfo.DisplayVersion`
+- tam sürüm tooltip: mevcut
+- ikinci bağımsız sürüm sabiti eklenmedi
+
+Bu değişiklik Paket 11 doğrulama kapısına dahil edilmiştir.
+
+Doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+3. Üst şeritte küçük **v1.0.1** etiketinin görünümünü kontrol et
+4. İşlem Arşivi → Tümü / Açık / Kapalı filtresini kontrol et
+5. `TESTLERI_CALISTIR.bat`
+6. Beklenen: **0 warning / 0 error + 117/117**
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
