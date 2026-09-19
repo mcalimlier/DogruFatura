@@ -2283,6 +2283,45 @@ Statik kontrol:
    - beklenen: **123/123**
 5. Aşama 5.1 gerçek tarihsel PDF smoke, uygun test PDF'leri bulunduğunda ayrıca yapılacak.
 
+## 19.09.2026 — Aşama 5.2 ilk build: 6 warning, düzeltildi
+
+Kullanıcının build sonucu:
+- Core: başarılı, **2 warning**
+- WPF: başarılı, **4 warning**
+- toplam: **6 warning / 0 error**
+- uygulama başlatıldı.
+
+Warningler:
+- `ArchiveStatisticsService.cs`
+  - 2 x CA1309
+- `MainWindow.Statistics.cs`
+  - 1 x CA1305
+  - 3 x CA1309
+
+Neden:
+- istatistik filtre/sıralama karşılaştırmalarında `CurrentCultureIgnoreCase`,
+- yıl string dönüşümünde açık kültür kullanılmaması.
+
+Düzeltme:
+- istatistik servisindeki comparer/comparison kullanımları `OrdinalIgnoreCase` yapıldı.
+- UI filtre karşılaştırmaları `OrdinalIgnoreCase` yapıldı.
+- yıl seçenekleri `CultureInfo.InvariantCulture` ile string'e çevriliyor.
+- yıl parse işlemi `NumberStyles.Integer + CultureInfo.InvariantCulture` ile açık hale getirildi.
+
+Commitler:
+- Core warning fix: `6f1662e15093a8fea07734b545b135737561baab`
+- WPF warning fix: `f998c7615acb9ba3c4bbcdc86cf263b2a4838542`
+
+Sıradaki kapı:
+1. Fetch origin → Pull origin
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+3. İstatistik / Fatura Listesi ARŞİVLE görsel-işlev smoke
+4. `TESTLERI_CALISTIR.bat`
+   - beklenen: **123/123**
+
+Aşama 5.2 bu kapılar geçmeden tamamlanmış sayılmayacak.
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
