@@ -80,7 +80,7 @@ Kalan ana işler:
 - `MainWindow` sorumluluk ayrımı yalnız yeni davranış eklenirken gerçek bir uygulama-servisi sınırı oluşursa sürdürülecek.
 - Typed domain geçişi gerekli alanlarda tamamlandı: fatura türü, kurum türü, arşiv durumu ve kontrol önem derecesi typed katmanı kullanıyor.
 - `SchoolId` işi tamamlandı; yeni/güncellenen faturalar ID bağı kullanıyor, legacy kayıtlar uyumlu fallback ile korunuyor.
-- Aşama 3 ilerliyor: vergi kural metadata'sı + InvoiceRecord kalıcılığı ve append-only audit trail doğrulandı; transaction journal kodlandı. Sırada kapalı HYS arşivinin değişmez belge modeli var.
+- Aşama 3 ilerliyor: vergi kural metadata'sı + InvoiceRecord kalıcılığı, append-only audit trail ve transaction journal doğrulandı; kapalı HYS arşivi değişmez belge modeli kodlandı.
 
 ## Aşama 4 — Warning temizliği
 
@@ -1560,6 +1560,139 @@ Sıradaki doğrulama:
 4. `TESTLERI_CALISTIR.bat`
    - beklenen: **119/119**
 5. Yeşil olursa Aşama 3.5 olarak **kapalı HYS arşivini değişmez belge modeliyle güçlendirme** işine geçilecek.
+
+## 19.09.2026 — Aşama 3.4 kullanıcı doğrulaması BAŞARILI
+
+Kullanıcı transaction journal paketi sonrasında tüm doğrulama akışlarının başarılı olduğunu bildirdi.
+
+- Build: başarılı
+- Transaction journal smoke: başarılı
+- Tamamlanmış transaction sonrası açılışta yanlış yarım işlem uyarısı bildirilmedi
+- Test kapısı: **119/119**
+
+## 19.09.2026 — Aşama 3.5 kapalı HYS arşivi değişmez belge modeli — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Amaç:
+- yeni kapatılan HYS arşivlerinin iş/veri içeriğini SHA-256 snapshot ile mühürlemek,
+- mühürlü kayıtların uygulama üzerinden değiştirilmesini, yeniden açılmasını veya silinmesini store seviyesinde engellemek,
+- mevcut PDF SHA-256 bütünlük mekanizmasını ayrı ve uyumlu tutmak,
+- legacy kapalı fakat snapshot'sız kayıtları zorla dönüştürmeden geriye uyumluluğu korumak.
+
+Yeni servis:
+- `ClosedArchiveSnapshotService`
+- kapalı arşivin deterministik snapshot SHA-256 özetini üretir.
+- `Seal(archive)`:
+  - yalnız kapalı,
+  - HYS numarası olan,
+  - kapanış tarihi bulunan
+  arşivi mühürler.
+- `Matches(archive)` mevcut snapshot ile güncel iş/veri içeriğini karşılaştırır.
+
+Snapshot kapsamı:
+- arşiv ID
+- arşiv numarası
+- arşiv tarihi
+- fatura türü
+- fatura kayıtlarının tamamı
+- yetkili/imza profili
+- HYS Ödeme Emri Belge No
+- kapalı durumu
+- kapanış tarihi
+
+Snapshot dışında bilinçli bırakılan alanlar:
+- `PdfFileName`
+- `PdfSha256`
+
+Neden:
+- PDF bütünlüğü zaten ayrı `PdfSha256` mekanizmasıyla korunuyor.
+- kapatma anında PDF mevcut olmayabilir ve sonradan güvenli biçimde üretilebilir/eşitlenebilir.
+- PDF referans/hash güncellemesi iş/veri snapshot mühürünü bozmamalı.
+
+`ArchivedInvoiceList`:
+- sona geriye uyumlu opsiyonel `ClosedSnapshotSha256 = ""` alanı eklendi.
+- `HasClosedSnapshot` JSON-dışı görünümü eklendi.
+- normalize aşamasında snapshot hash uppercase/trim uygulanıyor.
+- positional constructor'ın eski parametre sırası bozulmadı.
+
+Validation:
+- snapshot varsa geçerli SHA-256 formatı zorunlu.
+- snapshot bulunan kayıt açık duruma getirilemez.
+- snapshot bulunan kaydın hesaplanan içeriği kayıtlı hash ile eşleşmek zorunda.
+- snapshot'sız legacy kapalı kayıtlar geçerli olmaya devam ediyor.
+
+Store seviyesinde değişmezlik:
+- `ArchivedInvoiceListDataStore.Save` artık mevcut dosyadaki mühürlü kayıtları ayrıca kontrol ediyor.
+- daha önce mühürlenmiş kayıt:
+  - listeden çıkarılamaz,
+  - snapshot hash'i değiştirilemez,
+  - iş/veri içeriği değiştirilemez.
+- aday kayıt değiştirildikten sonra yeni bir hash hesaplanmaya çalışılsa bile mevcut diskteki mühür authoritative kabul edildiği için save reddedilir.
+- PDF dosya adı veya PDF SHA-256 değişiklikleri snapshot dışında olduğundan güvenli PDF eşitleme akışı çalışmaya devam edebilir.
+
+Yeni HYS kapanışı:
+- açık arşiv HYS ile kapatılırken `ClosedArchiveSnapshotService.Seal` uygulanıyor.
+- yeni kapalı kayıt ilk save anından itibaren mühürlü oluyor.
+- mühürlü kayıt için kapanışı geri alma kod yolu başlamadan engelleniyor.
+
+UI:
+- mühürlü kapalı kayıtta bilgi satırına `Mühürlü` ekleniyor.
+- kapanış düğmesi `MÜHÜRLÜ` metnine dönüyor.
+- düğme devre dışı.
+- durum mesajı iş/veri içeriğinin değiştirilemez olduğunu açıklıyor.
+- legacy kapalı snapshot'sız kayıtta eski `KAPANIŞI GERİ AL` davranışı geriye uyumluluk için korunuyor.
+
+Tarihsel PDF import:
+- yeni import edilen kapalı HYS kayıtları da snapshot ile mühürleniyor.
+- özgün PDF'nin vergi kural metadata davranışı önceki Aşama 3.2 kararına göre değişmedi.
+
+Bütünlük/restore:
+- `DataDirectoryValidationService` zaten `ArchivedInvoiceListValidationService` kullandığı için snapshot uyuşmazlığı veri bütünlüğü kontrolü ve restore doğrulamasında da hata olarak yakalanacak.
+- mevcut PDF SHA-256 kontrolü aynen korunuyor.
+
+Yeni test:
+- `ClosedArchiveImmutabilityTests.SealedClosedArchiveCannotBeChangedOrDeleted`
+- mühürlü kayıt kaydediliyor.
+- yetkili profili değiştirilip **yeni snapshot hash hesaplanmasına rağmen** store değişikliği reddediyor.
+- mühürlü kaydı listeden silme denemesi reddediliyor.
+- başarısız denemelerden sonra diskteki özgün mühürlü kayıt aynen yükleniyor ve snapshot doğrulanıyor.
+
+Test sayısı:
+- önce: **119**
+- yeni hedef: **120**
+
+Commitler:
+- snapshot servis: `36a0c61e7a6e20149e56ec57a6064b91ca647859`
+- model: `033f7ff6bb6b37272b90031d32dd88dc68da7453`
+- validation: `091a619dc1077485bda381d9c3f310a2761b3c81`
+- store değişmezlik: `d2089e182a8b9bc16146790401284d1a98430acf`
+- HYS kapanış mühürü: `21667955afee74a0c964aa2ebbdb2d5fed0c21b4`
+- UI mühür durumu: `b4172af9dc29819c5e40dcc12fcc6b1ddf9d9c33`
+- tarihsel import mühürü: `17700c5115c56bd84d0bb4d7e5662e5bd89a7fc7`
+- değişmezlik testi: `e1f01063c7f2ad525cdff3d57c8741c93d450116`
+
+Statik kontrol:
+- snapshot PDF alanlarını içermiyor: geçti
+- yeni kapanış mühürleniyor: geçti
+- tarihsel import mühürleniyor: geçti
+- snapshot validation: geçti
+- store değişiklik/silme engeli: geçti
+- UI mühürlü durum: geçti
+- legacy snapshot'sız kapalı kayıt uyumu: korundu
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+3. Smoke:
+   - aktif listeyi arşive al
+   - HYS numarasıyla kapat
+   - seçili arşivde `Mühürlü` bilgisi görünmeli
+   - düğme `MÜHÜRLÜ` olmalı ve devre dışı kalmalı
+   - uygulamayı kapat/aç; mühürlü durum korunmalı
+   - arşiv PDF görüntüleme/eşitleme çalışmaya devam etmeli
+4. `TESTLERI_CALISTIR.bat`
+   - beklenen: **120/120**
+5. Yeşil olursa Aşama 3 mali denetim/izlenebilirlik paketi kapanış değerlendirmesi yapılacak; ardından Aşama 5 UX işlerine geçilecek.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
