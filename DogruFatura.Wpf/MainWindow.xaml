@@ -1219,8 +1219,8 @@
                                     </Border>
                                 </Grid>
                             </Border>
-
-<ScrollViewer x:Name="AboutView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        </Grid>
+                        <ScrollViewer x:Name="AboutView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                             <StackPanel Margin="0,0,8,16">
                                 <TextBlock Text="HAKKINDA / GÜVENLİK" Style="{StaticResource PageTitle}"/>
                                 <TextBlock Text="Sürüm, veri sağlığı, yedekleme ve destek araçları." Style="{StaticResource PageSubtitle}"/>
