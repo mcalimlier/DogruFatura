@@ -111,7 +111,7 @@ public sealed class HistoricalPdfImportService
                 return Invalid(sourcePath, fileName, "PDF fatura sıra numaraları kesintisiz okunamadı.", hysNumber, invoiceType);
 
             var authorityProfile = ExtractAuthorityProfile(pages[^1], fallbackAuthorityProfile);
-            var archive = new ArchivedInvoiceList(
+            var archive = ClosedArchiveSnapshotService.Seal(new ArchivedInvoiceList(
                 Guid.NewGuid(),
                 "DF-PDF-" + hysNumber[4..],
                 reportDate.Value.Date,
@@ -121,7 +121,7 @@ public sealed class HistoricalPdfImportService
                 hysNumber,
                 true,
                 reportDate.Value.Date,
-                hysNumber + ".pdf");
+                hysNumber + ".pdf"));
             var validation = ArchivedInvoiceListValidationService.Validate(archive);
             if (!validation.IsValid)
                 return Invalid(sourcePath, fileName, validation.Message, hysNumber, invoiceType);
