@@ -669,7 +669,7 @@ public partial class MainWindow
         var safe = value ?? string.Empty;
         if (safe.Length > 0 && safe[0] is '=' or '+' or '-' or '@')
             safe = "'" + safe;
-        return """ + safe.Replace(""", """", StringComparison.Ordinal) + """;
+        return "\"" + safe.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
     }
 
     private void ShowStatisticsExportError(string title, Exception ex)
