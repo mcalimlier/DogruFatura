@@ -287,6 +287,9 @@ public sealed class HistoricalPdfImportService
             var school = schools.FirstOrDefault(candidate =>
                 TurkishTextComparison.EqualsIgnoreCase(candidate.Name.Trim(), institutionName));
             var institutionType = school?.InstitutionType ?? InferInstitutionType(institutionName);
+
+            // Tarihsel PDF güncel hesapla doğrulanabilir; ancak PDF'nin üretildiği özgün
+            // vergi kural sürümü kanıtlanamadığı için rule metadata bilinçli olarak boş bırakılır.
             var invoice = new InvoiceRecord(
                 Guid.NewGuid(),
                 reportDate,
