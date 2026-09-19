@@ -79,10 +79,6 @@ public partial class MainWindow
             + $" • Ödeme: {NumberParser.Money(result.PaymentTotal)}";
 
         RefreshStatisticsDonut(result);
-
-        StatisticsGrid.ItemsSource = result.Rows;
-        StatisticsEmptyState.Visibility =
-            result.Rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void RefreshStatisticsDonut(ArchiveStatisticsResult result)
@@ -125,12 +121,12 @@ public partial class MainWindow
             {
                 Name = item.InvoiceType,
                 Values = new[] { (double)item.PaymentTotal },
-                InnerRadius = 92,
-                HoverPushout = 8,
+                InnerRadius = 128,
+                HoverPushout = 10,
                 Fill = new SolidColorPaint(skColor),
                 Stroke = new SolidColorPaint(SKColors.White) { StrokeThickness = 2 },
                 DataLabelsPaint = new SolidColorPaint(SKColors.White),
-                DataLabelsSize = 16,
+                DataLabelsSize = 18,
                 DataLabelsPosition = PolarLabelsPosition.Middle,
                 DataLabelsFormatter = _ => percentage >= 0.06m ? percentageText : string.Empty,
                 ToolTipLabelFormatter = _ =>
@@ -153,37 +149,37 @@ public partial class MainWindow
     {
         var row = new Grid
         {
-            Margin = new Thickness(0, 0, 0, 12)
+            Margin = new Thickness(0, 0, 0, 16)
         };
-        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(22) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var marker = new Border
         {
-            Width = 13,
-            Height = 13,
-            CornerRadius = new CornerRadius(3),
+            Width = 15,
+            Height = 15,
+            CornerRadius = new CornerRadius(4),
             Background = brush,
             VerticalAlignment = VerticalAlignment.Center
         };
 
         var label = new StackPanel
         {
-            Margin = new Thickness(9, 0, 10, 0)
+            Margin = new Thickness(10, 0, 12, 0)
         };
         label.Children.Add(new TextBlock
         {
             Text = item.InvoiceType,
             Foreground = new SolidColorBrush(Color.FromRgb(3, 28, 56)),
-            FontSize = 15,
+            FontSize = 16,
             FontWeight = FontWeights.SemiBold
         });
         label.Children.Add(new TextBlock
         {
             Text = $"{item.InvoiceCount} fatura",
             Foreground = new SolidColorBrush(Color.FromRgb(100, 119, 139)),
-            FontSize = 13
+            FontSize = 13.5
         });
 
         var value = new StackPanel
@@ -194,7 +190,7 @@ public partial class MainWindow
         {
             Text = NumberParser.Money(item.PaymentTotal),
             Foreground = new SolidColorBrush(Color.FromRgb(3, 28, 56)),
-            FontSize = 15,
+            FontSize = 16,
             FontWeight = FontWeights.Bold,
             HorizontalAlignment = HorizontalAlignment.Right
         });
@@ -202,7 +198,7 @@ public partial class MainWindow
         {
             Text = "%" + percentage.ToString("N1", CultureInfo.GetCultureInfo("tr-TR")),
             Foreground = new SolidColorBrush(Color.FromRgb(84, 112, 141)),
-            FontSize = 13,
+            FontSize = 13.5,
             FontWeight = FontWeights.SemiBold,
             HorizontalAlignment = HorizontalAlignment.Right
         });
