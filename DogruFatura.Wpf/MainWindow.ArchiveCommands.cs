@@ -408,6 +408,252 @@ public partial class MainWindow
         RefreshFinalReportPreview();
     }
 
+    private void RestoreArchivedListToActive_Click(object sender, RoutedEventArgs e)
+    {
+        if (ArchiveGrid.SelectedItem is not ArchivedInvoiceList archive)
+        {
+            SetArchiveStatus("Düzenlemek için arşivden bir liste seçin.", true);
+            return;
+        }
+
+        if (ActiveInvoices.Count > 0)
+        {
+            SetArchiveStatus(
+                "Arşiv düzenlemeye alınamadı: Aktif Fatura Listesi boş olmalıdır. "
+                + "Önce mevcut aktif listeyi tamamlayın veya arşive alın.",
+                true);
+            return;
+        }
+
+        var validation = FinalReportValidationService.Validate(archive.Invoices);
+        if (!validation.IsValid)
+        {
+            SetArchiveStatus("Arşiv düzenlemeye alınamadı: " + validation.Message, true);
+            return;
+        }
+
+        var confirmation = MessageBox.Show(
+            this,
+            $"{archive.ArchiveNumber} arşivindeki {archive.InvoiceCount} fatura Aktif Fatura Listesi'ne geri alınacak.\n\n"
+            + "Arşiv kaydı ve ona bağlı eski PDF silinecek; faturaları normal listeden düzenleyebileceksiniz. "
+            + "HYS kapanış bilgisi arşiv kaydıyla birlikte kaldırılacak. Devam edilsin mi?",
+            "DoğruFatura - Arşivi Düzenlemeye Al",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+        if (confirmation != MessageBoxResult.Yes)
+            return;
+
+        var transactionId = Guid.NewGuid();
+        const TransactionJournalOperation operation = TransactionJournalOperation.RestoreArchiveToActive;
+        if (!TryAppendArchiveTransaction(
+                transactionId,
+                TransactionJournalState.Started,
+                archive,
+                out var journalStartError,
+                operation))
+        {
+            SetArchiveStatus(
+                "Arşiv düzenlemeye alınamadı: işlem journal başlatılamadı. Veri değişikliği yapılmadı. "
+                + journalStartError,
+                true);
+            return;
+        }
+
+        var restoredInvoices = archive.Invoices.ToList();
+        try
+        {
+            _invoiceDataStore.Save(restoredInvoices);
+        }
+        catch (Exception ex)
+        {
+            AppendArchiveTransactionBestEffort(
+                transactionId,
+                TransactionJournalState.RolledBack,
+                archive,
+                operation);
+            SetArchiveStatus("Faturalar aktif listeye alınamadı: " + ex.Message, true);
+            return;
+        }
+
+        if (!TryAppendArchiveTransaction(
+                transactionId,
+                TransactionJournalState.ActiveListRestored,
+                archive,
+                out var journalActiveError,
+                operation))
+        {
+            var rollbackSucceeded = true;
+            try
+            {
+                _invoiceDataStore.Save(Array.Empty<InvoiceRecord>());
+            }
+            catch
+            {
+                rollbackSucceeded = false;
+            }
+
+            AppendArchiveTransactionBestEffort(
+                transactionId,
+                rollbackSucceeded
+                    ? TransactionJournalState.RolledBack
+                    : TransactionJournalState.RecoveryRequired,
+                archive,
+                operation);
+
+            SetArchiveStatus(
+                rollbackSucceeded
+                    ? "İşlem journal güncellenemedi; aktif liste geri alındı. " + journalActiveError
+                    : "İşlem journal güncellenemedi ve aktif liste rollback tamamlanamadı. "
+                      + "Uygulamayı kapatmadan veri bütünlüğünü kontrol edin. " + journalActiveError,
+                true);
+            return;
+        }
+
+        var archiveIndex = ArchivedLists.IndexOf(archive);
+        if (archiveIndex < 0)
+        {
+            try { _invoiceDataStore.Save(Array.Empty<InvoiceRecord>()); } catch { }
+            AppendArchiveTransactionBestEffort(
+                transactionId,
+                TransactionJournalState.RolledBack,
+                archive,
+                operation);
+            SetArchiveStatus("Seçili arşiv kaydı artık listede bulunmuyor.", true);
+            return;
+        }
+
+        ArchivedLists.RemoveAt(archiveIndex);
+        try
+        {
+            _archiveDataStore.Save(ArchivedLists);
+        }
+        catch (Exception ex)
+        {
+            ArchivedLists.Insert(Math.Clamp(archiveIndex, 0, ArchivedLists.Count), archive);
+            var rollbackSucceeded = true;
+            try
+            {
+                _invoiceDataStore.Save(Array.Empty<InvoiceRecord>());
+            }
+            catch
+            {
+                rollbackSucceeded = false;
+            }
+
+            AppendArchiveTransactionBestEffort(
+                transactionId,
+                rollbackSucceeded
+                    ? TransactionJournalState.RolledBack
+                    : TransactionJournalState.RecoveryRequired,
+                archive,
+                operation);
+
+            RefreshArchiveView(archive.Id);
+            SetArchiveStatus(
+                "Arşiv kaydı düzenleme için kaldırılamadı: " + ex.Message
+                + (rollbackSucceeded
+                    ? string.Empty
+                    : " Aktif liste rollback tamamlanamadı; veri bütünlüğünü kontrol edin."),
+                true);
+            return;
+        }
+
+        if (!TryAppendArchiveTransaction(
+                transactionId,
+                TransactionJournalState.ArchiveRemoved,
+                archive,
+                out var journalArchiveError,
+                operation))
+        {
+            var rollbackArchiveSucceeded = true;
+            var rollbackActiveSucceeded = true;
+            ArchivedLists.Insert(Math.Clamp(archiveIndex, 0, ArchivedLists.Count), archive);
+            try
+            {
+                _archiveDataStore.Save(ArchivedLists);
+            }
+            catch
+            {
+                ArchivedLists.Remove(archive);
+                rollbackArchiveSucceeded = false;
+            }
+
+            try
+            {
+                _invoiceDataStore.Save(Array.Empty<InvoiceRecord>());
+            }
+            catch
+            {
+                rollbackActiveSucceeded = false;
+            }
+
+            var rollbackSucceeded = rollbackArchiveSucceeded && rollbackActiveSucceeded;
+            AppendArchiveTransactionBestEffort(
+                transactionId,
+                rollbackSucceeded
+                    ? TransactionJournalState.RolledBack
+                    : TransactionJournalState.RecoveryRequired,
+                archive,
+                operation);
+
+            RefreshArchiveView(archive.Id);
+            SetArchiveStatus(
+                rollbackSucceeded
+                    ? "İşlem journal güncellenemedi; arşiv düzenleme aktarımı geri alındı. " + journalArchiveError
+                    : "İşlem journal güncellenemedi ve rollback tamamlanamadı. Veri bütünlüğünü kontrol edin. "
+                      + journalArchiveError,
+                true);
+            return;
+        }
+
+        var journalWarning = !TryAppendArchiveTransaction(
+            transactionId,
+            TransactionJournalState.Completed,
+            archive,
+            out _,
+            operation);
+
+        var pdfDeleteWarning = false;
+        try
+        {
+            _documentArchiveStorageService.DeleteStoredPdf(archive);
+        }
+        catch (Exception ex)
+        {
+            pdfDeleteWarning = true;
+            ApplicationCrashLogger.Write(ex, "Archive.RestoreToActive.DeletePdf");
+        }
+
+        ActiveInvoices.Clear();
+        foreach (var invoice in restoredInvoices)
+            ActiveInvoices.Add(invoice);
+
+        if (_openedArchiveForReport?.Id == archive.Id)
+            _openedArchiveForReport = null;
+
+        AppendAudit(
+            AuditTrailEventType.ArchiveRestoredToActive,
+            AuditTrailEntityType.Archive,
+            archive.Id.ToString("D"),
+            $"InvoiceCount={archive.InvoiceCount};Type={archive.InvoiceType}");
+
+        EndInvoiceEditMode();
+        UpdateInvoiceListSummary();
+        RefreshArchiveView();
+        RefreshDashboard();
+        RefreshControlCenter();
+
+        var message = $"{archive.ArchiveNumber} aktif fatura listesine geri alındı. Faturaları artık normal listeden düzenleyebilirsiniz.";
+        if (pdfDeleteWarning)
+            message += " Eski PDF silinemedi; dosya klasörde kalmış olabilir.";
+        if (journalWarning)
+            message += " İşlem journal kapanışı tam yazılamadı; sonraki açılışta kontrol uyarısı görülebilir.";
+
+        SetInvoiceListStatus(message, pdfDeleteWarning || journalWarning, !(pdfDeleteWarning || journalWarning));
+        ShowView("List");
+    }
+
     private void DeleteArchivedList_Click(object sender, RoutedEventArgs e)
     {
         if (ArchiveGrid.SelectedItem is not ArchivedInvoiceList archive)
@@ -416,13 +662,10 @@ public partial class MainWindow
             return;
         }
 
-        var pdfNote = string.IsNullOrWhiteSpace(archive.PdfFileName)
-            ? string.Empty
-            : "\n\nKayıtlı PDF dosyası güvenlik amacıyla diskten silinmeyecek.";
-
         var confirmation = MessageBox.Show(
             this,
-            $"{archive.ArchiveNumber} arşiv kaydı kalıcı listeden silinsin mi?{pdfNote}",
+            $"{archive.ArchiveNumber} arşiv kaydı ve ona bağlı PDF kalıcı olarak silinecek.\n\n"
+            + "Bu işlem geri alınamaz. Silmek istediğinizden emin misiniz?",
             "DoğruFatura - Arşiv Silme Onayı",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning,
@@ -447,23 +690,38 @@ public partial class MainWindow
             return;
         }
 
+        var pdfDeleted = false;
+        var pdfDeleteFailed = false;
+        try
+        {
+            pdfDeleted = _documentArchiveStorageService.DeleteStoredPdf(archive);
+        }
+        catch (Exception ex)
+        {
+            pdfDeleteFailed = true;
+            ApplicationCrashLogger.Write(ex, "Archive.DeletePdf");
+        }
+
         AppendAudit(
             AuditTrailEventType.ArchiveDeleted,
             AuditTrailEntityType.Archive,
             archive.Id.ToString("D"),
-            $"State={archive.State};InvoiceCount={archive.InvoiceCount};Type={archive.InvoiceType}");
+            $"State={archive.State};InvoiceCount={archive.InvoiceCount};Type={archive.InvoiceType};PdfDeleted={pdfDeleted}");
 
         if (_openedArchiveForReport?.Id == archive.Id)
             _openedArchiveForReport = null;
 
         RefreshArchiveView();
         RefreshDashboard();
+
         SetArchiveStatus(
-            string.IsNullOrWhiteSpace(archive.PdfFileName)
-                ? $"{archive.ArchiveNumber} arşiv kaydı silindi."
-                : $"{archive.ArchiveNumber} arşiv kaydı silindi; PDF dosyası güvenlik amacıyla korundu.",
-            false,
-            true);
+            pdfDeleteFailed
+                ? $"{archive.ArchiveNumber} arşiv kaydı silindi ancak bağlı PDF silinemedi."
+                : $"{archive.ArchiveNumber} arşiv kaydı"
+                  + (pdfDeleted ? " ve bağlı PDF" : string.Empty)
+                  + " kalıcı olarak silindi.",
+            pdfDeleteFailed,
+            !pdfDeleteFailed);
     }
 
     private void SetArchiveStatus(string message, bool isError = false, bool isSuccess = false)
