@@ -2431,6 +2431,128 @@ Sıradaki doğrulama:
    - beklenen: **123/123**
 5. Aylık trend grafiği bu paket doğrulandıktan sonra ayrı küçük dilim olarak değerlendirilebilir.
 
+## 19.09.2026 — Aşama 5.2 donut görsel kalite revizyonu — LiveCharts2
+
+Kullanıcının yerel build sonucu:
+- Core: başarılı
+- WPF: başarılı, **1 warning**
+- toplam: **1 warning / 0 error**
+- warning:
+  - `MainWindow.Statistics.cs(256,26) CA1859`
+  - `StatisticsBrush` dönüş tipinin `Brush` yerine `SolidColorBrush` olması önerildi.
+
+Kullanıcı ayrıca:
+- donut grafiğinin daha büyük olmasını,
+- grafik üzerindeki yazıların daha okunaklı olmasını,
+- harici grafik kütüphanesi görsel kaliteyi artıracaksa kullanılmasını
+istedi.
+
+### Grafik kütüphanesi kararı
+
+Önceki “harici chart kütüphanesi ekleme” tercihi kullanıcı tarafından geri çekildi.
+
+Yeni bağımlılık:
+- `LiveChartsCore.SkiaSharpView.WPF`
+- sürüm: `2.0.5`
+
+Amaç:
+- profesyonel WPF pie/donut render,
+- daha iyi ölçekleme,
+- daha okunaklı data label,
+- hover/tooltip,
+- elle `Canvas/Path/ArcSegment` geometri bakımını kaldırmak.
+
+### Donut revizyonu
+
+Eski:
+- WPF `Canvas`
+- `PathGeometry`
+- `ArcSegment`
+- 220x220 manuel donut
+
+Yeni:
+- `LiveChartsCore.SkiaSharpView.WPF.PieChart`
+- boyut: **300x300**
+- `InitialRotation=-90`
+- built-in legend kapalı; mevcut detay legend korunuyor.
+- `PieSeries<double>`
+- `InnerRadius = 92`
+- `HoverPushout = 8`
+- dilimler arasında beyaz stroke.
+- data label:
+  - beyaz,
+  - 16 px,
+  - dilim ortasında,
+  - yüzde olarak.
+- %6'dan küçük dilimlerde okunaksızlığı önlemek için dilim üzerindeki yüzde gizlenir; kesin oran/tutar legend ve tooltip'te görünür.
+- tooltip:
+  - fatura türü,
+  - ödeme tutarı,
+  - yüzde.
+
+Merkez:
+- iç panel 136x136,
+- `TOPLAM ÖDEME`,
+- toplam tutar fontu **20 px**.
+
+Legend okunaklılık artışı:
+- tür adı 15 px,
+- tutar 15 px bold,
+- yüzde 13 px semibold,
+- işaret 13x13.
+
+### CA1859 fix
+
+`StatisticsBrush`:
+- önce: `Brush`
+- yeni: `SolidColorBrush`
+
+Böylece bildirilen CA1859 kaynağı kaldırıldı.
+
+### Eski manuel donut temizliği
+
+Kaldırıldı:
+- `StatisticsDonutCanvas`
+- `StatisticsDonutPoint`
+- `ArcSegment`
+- `PathGeometry`
+- manuel açı/sweep hesapları.
+
+Core istatistik hesabı ve filtre semantiği değişmedi.
+
+### LiveCharts API düzeltmesi
+
+Statik doküman/API kontrolünde tooltip property adı doğrulandı:
+- doğru: `ToolTipLabelFormatter`
+- yanlış ilk yazım doğrulama öncesi düzeltildi.
+
+### Commitler
+
+- LiveCharts2 package: `3bdd44078715928beae5a71b02484bc8c2c69656`
+- 300x300 LiveCharts XAML: `57925c18bf608f6a2871bfd5700893a644bce5ce`
+- LiveCharts PieSeries / labels / legend entegrasyonu: `e4be60af506bb72bf2c8ea437ba73065fff3b2b1`
+- tooltip property fix: `69c5ac674fe52e029998053bd22bf3493b7c1b9a`
+
+Test sayısı:
+- yeni test metodu yok.
+- hedef **123/123**.
+
+### Sıradaki doğrulama
+
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - NuGet restore LiveCharts2 bağımlılıklarını indirebilir.
+   - beklenen: **0 warning / 0 error**
+3. İSTATİSTİK görsel smoke:
+   - donut önceki halden belirgin büyük olmalı,
+   - yüzde yazıları net okunmalı,
+   - merkez toplam ödeme rahat okunmalı,
+   - hover tooltip çalışmalı,
+   - legend tür/tutar/yüzde okunaklı olmalı,
+   - Yıl/Kurum/Tür filtreleri grafiği ve tabloyu birlikte değiştirmeli.
+4. `TESTLERI_CALISTIR.bat`
+   - beklenen: **123/123**
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
