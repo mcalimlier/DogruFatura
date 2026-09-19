@@ -748,6 +748,46 @@ Sonuç:
 - Yeni güvenilir baseline: **0 warning / 0 error + 117/117 xUnit**.
 - Paket 10 için yeni küçük, geri alınabilir sadeleştirme dilimine geçilebilir.
 
+## 19.09.2026 — Kod temizliği / sadeleştirme paketi 10 — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Paket 9'un **0 warning / 0 error + 117/117 xUnit** baseline'ından sonra typed domain katmanının UI tarafındaki kullanımı küçük bir adımla genişletildi.
+
+Değişiklikler:
+- `MainWindow.xaml.cs` içindeki fatura türü UI listesi artık ham `"Elektrik" / "Telefon" / "İnternet" / "Su"` dizisini ikinci kez tanımlamıyor.
+- `InvoiceTypes`, `DomainValueText.ToStorageValue(InvoiceKind...)` üzerinden oluşturuluyor.
+- Kurum türü listesi de mevcut `InstitutionKind + DomainValueText` typed katmanından üretiliyor.
+- Fatura girişindeki `InvoiceTypeBox` aynı ortak `InvoiceTypes` kaynağını kullanıyor.
+- Arşiv tür filtresi `"Tümü"` prefix'i + aynı ortak `InvoiceTypes` kaynağından üretiliyor.
+- Dashboard fatura türü renk seçimi artık storage string'leri üzerinde ikinci bir switch taşımıyor; önce `DomainValueText.ParseInvoiceKind` ile typed değere dönüyor, sonra `InvoiceKind` üzerinden renk seçiyor.
+- Kalıcı JSON/storage metinleri değiştirilmedi; `DomainValueText` mevcut storage değerlerini aynen üretmeye devam ediyor.
+
+Commitler:
+- UI tür kaynakları: `f92aed4f39f943d6da639a6fa748876722aabd1f`
+- Dashboard typed eşleme: `071f1302f8487fba137d10cfb05e99592b87ecbf`
+- Dashboard Core.Models import/statik temizlik fix'i: `78110d3b191c7277aea2b87a67dca4ed78161b0c`
+
+Statik kontrol:
+- `InvoiceTypeBox.ItemsSource = InvoiceTypes`: mevcut
+- kurum türleri `InstitutionKind` üzerinden: mevcut
+- arşiv fatura türü filtresi ortak `InvoiceTypes` kaynağını kullanıyor
+- dashboard `DomainValueText.ParseInvoiceKind` + `InvoiceKind` switch kullanıyor
+- dashboard'da ham `"Elektrik" / "Telefon" / "İnternet" / "Su"` renk switch'i: **0**
+- veri modeli, JSON şeması, restore, SHA-256/manifest, SchoolId, PDF/arşiv akışına dokunulmadı.
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+   - normal başlatma
+3. Hızlı smoke:
+   - Fatura Girişi tür listesi: Elektrik / Telefon / İnternet / Su
+   - İşlem Arşivi tür filtresi: Tümü + aynı dört tür
+   - Ana Ekran fatura türü grafik renkleri
+   - Kurum türü listesi
+4. `TESTLERI_CALISTIR.bat`
+   - yeni test eklenmedi; beklenen **117/117**
+5. Bu iki kapı yeşil olmadan Paket 11'e geçilmeyecek.
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
