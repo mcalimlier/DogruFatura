@@ -9,13 +9,14 @@ public partial class MainWindow
         Guid transactionId,
         TransactionJournalState state,
         ArchivedInvoiceList archive,
-        out string errorMessage)
+        out string errorMessage,
+        TransactionJournalOperation operation = TransactionJournalOperation.ArchiveActiveList)
     {
         try
         {
             _transactionJournalStore.Append(TransactionJournalEntry.Create(
                 transactionId,
-                TransactionJournalOperation.ArchiveActiveList,
+                operation,
                 state,
                 archive.Id.ToString("D"),
                 $"InvoiceCount={archive.InvoiceCount};Type={archive.InvoiceType}"));
@@ -33,9 +34,10 @@ public partial class MainWindow
     private void AppendArchiveTransactionBestEffort(
         Guid transactionId,
         TransactionJournalState state,
-        ArchivedInvoiceList archive)
+        ArchivedInvoiceList archive,
+        TransactionJournalOperation operation = TransactionJournalOperation.ArchiveActiveList)
     {
-        _ = TryAppendArchiveTransaction(transactionId, state, archive, out _);
+        _ = TryAppendArchiveTransaction(transactionId, state, archive, out _, operation);
     }
 
     private void ShowPendingTransactionJournalWarning()
