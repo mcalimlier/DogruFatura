@@ -14,33 +14,68 @@
 
                 <!-- ÜST BAR -->
                 <Grid Grid.Row="0" Grid.ColumnSpan="2" Background="#031C38" MouseLeftButtonDown="Header_MouseLeftButtonDown">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="255"/><ColumnDefinition Width="220"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                    <Image Grid.Column="0" Source="Assets/Logo.png" Width="220" Stretch="Uniform" Margin="22,0,0,0" HorizontalAlignment="Left"/>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="255"/>
+                        <ColumnDefinition Width="170"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
-                        <Border Background="#092746" CornerRadius="9" BorderBrush="#24496B" BorderThickness="1" Padding="13,8" Margin="10,0,0,0" Width="196">
-                            <StackPanel>
-                                <TextBlock Text="HESAPLAMA" Foreground="#8FA8C0" FontSize="13" FontWeight="SemiBold"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
-                                    <Ellipse x:Name="EngineStatusDot" Width="9" Height="9" Fill="#43C77A" Margin="0,0,7,0"/>
-                                    <TextBlock x:Name="EngineStatusText" Text="Doğrulandı" Foreground="#DDF6E7" FontSize="14.5" FontWeight="SemiBold"/>
-                                </StackPanel>
+                    <Image Grid.Column="0" Source="Assets/Logo.png" Width="220" Stretch="Uniform"
+                           Margin="22,0,0,0" HorizontalAlignment="Left"/>
+
+                    <Border Grid.Column="1"
+                            Width="148"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Background="#092746"
+                            CornerRadius="8"
+                            BorderBrush="#24496B"
+                            BorderThickness="1"
+                            Padding="10,6"
+                            Margin="8,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="HESAPLAMA" Foreground="#8FA8C0" FontSize="10.5" FontWeight="SemiBold"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <Ellipse x:Name="EngineStatusDot" Width="8" Height="8" Fill="#43C77A" Margin="0,0,6,0"/>
+                                <TextBlock x:Name="EngineStatusText" Text="Doğrulandı" Foreground="#DDF6E7"
+                                           FontSize="12.5" FontWeight="SemiBold"/>
                             </StackPanel>
-                        </Border>
-                    </StackPanel>
+                        </StackPanel>
+                    </Border>
 
                     <Grid Grid.Column="2" VerticalAlignment="Center" Margin="8,0,14,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="120"/><ColumnDefinition Width="10"/>
-                            <ColumnDefinition Width="132"/><ColumnDefinition Width="44"/><ColumnDefinition Width="44"/><ColumnDefinition Width="44"/>
+                            <ColumnDefinition Width="280"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="116"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="58"/>
+                            <ColumnDefinition Width="6"/>
+                            <ColumnDefinition Width="44"/>
+                            <ColumnDefinition Width="44"/>
+                            <ColumnDefinition Width="44"/>
                         </Grid.ColumnDefinitions>
-                        <Border Grid.Column="0" Background="#082744" BorderBrush="#24496B" BorderThickness="1" CornerRadius="9" Padding="12,7" MinWidth="210">
+
+                        <Border Grid.Column="0"
+                                Background="#082744"
+                                BorderBrush="#24496B"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="11,6">
                             <StackPanel>
-                                <TextBlock Text="AKTİF KURUM" Foreground="#8FA8C0" FontSize="13" FontWeight="SemiBold"/>
-                                <TextBlock x:Name="ActiveInstitutionText" Text="Henüz seçilmedi" Foreground="White" FontSize="14.5" FontWeight="SemiBold" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="AKTİF KURUM" Foreground="#8FA8C0" FontSize="10.5" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="ActiveInstitutionText" Text="Henüz seçilmedi" Foreground="White"
+                                           FontSize="12.5" FontWeight="SemiBold" Margin="0,2,0,0"
+                                           TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
                         </Border>
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center"
+
+                        <StackPanel Grid.Column="2"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Center"
                                     ToolTip="Kurum, VKN, fatura türü, hizmet no, fatura no, tarihler, tutar ve geçerli vergi hesabına göre canlı form hazırlığı">
                             <StackPanel VerticalAlignment="Center" Margin="0,0,8,0">
                                 <TextBlock Text="FORM" Foreground="#8FA8C0" FontSize="12.5" FontWeight="SemiBold" HorizontalAlignment="Right"/>
@@ -54,23 +89,31 @@
                                            FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
                         </StackPanel>
-                        <StackPanel Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <TextBlock x:Name="HeaderVersionText"
-                                       Text="v—"
-                                       Foreground="#8FA8C0"
-                                       FontSize="10.5"
-                                       FontWeight="SemiBold"
-                                       HorizontalAlignment="Center"
-                                       Margin="0,0,0,2"
-                                       IsHitTestVisible="False"/>
-                            <Button Style="{StaticResource ModernButton}" Content="TEMİZLE" Width="116" Height="42"
-                                    Padding="8,8" Background="#8A5A12" Click="ClearInvoiceForm_Click"/>
-                        </StackPanel>
-                        <Button Grid.Column="5" Style="{StaticResource StandardButtonBase}" Content="—" ToolTip="Küçült" FontSize="23.5" FontWeight="SemiBold" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="Minimize_Click"/>
-                        <Button x:Name="MaximizeRestoreButton" Grid.Column="6" Style="{StaticResource StandardButtonBase}" ToolTip="Tam ekran" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="MaximizeRestore_Click">
+
+                        <Button Grid.Column="4"
+                                Style="{StaticResource ModernButton}"
+                                Content="TEMİZLE"
+                                Width="116"
+                                Height="42"
+                                Padding="8,8"
+                                Background="#8A5A12"
+                                Click="ClearInvoiceForm_Click"/>
+
+                        <TextBlock x:Name="HeaderVersionText"
+                                   Grid.Column="6"
+                                   Text="v—"
+                                   Foreground="#8FA8C0"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   TextAlignment="Center"/>
+
+                        <Button Grid.Column="8" Style="{StaticResource StandardButtonBase}" Content="—" ToolTip="Küçült" FontSize="23.5" FontWeight="SemiBold" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="Minimize_Click"/>
+                        <Button x:Name="MaximizeRestoreButton" Grid.Column="9" Style="{StaticResource StandardButtonBase}" ToolTip="Tam ekran" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="MaximizeRestore_Click">
                             <TextBlock x:Name="MaximizeRestoreIcon" FontFamily="Segoe MDL2 Assets" Text="&#xE922;" FontSize="16.5" FontWeight="SemiBold"/>
                         </Button>
-                        <Button Grid.Column="7" Style="{StaticResource StandardButtonBase}" Content="×" ToolTip="Kapat" FontSize="27.5" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="Close_Click"/>
+                        <Button Grid.Column="10" Style="{StaticResource StandardButtonBase}" Content="×" ToolTip="Kapat" FontSize="27.5" Foreground="White" Background="Transparent" BorderThickness="0" Width="44" Height="42" Click="Close_Click"/>
                     </Grid>
                 </Grid>
 
