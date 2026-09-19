@@ -76,11 +76,11 @@ Tamamlananlar:
 
 Kalan ana işler:
 
-- DI kapsamını kalan uygulama/rapor/arşiv servislerine kontrollü genişletmek.
-- `MainWindow` sorumluluklarını ViewModel/application-service katmanlarına ayırmak.
-- Typed domain geçişini yalnız gerçekten tekrar/riski azaltan alanlarda tamamlamak; fatura türü, kurum türü, arşiv durumu ve kontrol önem derecesi artık typed katmanı kullanıyor.
+- Aşama 2 mimari kapanış envanteri tamamlandı: `MainWindow` artık servis örnekleri üretmiyor; kalan çağrıların çoğu stateless domain/application helper. Sırf DI uğruna constructor bağımlılığı artırılmayacak.
+- `MainWindow` sorumluluk ayrımı yalnız yeni davranış eklenirken gerçek bir uygulama-servisi sınırı oluşursa sürdürülecek.
+- Typed domain geçişi gerekli alanlarda tamamlandı: fatura türü, kurum türü, arşiv durumu ve kontrol önem derecesi typed katmanı kullanıyor.
 - `SchoolId` işi tamamlandı; yeni/güncellenen faturalar ID bağı kullanıyor, legacy kayıtlar uyumlu fallback ile korunuyor.
-- Aşama 3 mali denetim/izlenebilirlik işlerine geçmek: vergi kural sürümü, append-only audit trail, transaction journal ve kapalı HYS arşivinin değişmez belge modeli.
+- Aşama 3 başladı: vergi kural sürümü/yürürlük metadata'sı ilk dilimde eklendi. Sırada bu metadata'nın kalıcı fatura kaydına taşınması, append-only audit trail, transaction journal ve kapalı HYS arşivinin değişmez belge modeli var.
 
 ## Aşama 4 — Warning temizliği
 
@@ -1108,6 +1108,96 @@ Sıradaki doğrulama:
 4. `TESTLERI_CALISTIR.bat`
 5. Beklenen: **0 warning / 0 error + 117/117**
 6. Bu kapı yeşil olursa sadeleştirme paketlerini burada durdurup Aşama 3'e geçilecek.
+
+## 19.09.2026 — Paket 13 kullanıcı doğrulaması BAŞARILI
+
+Kullanıcı Paket 13 sonrasında her şeyin yolunda olduğunu bildirdi.
+
+- Kontrol Merkezi önem filtresi typed enum geçişi çalışıyor.
+- Build/smoke/test akışında sorun bildirilmedi.
+- Ayrıntılı sayaç tekrar paylaşılmadığı için son açık sayısal baseline **117/117** olarak korunuyor.
+
+## 19.09.2026 — Aşama 2 mimari kapanış envanteri TAMAMLANDI
+
+`MainWindow*.cs` taramasında:
+- yeni `Service/Store/Engine/Guard` nesnesi üretimi kalmadı,
+- rapor/arşiv/safety/tax servisleri composition root veya injected alanlar üzerinden kullanılıyor,
+- kalan `ControlCenterService.Scan`, `DashboardStatisticsService.Build`, `FinalReportValidationService.Validate`, `InvoiceValidationService.Validate` vb. çağrılar stateless domain/application helper niteliğinde.
+
+Karar:
+- Bu helper'ları yalnız “DI kapsamı büyüsün” diye constructor'a taşımak ek karmaşıklık yaratacağı için yapılmayacak.
+- Aşama 2 mevcut kapsamda mimari olarak yeterli kabul edildi.
+- Yeni bir davranış gerçek state/IO bağımlılığı gerektirirse o noktada application-service/ViewModel ayrımı yapılacak.
+
+## 19.09.2026 — Aşama 3.1 Vergi kural sürümü ve yürürlük metadata'sı — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Amaç:
+- hesap sonucunun hangi vergi kural setiyle üretildiğini izlenebilir hale getirmek,
+- gelecekte oran/yürürlük değişikliklerini tarihli kural kataloğuna taşıyabilecek bir temel oluşturmak,
+- mevcut 0,00948 hesabını ve legacy davranışı değiştirmemek.
+
+Yeni model:
+- `TaxRuleDefinition`
+  - `Version`
+  - `EffectiveFrom`
+  - `StampDutyRate`
+  - `IsEffectiveOn(DateOnly)`
+
+Yeni katalog:
+- `TaxRuleCatalog`
+- mevcut teknik kural kimliği: `DV-0.00948-R1`
+- mevcut oran: `0.00948`
+- `EffectiveFrom = null`
+  - nedeni: legacy uygulamada doğrulanmış/hukuki yürürlük tarihi metadata'sı tutulmuyordu,
+  - bu aşamada doğrulanmamış bir hukuki tarih **uydurulmadı**.
+
+`TaxCalculationResult` artık ayrıca taşıyor:
+- `RuleVersion`
+- `RuleEffectiveFrom`
+- `AppliedStampDutyRate`
+
+`TaxCalculationService`:
+- aktif `TaxRuleDefinition` ile çalışıyor,
+- default olarak `TaxRuleCatalog.Current` kullanıyor,
+- geçersiz hesap sonuçlarında bile hangi kuralın kullanıldığını metadata olarak koruyor,
+- mevcut `TaxCalculationService.StampDutyRate` sabiti geriye uyumluluk için korunuyor,
+- kullanıcı mesajındaki oran aktif kuraldan `tr-TR` formatında üretiliyor; mevcut kuralda görünür metin yine `0,00948`.
+
+Test:
+- mevcut `ElectricityCalculationUsesApprovedStampDutyFormula` testine kural version/rate/effective-date assertion'ları eklendi.
+- yeni test metodu eklenmedi; beklenen toplam hâlâ **117**.
+
+Commitler:
+- model: `fea04730c7e04ef7024fa1c1632c2ab093e4f350`
+- katalog: `7eac055e9df851370151e54e01c1e7e59d5a248c`
+- result metadata: `2ed2a801c1afd7018bb8387bcf17507bfe416e3d`
+- calculation service: `40950eec02c834ab729e4a5680870fa87dfd208e`
+- test: `6f398e33a55104cbf289bfe27605fc713ff59126`
+- aktif oran mesajı düzeltmesi: `b98f1e1d505b9ae037aeb3022f8d9d267e5c557c`
+
+Statik kontrol:
+- kural modeli: mevcut
+- version: mevcut
+- nullable yürürlük tarihi: mevcut
+- sonuç metadata'sı: mevcut
+- valid/invalid hesaplarda rule metadata: mevcut
+- aktif kural oranı hesaplamada tek kaynak: mevcut
+- hukuki tarih varsayımı: **yok**
+- mevcut oran/formül: değişmedi
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+3. Fatura Girişi:
+   - Elektrik normal hesap
+   - Su damga vergisi istisnası
+   - Elektrik kesinti tazminatı
+   hızlı smoke
+4. `TESTLERI_CALISTIR.bat`
+   - yeni test metodu yok
+   - beklenen: **117/117**
+5. Yeşil olursa Aşama 3.2'de kural metadata'sı yeni/güncellenen `InvoiceRecord` kayıtlarına legacy uyumlu opsiyonel alanlarla taşınacak.
 
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
