@@ -415,7 +415,10 @@ public partial class MainWindow
             calculation.StampDuty,
             calculation.PaymentAmount,
             compensation,
-            school.SchoolId);
+            school.SchoolId,
+            calculation.RuleVersion,
+            calculation.RuleEffectiveFrom,
+            calculation.AppliedStampDutyRate);
 
         var validation = InvoiceValidationService.Validate(invoice);
         if (!validation.IsValid)
