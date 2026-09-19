@@ -1918,6 +1918,116 @@ Sıradaki doğrulama:
    - beklenen: **121/121**
 7. Bu revizyon doğrulanmadan Aşama 3 kapanışı yapılmayacak.
 
+## 19.09.2026 — Aşama 3 kapanışı BAŞARILI
+
+Kullanıcı son arşiv düzenle/sil revizyonunun çalıştığını bildirdi ve devam edilmesini istedi.
+
+Aşama 3 kapsamında tamamlanan ana güvenlik/izlenebilirlik işleri:
+- vergi kural sürümü ve hesap metadata'sı,
+- `InvoiceRecord` üzerinde legacy uyumlu vergi kural kalıcılığı,
+- append-only audit trail,
+- transaction journal,
+- kapalı HYS arşivi SHA-256 snapshot bütünlük mührü,
+- mühürü kullanıcı iş akışını kilitlemeden yeniden açma/reseal semantiği,
+- arşivden Aktif Fatura Listesi'ne güvenli geri alma/düzenleme,
+- onaylı arşiv + bağlı PDF kalıcı silme.
+
+Son Aşama 3 test hedefi:
+- **121/121**
+
+Aşama 3 bu kullanıcı doğrulamasıyla kapatıldı.
+
+## 19.09.2026 — Aşama 5.1 tarihsel PDF async okuma + ilerleme + iptal — KODLANDI, DOĞRULAMA BEKLİYOR
+
+Amaç:
+- çoklu tarihsel PDF okuma/doğrulama sırasında WPF UI thread'ini bloklamamak,
+- kullanıcıya dosya bazında ilerleme göstermek,
+- veri dosyalarına yazım başlamadan güvenli iptal imkanı vermek,
+- mevcut PDF parse/doğrulama ve arşiv kayıt kurallarını değiştirmemek.
+
+`HistoricalPdfImportService.Read`:
+- sona opsiyonel `CancellationToken cancellationToken = default` parametresi eklendi.
+- mevcut 3 parametreli çağrı semantiği geriye uyumlu.
+- iptal kontrolleri:
+  - parse başlamadan önce,
+  - PDF açıldıktan sonra,
+  - her sayfa extraction öncesi,
+  - her sayfanın fatura satırları işlenirken,
+  - sıra numarası doğrulaması öncesi
+  çalışıyor.
+- `OperationCanceledException` normal “hatalı PDF” sonucuna çevrilmiyor; üst UI katmanına yeniden fırlatılıyor.
+- PDF iş kuralları, HYS parse, tutar/vergi doğrulaması ve mühürleme davranışı değişmedi.
+
+UI:
+- `ARŞİV EKLE` düğmesi artık `ArchiveImportButton` adıyla yönetiliyor.
+- yalnız okuma/doğrulama sürerken görünen `İPTAL` düğmesi eklendi.
+- import preview işlemi `async void` WPF event üzerinden yürütülüyor.
+- ağır `HistoricalPdfImportService.Read` işi `Task.Run` ile UI thread dışına taşındı.
+- ilerleme durum alanında dosya bazında gösteriliyor:
+  - `1/N PDF okunuyor ve doğrulanıyor: ...`
+  - `1/N PDF doğrulandı.`
+- işlem sürerken:
+  - ARŞİV EKLE devre dışı,
+  - PDF KONTROL devre dışı,
+  - İPTAL görünür/etkin.
+- iptal tıklanınca düğme tekrar tıklanamayacak şekilde devre dışı kalır ve cancellation token tetiklenir.
+
+İptal güvenliği:
+- iptal yalnız preview/okuma/doğrulama aşamasında kullanılabilir.
+- bu aşamada henüz:
+  - `ArchivedLists` içine kayıt eklenmez,
+  - PDF Arşivlenenler klasörüne kopyalanmaz,
+  - `IslemArsivi.json` kaydedilmez.
+- iptal sonucu:
+  - `PDF okuma/doğrulama işlemi iptal edildi. Arşiv verilerinde değişiklik yapılmadı.`
+  mesajı gösterilir.
+- mevcut önizleme onayı sonrasındaki atomik kopyalama/save/rollback akışı değiştirilmedi.
+
+Statik kontrolde yakalanıp doğrulama öncesi düzeltilen hata:
+- sayfa buffer tipi ilk değişiklikte yanlışlıkla `ExtractedPage` yazılmıştı.
+- gerçek iç model `PdfPageData`; doğrulama kapısı öncesi düzeltildi.
+
+Yeni test:
+- `HistoricalPdfImportCancellationTests.ReadThrowsWhenCancellationWasRequestedBeforeParsing`
+- önceden iptal edilmiş token ile `Read` çağrısının `OperationCanceledException` ürettiğini doğruluyor.
+- böylece iptalin “hatalı PDF preview” olarak yutulmadığı sabitleniyor.
+
+Test sayısı:
+- önce: **121**
+- yeni hedef: **122**
+
+Commitler:
+- service cancellation: `107d44243f703e546126c584f5c3b8d82420b89c`
+- UI İPTAL düğmesi: `889f3ecfa13161ed7b7a5427ed95723c3b693b8f`
+- async/progress/cancel WPF akışı: `0176f8af05ed7569c01b7797acda910f0ef19f04`
+- PdfPageData compile fix: `1c647a640ff131edd83e0d197bbfb1d332bbe67d`
+- cancellation regression testi: `923d07d34896966330c113c7316f1381a4eb4a92`
+
+Statik kontrol:
+- optional cancellation token: mevcut
+- OperationCanceledException swallow edilmiyor: geçti
+- sayfa/satır cancellation noktaları: mevcut
+- UI thread dışı parse: mevcut
+- dosya bazlı progress: mevcut
+- cancel UI: mevcut
+- iptal öncesi kalıcı veri yazımı: **yok**
+- eski import commit/rollback akışı: korundu
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+3. Smoke:
+   - birden fazla tarihsel PDF seç
+   - okuma sırasında UI cevap vermeye devam etmeli
+   - durum alanında `1/N, 2/N...` ilerleme görülmeli
+   - ikinci denemede okuma sırasında `İPTAL` tıkla
+   - işlem iptal edilmeli ve arşiv listesine/PDF klasörüne yeni kayıt yazılmamalı
+   - normal denemede önizleme → onay → import önceki gibi tamamlanmalı
+4. `TESTLERI_CALISTIR.bat`
+   - beklenen: **122/122**
+5. Yeşil olursa Aşama 5.2 için **boş fatura numarası mükerrer uyarısı** ele alınacak.
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
