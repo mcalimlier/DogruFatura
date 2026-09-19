@@ -2322,6 +2322,115 @@ Sıradaki kapı:
 
 Aşama 5.2 bu kapılar geçmeden tamamlanmış sayılmayacak.
 
+## 19.09.2026 — Aşama 5.2 build kapısı YEŞİL + yerel WPF donut görselleştirme KODLANDI
+
+Kullanıcının warning fix sonrası build sonucu:
+- Core: başarılı
+- WPF: başarılı
+- toplam: **0 warning / 0 error**
+- uygulama başarıyla başlatıldı.
+
+Test kapısı henüz ayrıca raporlanmadı; mevcut hedef **123/123**.
+
+### İstatistik görselleştirme kararı
+
+Kullanıcı:
+- Top 5 kurum yatay çubuk grafiğini istemedi.
+- harici grafik kütüphanesi eklenmemesini özellikle tercih etti.
+- diğer görsel önerilerden Fatura Türü Dağılımı donut grafiğinin uygulanmasını istedi.
+
+Karar:
+- **harici chart/NuGet kütüphanesi eklenmedi**.
+- donut grafik yalnız WPF'nin kendi:
+  - `Canvas`
+  - `Path`
+  - `PathGeometry`
+  - `ArcSegment`
+  - `Ellipse`
+  bileşenleriyle çiziliyor.
+
+### Donut grafik
+
+Yeni alan:
+- başlık: `FATURA TÜRÜ DAĞILIMI`
+- açıklama: seçili filtrelere göre ödeme tutarının fatura türlerine dağılımı.
+- merkez:
+  - `TOPLAM ÖDEME`
+  - filtrelenmiş toplam ödeme tutarı.
+- legend:
+  - fatura türü
+  - fatura adedi
+  - ödeme tutarı
+  - yüzde payı.
+
+Türler için sabit görsel eşleme:
+- Elektrik
+- Su
+- Telefon
+- İnternet
+- diğer türler için güvenli fallback.
+
+Filtre entegrasyonu:
+- Yıl
+- Kurum
+- Fatura Türü
+
+filtreleri değiştiğinde:
+- özet kartlar,
+- toplam satırı,
+- donut,
+- legend,
+- detay tablosu
+
+aynı `ArchiveStatisticsResult` üzerinden birlikte yenilenir.
+
+Tek tür filtrelenirse:
+- halka %100 tek tür olarak çizilir.
+
+Veri yoksa:
+- donut boş kalır,
+- `Dağılım verisi yok` durumu gösterilir.
+
+### Yerleşim düzeltmesi
+
+İlk donut XAML commitinde generic satır deseni yanlışlıkla `ReportsView` içine fazladan bir `Auto` satır eklemişti.
+Bu durum build kapısından önce statik commit farkı kontrolünde yakalandı ve düzeltildi:
+- `ReportsView` tekrar özgün **4 satır** düzenine döndürüldü.
+- `StatisticsView` doğru şekilde **5 satır** düzenine geçirildi.
+- donut `Grid.Row=3`
+- detay tablo `Grid.Row=4`.
+
+### Analyzer/format güvenliği
+
+- yüzde gösterimi açık `tr-TR` kültürüyle formatlanıyor.
+- tek dilim 360° olduğunda `ArcSegment` yerine doğrudan `Ellipse` halka çiziliyor.
+- harici chart package referansı yok.
+
+Commitler:
+- donut XAML: `e545e3d090c076fc508a18f7f1821b75d6289f82`
+- yanlış satır konumu düzeltmesi: `8f8a9e493851786b7ba64b37458ffd9a4cc8f7dc`
+- WPF donut çizim/filter entegrasyonu: `a92080bcfb9a50ad305f327c8a44a37d9d08dc70`
+- tam halka + yüzde format düzeltmesi: `065965fb292bf8ce1abde4927471f734a8af8744`
+
+Test sayısı:
+- yeni test metodu eklenmedi.
+- hedef **123/123** olarak kalır.
+
+Sıradaki doğrulama:
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - beklenen: **0 warning / 0 error**
+3. İSTATİSTİK görsel smoke:
+   - donut görünmeli,
+   - merkez toplam ödeme göstermeli,
+   - legend tür + adet + tutar + yüzde göstermeli,
+   - Yıl/Kurum/Tür filtreleri donut ve tabloyu birlikte değiştirmeli,
+   - tek tür seçildiğinde halka %100 tek renk olmalı,
+   - veri olmayan filtrede boş durum görünmeli.
+4. `TESTLERI_CALISTIR.bat`
+   - beklenen: **123/123**
+5. Aylık trend grafiği bu paket doğrulandıktan sonra ayrı küçük dilim olarak değerlendirilebilir.
+
 ## Aşama 3 — Mali Denetim ve İzlenebilirlik
 
 Aşama 2 mimari dilimleri ilerledikten sonra:
