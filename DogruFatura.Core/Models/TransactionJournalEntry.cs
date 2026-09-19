@@ -2,7 +2,8 @@ namespace DogruFatura.Core.Models;
 
 public enum TransactionJournalOperation
 {
-    ArchiveActiveList
+    ArchiveActiveList,
+    RestoreArchiveToActive
 }
 
 public enum TransactionJournalState
@@ -10,6 +11,8 @@ public enum TransactionJournalState
     Started,
     ArchivePersisted,
     ActiveListCleared,
+    ActiveListRestored,
+    ArchiveRemoved,
     Completed,
     RolledBack,
     RecoveryRequired
