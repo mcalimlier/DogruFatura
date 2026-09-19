@@ -464,6 +464,12 @@ public partial class MainWindow
             }
         }
 
+        AppendAudit(
+            editingInvoice is null ? AuditTrailEventType.InvoiceCreated : AuditTrailEventType.InvoiceUpdated,
+            AuditTrailEntityType.Invoice,
+            invoice.Id.ToString("D"),
+            $"Type={invoice.InvoiceType};Rule={invoice.TaxRuleVersion}");
+
         var invoiceReference = InvoiceReference(invoice);
         var successMessage = editingInvoice is null
             ? $"{invoiceReference} aktif listeye kaydedildi."
