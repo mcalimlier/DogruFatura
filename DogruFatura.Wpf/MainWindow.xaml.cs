@@ -50,6 +50,7 @@ public partial class MainWindow : Window
     private readonly DocumentArchiveStorageService _documentArchiveStorageService;
     private readonly HistoricalPdfImportService _historicalPdfImportService;
     private readonly ArchivePdfSynchronizationService _archivePdfSynchronizationService;
+    private readonly AuditTrailStore _auditTrailStore;
     private readonly ApplicationSafetyService _safetyService;
     private readonly SafetyCheckResult _startupSafetyResult;
     private readonly ICollectionView _schoolView;
@@ -87,6 +88,7 @@ public partial class MainWindow : Window
         DocumentArchiveStorageService documentArchiveStorageService,
         HistoricalPdfImportService historicalPdfImportService,
         ArchivePdfSynchronizationService archivePdfSynchronizationService,
+        AuditTrailStore auditTrailStore,
         MainWindowStartupState startupState)
     {
         ArgumentNullException.ThrowIfNull(taxService);
@@ -100,6 +102,7 @@ public partial class MainWindow : Window
         ArgumentNullException.ThrowIfNull(documentArchiveStorageService);
         ArgumentNullException.ThrowIfNull(historicalPdfImportService);
         ArgumentNullException.ThrowIfNull(archivePdfSynchronizationService);
+        ArgumentNullException.ThrowIfNull(auditTrailStore);
         ArgumentNullException.ThrowIfNull(startupState);
 
         _taxService = taxService;
@@ -113,6 +116,7 @@ public partial class MainWindow : Window
         _documentArchiveStorageService = documentArchiveStorageService;
         _historicalPdfImportService = historicalPdfImportService;
         _archivePdfSynchronizationService = archivePdfSynchronizationService;
+        _auditTrailStore = auditTrailStore;
 
         _startupSafetyResult = startupState.SafetyResult;
         _lastSafetyBackupPath = _startupSafetyResult.BackupPath;
