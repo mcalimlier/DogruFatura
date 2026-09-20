@@ -39,10 +39,11 @@ public sealed class FinalReportPdfService
             throw new InvalidOperationException("Boş aktif listeden PDF oluşturulamaz.");
 
         var document = new PdfDocument();
-        document.Info.Title = $"{data.InvoiceType} Faturaları Ödeme Listesi";
-        document.Info.Author = "DoğruFatura";
-        document.Info.Subject = "Fatura ödeme ve kontrol listesi";
-        document.Info.Creator = $"DoğruFatura {AppVersionInfo.InformationalVersion}";
+        PdfMetadataContract.Apply(
+            document,
+            $"{data.InvoiceType} Faturaları Ödeme Listesi",
+            "Fatura ödeme ve kontrol listesi",
+            PdfMetadataContract.PaymentListDocumentType);
 
         for (var pageIndex = 0; pageIndex < slices.Count; pageIndex++)
         {
