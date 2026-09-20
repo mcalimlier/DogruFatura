@@ -22,7 +22,11 @@ InstallDir "$PROGRAMFILES64\DoğruFatura"
 InstallDirRegKey HKLM "${APPKEY}" "InstallDir"
 RequestExecutionLevel admin
 CRCCheck force
-SetCompressor /SOLID lzma
+; Self-contained yayın çok sayıda büyük .NET/WPF dosyası içeriyor.
+; SOLID LZMA tüm paketi tek blokta sıkıştırdığı için final build uzun süre
+; "Compressed data:" satırında sessiz kalabiliyor. Normal LZMA yine tek EXE
+; üretir ancak dosyaları bağımsız sıkıştırarak paketlemeyi daha öngörülebilir yapar.
+SetCompressor lzma
 SetCompressorDictSize 32
 ShowInstDetails show
 ShowUninstDetails show
