@@ -4825,3 +4825,36 @@ Gerçek dağıtım paketi için kod imzası politikası ayrıca korunur:
 - GitHub Actions: **runner/job başlangıç aşamasında bloklu**
 - Tag/release: **bekliyor**
 - Final Setup dağıtımı: **bekliyor**
+
+
+## 20.09.2026 — release/1.1.0 senkronizasyonu ve CI ikinci doğrulama
+
+`release/1.1.0` dalı son devir kaydı commit'ine:
+- `7db72bdfcec1a8a3c581fd6d2a14c116c2298569`
+
+force kullanılmadan fast-forward edildi.
+
+Bu push ile:
+- workflow run: **#507**
+- run id: `35519349031`
+
+tetiklendi.
+
+Sonuç:
+- durum birkaç saniye içinde `failure`,
+- build job gerçek step üretmeden sonlandı,
+- Setup smoke çalışmadı.
+
+Böylece release dalındaki:
+- #505 attempt 1,
+- #505 attempt 2,
+- #507
+
+aynı pre-step failure örüntüsünü gösterdi.
+
+Karar:
+- release branch artık gereksiz dokümantasyon push'larıyla oynatılmayacak,
+- tag/release yapılmayacak,
+- GitHub Actions yeşil koşusu veya gerçek Windows final Setup smoke doğrulaması beklenir.
+
+`QUALITY_CHECKLIST_1.1_FINAL.md` mevcut CI altyapı engelini gösterecek şekilde güncellendi.
