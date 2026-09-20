@@ -5762,3 +5762,72 @@ Mevcut imzasız smoke EXE:
 - `DAGITIM\DogruFatura_Setup_1.1.0_x64.exe`
 
 teknik/manüel smoke testleri geçmiştir; ancak release politikası gereği imzalı final yerine geçmez.
+
+
+## 20.09.2026 — 1.1.0 imzasız final dağıtım kararı KABUL EDİLDİ
+
+Kullanıcı açıkça:
+- kod imzalama sertifikası bulunmadığını,
+- DoğruFatura 1.1.0 sürümünü **imzasız olarak doğrudan dağıtacağını**
+
+bildirdi.
+
+Bu nedenle önceki "imza zorunlu" release politikası 1.1.0 için bilinçli olarak değiştirildi.
+
+### Yeni dağıtım politikası
+
+DoğruFatura 1.1.0:
+- tek EXE self-contained Setup,
+- **imzasız dağıtılabilir**,
+- SmartScreen / "Bilinmeyen yayıncı" uyarısı beklenebilir,
+- Setup ile birlikte SHA-256 doğrulama dosyası dağıtılır,
+- `KURULUM_NOTU.txt` kullanıcıya SmartScreen ve SHA doğrulama adımlarını açıklar.
+
+### Script ayrımı
+
+`SETUP_HAZIRLA.ps1` içine yeni:
+- `-AllowUnsignedDistribution`
+
+modu eklendi.
+
+Ayrım:
+- `-AllowUnsignedFinal` = yalnız smoke/CI
+- `-AllowUnsignedDistribution` = kullanıcı tarafından kabul edilmiş gerçek imzasız final dağıtım
+
+Commit:
+- `184f637212d77f9e09782011e159bfd953ffc28f`
+
+### FINAL_EXE_OLUSTUR.bat
+
+Yeni davranış:
+- sertifika varsa imzalı final,
+- sertifika yoksa açıkça imzasız dağıtım modu,
+- Setup + SHA dosya kontrolü,
+- SHA-256 ikinci doğrulaması,
+- başarılı sonunda DAGITIM klasörünü açar.
+
+Commit:
+- `a414e7d4111568a02019d436e05369578a9b376e`
+
+### Dokümantasyon
+
+Güncellendi:
+- `CODE_SIGNING.md` — imza artık 1.1.0 için zorunlu değil; imzasız dağıtım açıkça tanımlı
+- `KURULUM_NOTU.txt` — 1.1.0 imzasız dağıtım ve SmartScreen/SHA uyarısı
+- `RELEASE_NOTES_1.1.0.md` — final smoke, manuel smoke ve imzasız dağıtım biçimi
+
+İlgili commitler:
+- `8105ef8d234d81ad61a838bd276226efe13bc589`
+- `ef8b7571f508bf5eb093d8950d399894fcdd0ec5`
+- `87c4d67e461070d82c9415d5aaba7cddbc155671`
+
+### Son kullanıcıya verilecek paket
+
+Final üretimden sonra:
+- `DogruFatura_Setup_1.1.0_x64.exe`
+- `DogruFatura_Setup_1.1.0_x64_SHA256.txt`
+- `KURULUM_NOTU.txt`
+
+dağıtılmalıdır.
+
+Kod/UI kapsamı değişmedi; yalnız release/imza politikası kullanıcı kararıyla güncellendi.
