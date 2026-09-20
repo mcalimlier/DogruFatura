@@ -4053,3 +4053,38 @@ Hedef:
 - DoğruFatura'nın ürettiği PDF'lerde sürüm/üretim bilgisi için tek, kararlı metadata sözleşmesi,
 - tarihsel PDF import ve mevcut PDF SHA-256 bütünlük davranışını bozmadan geriye uyum,
 - PDF içerik/metin düzeninden bağımsız teknik metadata standardizasyonu.
+
+
+## 20.09.2026 — Tanılama Paketi butonu görünürlük düzeltmesi
+
+Kullanıcı geri bildirimi:
+- Hakkında / Güvenlik ekranında doğrudan `TANILAMA PAKETİ` görünmüyordu.
+
+Neden:
+- buton mevcut olmakla birlikte `GELİŞMİŞ / DESTEK` Expander'ının içine yerleştirilmişti.
+- Expander kapalı olduğu için kullanıcı açısından özellik yokmuş gibi görünüyordu.
+
+Düzeltme:
+- `TANILAMA PAKETİ` butonu Veri Güvenliği kartında:
+  - `KONTROL ET / YEDEK OLUŞTUR / GERİ YÜKLE`
+  grubunun hemen altına taşındı.
+- buton artık her zaman görünür.
+- `CreateDiagnosticPackage_Click` handler aynen korunuyor.
+- gizlilik tooltip/Automation açıklaması korunuyor.
+- `GELİŞMİŞ / DESTEK` altında yalnız klasör kısayolları bırakıldı.
+- duplicate tanılama butonu bırakılmadı.
+
+Commit:
+- `17007f64b9d24dc4505d5d55566e498c1afd7895`
+
+Statik kontrol:
+- görünür TANILAMA PAKETİ butonu: geçti
+- handler bağlantısı: geçti
+- buton Expander dışında: geçti
+- GELİŞMİŞ / DESTEK bölümü korunuyor: geçti
+
+Yerel doğrulama:
+1. Fetch origin -> Pull origin
+2. `DERLE_CALISTIR.bat`
+3. Hakkında / Güvenlik ekranında `TANILAMA PAKETİ` doğrudan görünmeli.
+4. Butona basınca tanılama ZIP'i oluşmalı.
