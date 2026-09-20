@@ -5084,3 +5084,66 @@ Bu sonuç gelmeden:
 - tag yok,
 - release yok,
 - dağıtım yok.
+
+
+## 20.09.2026 — FINAL_DOGRULAMA tekrar koşusu: build + 126/126 YEŞİL, Setup üretimi başladı
+
+Regex timeout düzeltmesi sonrası kullanıcı `FINAL_DOGRULAMA.bat` komutunu yeniden çalıştırdı.
+
+### Doğrulanan sonuçlar
+
+Release build:
+- `DogruFatura.Core`: başarılı
+- `DogruFatura.Wpf`: başarılı
+- `DogruFatura.Tests`: başarılı
+- Release build tamamlandı.
+
+Otomatik test:
+- toplam: **126**
+- başarısız: **0**
+- başarılı: **126**
+- atlandı: **0**
+
+Böylece tanılama regex timeout regresyonu gerçek Windows Release koşusunda kapanmış oldu.
+
+### Publish / Setup
+
+`win-x64` self-contained publish başarılı.
+
+NSIS üretilen final değerleri:
+- `APPVERSION = 1.1.0`
+- `APPDISPLAYVERSION = 1.1.0`
+- `OutFile = DogruFatura_Setup_1.1.0_x64.exe`
+- `FileVersion = 1.1.0.0`
+- `ProductVersion = 1.1.0`
+- hoş geldiniz başlığı = `DoğruFatura 1.1.0 Kurulumuna Hoş Geldiniz`
+
+NSIS çıktısı:
+- `_YAYIN\Setup\DogruFatura_Setup_1.1.0_x64.exe`
+
+oluşturma aşamasına ulaştı.
+
+### Henüz kapanmayan tek nokta
+
+Paylaşılan konsol kaydı:
+- `Compressed data:`
+
+satırında sona eriyor.
+
+Bu nedenle bu logdan henüz:
+- `FINAL_DOGRULAMA.bat` içindeki [2/3] dağıtım dosyası kontrolü,
+- [3/3] SHA-256 ikinci doğrulaması,
+- `[OK] FINAL SMOKE PAKETI HAZIR VE SHA-256 DOGRULANDI`
+
+sonucu görülemiyor.
+
+Kod değişikliği gerekmiyor.
+
+### Durum
+
+- Final Release build: **YEŞİL**
+- Test: **126/126 YEŞİL**
+- win-x64 publish: **YEŞİL**
+- NSIS final Setup üretimi: **başladı / çıktı yolu doğrulandı**
+- SHA-256 ikinci doğrulaması: **paylaşılan logda henüz görünmüyor**
+- tag/release: **SHA + manuel kurulum smoke tamamlanana kadar bekliyor**
