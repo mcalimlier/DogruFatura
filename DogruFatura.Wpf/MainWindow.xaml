@@ -1044,28 +1044,6 @@
                                     <TextBlock Text="İSTATİSTİK" Style="{StaticResource PageTitle}"/>
                                     <TextBlock Text="HYS ile kapanmış arşiv kayıtlarından kurum, dönem ve fatura türü bazında mali analiz ve çıktı alın." Style="{StaticResource PageSubtitle}"/>
                                 </StackPanel>
-                                <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Top">
-                                    <Button x:Name="StatisticsExportMenuButton"
-                                            Style="{StaticResource ModernButton}"
-                                            Content="ÇIKTI AL ▼"
-                                            Width="118"
-                                            Margin="0,0,6,0"
-                                            Background="#2468D8"
-                                            Click="StatisticsExportMenu_Click">
-                                        <Button.ContextMenu>
-                                            <ContextMenu>
-                                                <MenuItem Header="PDF RAPORU" Click="ExportStatisticsPdf_Click"/>
-                                                <MenuItem Header="YAZDIR" Click="PrintStatistics_Click"/>
-                                                <Separator/>
-                                                <MenuItem Header="CSV" Click="ExportStatisticsCsv_Click"/>
-                                                <MenuItem Header="EXCEL" Click="ExportStatisticsExcel_Click"/>
-                                                <MenuItem Header="PNG" Click="ExportStatisticsPng_Click"/>
-                                            </ContextMenu>
-                                        </Button.ContextMenu>
-                                    </Button>
-                                    <Button Style="{StaticResource ModernButton}" Content="YENİLE" Width="86"
-                                            Background="#248A50" Click="RefreshStatistics_Click"/>
-                                </WrapPanel>
                             </Grid>
 
                             <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,9">
@@ -1087,57 +1065,149 @@
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="10"/>
-                                        <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="145"/><ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="*"/><ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="180"/><ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="108"/>
+                                        <ColumnDefinition Width="2.05*"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="1.25*"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="1.40*"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="0.86*"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="0.78*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <StackPanel>
-                                        <TextBlock Text="Yıl" Style="{StaticResource PremiumFieldLabel}"/>
-                                        <ComboBox x:Name="StatisticsYearFilterBox" Style="{StaticResource PremiumFieldComboBox}"
-                                                  SelectionChanged="StatisticsFilter_SelectionChanged"/>
+                                    <StackPanel Grid.Column="0">
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Yıl" Style="{StaticResource PremiumFieldLabel}"/>
+                                            <ComboBox x:Name="StatisticsYearFilterBox"
+                                                      Style="{StaticResource PremiumFieldComboBox}"
+                                                      SelectionChanged="StatisticsFilter_SelectionChanged"/>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="Kurum" Style="{StaticResource PremiumFieldLabel}"/>
+                                            <ComboBox x:Name="StatisticsInstitutionFilterBox"
+                                                      Style="{StaticResource PremiumFieldComboBox}"
+                                                      SelectionChanged="StatisticsFilter_SelectionChanged"/>
+                                        </StackPanel>
                                     </StackPanel>
+
                                     <StackPanel Grid.Column="2">
-                                        <TextBlock Text="Kurum" Style="{StaticResource PremiumFieldLabel}"/>
-                                        <ComboBox x:Name="StatisticsInstitutionFilterBox" Style="{StaticResource PremiumFieldComboBox}"
-                                                  SelectionChanged="StatisticsFilter_SelectionChanged"/>
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Başlangıç Tarihi" Style="{StaticResource PremiumFieldLabel}"/>
+                                            <DatePicker x:Name="StatisticsDateFromPicker"
+                                                        Style="{StaticResource PremiumDatePicker}"
+                                                        SelectedDateChanged="StatisticsDateFilter_SelectionChanged"/>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="Bitiş Tarihi" Style="{StaticResource PremiumFieldLabel}"/>
+                                            <DatePicker x:Name="StatisticsDateToPicker"
+                                                        Style="{StaticResource PremiumDatePicker}"
+                                                        SelectedDateChanged="StatisticsDateFilter_SelectionChanged"/>
+                                        </StackPanel>
                                     </StackPanel>
+
                                     <StackPanel Grid.Column="4">
-                                        <TextBlock Text="Fatura Türü" Style="{StaticResource PremiumFieldLabel}"/>
-                                        <ComboBox x:Name="StatisticsTypeFilterBox" Style="{StaticResource PremiumFieldComboBox}"
-                                                  SelectionChanged="StatisticsFilter_SelectionChanged"/>
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Fatura Türü" Style="{StaticResource PremiumFieldLabel}"/>
+                                            <ComboBox x:Name="StatisticsTypeFilterBox"
+                                                      Style="{StaticResource PremiumFieldComboBox}"
+                                                      SelectionChanged="StatisticsFilter_SelectionChanged"/>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="Hızlı Rapor" Style="{StaticResource PremiumFieldLabel}"/>
+                                            <ComboBox x:Name="StatisticsTemplateBox"
+                                                      Style="{StaticResource PremiumFieldComboBox}"/>
+                                        </StackPanel>
                                     </StackPanel>
-                                    <Button Grid.Column="6" Style="{StaticResource ModernButton}" Content="TEMİZLE"
-                                            VerticalAlignment="Bottom" Background="#315371" Click="ClearStatisticsFilters_Click"/>
 
-                                    <StackPanel Grid.Row="2">
-                                        <TextBlock Text="Başlangıç Tarihi" Style="{StaticResource PremiumFieldLabel}"/>
-                                        <DatePicker x:Name="StatisticsDateFromPicker" Style="{StaticResource PremiumDatePicker}"
-                                                    SelectedDateChanged="StatisticsDateFilter_SelectionChanged"/>
+                                    <StackPanel Grid.Column="6">
+                                        <TextBlock Text="Çıktı / Güncelle" Style="{StaticResource PremiumFieldLabel}"/>
+                                        <Button x:Name="StatisticsExportMenuButton"
+                                                Style="{StaticResource ModernButton}"
+                                                Content="ÇIKTI AL ▼"
+                                                Height="38"
+                                                Padding="8,5"
+                                                FontSize="12.5"
+                                                FontWeight="SemiBold"
+                                                Background="#2468D8"
+                                                Click="StatisticsExportMenu_Click">
+                                            <Button.ContextMenu>
+                                                <ContextMenu FontFamily="Segoe UI"
+                                                             FontSize="12.5"
+                                                             FontWeight="Normal">
+                                                    <MenuItem Header="PDF Raporu"
+                                                              FontSize="12.5"
+                                                              FontWeight="Normal"
+                                                              Padding="8,3"
+                                                              Click="ExportStatisticsPdf_Click"/>
+                                                    <MenuItem Header="Yazdır"
+                                                              FontSize="12.5"
+                                                              FontWeight="Normal"
+                                                              Padding="8,3"
+                                                              Click="PrintStatistics_Click"/>
+                                                    <Separator/>
+                                                    <MenuItem Header="CSV"
+                                                              FontSize="12.5"
+                                                              FontWeight="Normal"
+                                                              Padding="8,3"
+                                                              Click="ExportStatisticsCsv_Click"/>
+                                                    <MenuItem Header="Excel"
+                                                              FontSize="12.5"
+                                                              FontWeight="Normal"
+                                                              Padding="8,3"
+                                                              Click="ExportStatisticsExcel_Click"/>
+                                                    <MenuItem Header="PNG"
+                                                              FontSize="12.5"
+                                                              FontWeight="Normal"
+                                                              Padding="8,3"
+                                                              Click="ExportStatisticsPng_Click"/>
+                                                </ContextMenu>
+                                            </Button.ContextMenu>
+                                        </Button>
+                                        <Button Style="{StaticResource ModernButton}"
+                                                Content="YENİLE"
+                                                Height="38"
+                                                Padding="8,5"
+                                                FontSize="12.5"
+                                                Margin="0,8,0,0"
+                                                Background="#248A50"
+                                                Click="RefreshStatistics_Click"/>
                                     </StackPanel>
-                                    <StackPanel Grid.Row="2" Grid.Column="2">
-                                        <TextBlock Text="Bitiş Tarihi" Style="{StaticResource PremiumFieldLabel}"/>
-                                        <DatePicker x:Name="StatisticsDateToPicker" Style="{StaticResource PremiumDatePicker}"
-                                                    SelectedDateChanged="StatisticsDateFilter_SelectionChanged"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Row="2" Grid.Column="4">
-                                        <TextBlock Text="Hazır Rapor" Style="{StaticResource PremiumFieldLabel}"/>
-                                        <ComboBox x:Name="StatisticsTemplateBox" Style="{StaticResource PremiumFieldComboBox}"/>
-                                    </StackPanel>
-                                    <Button Grid.Row="2" Grid.Column="6" Style="{StaticResource ModernButton}" Content="UYGULA"
-                                            VerticalAlignment="Bottom" Background="#8A5A12" Click="ApplyStatisticsTemplate_Click"/>
 
-                                    <Border Grid.Row="3" Grid.ColumnSpan="7" Background="#123B5B" BorderBrush="#365874"
-                                            BorderThickness="1" CornerRadius="8" Padding="11,8" Margin="0,10,0,0">
+                                    <StackPanel Grid.Column="8">
+                                        <TextBlock Text="İşlemler" Style="{StaticResource PremiumFieldLabel}"/>
+                                        <Button Style="{StaticResource ModernButton}"
+                                                Content="TEMİZLE"
+                                                Height="38"
+                                                Padding="8,5"
+                                                FontSize="12.5"
+                                                Background="#315371"
+                                                Click="ClearStatisticsFilters_Click"/>
+                                        <Button Style="{StaticResource ModernButton}"
+                                                Content="UYGULA"
+                                                Height="38"
+                                                Padding="8,5"
+                                                FontSize="12.5"
+                                                Margin="0,8,0,0"
+                                                Background="#8A5A12"
+                                                Click="ApplyStatisticsTemplate_Click"/>
+                                    </StackPanel>
+
+                                    <Border Grid.Row="1"
+                                            Grid.ColumnSpan="9"
+                                            Background="#123B5B"
+                                            BorderBrush="#365874"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Padding="11,7"
+                                            Margin="0,10,0,0">
                                         <TextBlock x:Name="StatisticsTotalsText"
                                                    Text="Fatura toplamı: 0,00 TL • KDV: 0,00 TL • Damga: 0,00 TL • Ödeme: 0,00 TL"
-                                                   Style="{StaticResource StatusText}" TextWrapping="Wrap"/>
+                                                   Style="{StaticResource StatusText}"
+                                                   TextWrapping="Wrap"/>
                                     </Border>
                                 </Grid>
                             </Border>
@@ -1164,13 +1234,13 @@
                                             BorderBrush="#DCE5EE"
                                             BorderThickness="1"
                                             CornerRadius="20"
-                                            Padding="14"
+                                            Padding="10"
                                             ClipToBounds="True"
-                                            Margin="0,0,0,10">
+                                            Margin="0">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="430"/>
-                                                <ColumnDefinition Width="14"/>
+                                                <ColumnDefinition Width="380"/>
+                                                <ColumnDefinition Width="12"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
 
@@ -1178,7 +1248,7 @@
                                                     BorderBrush="#DCE5EE"
                                                     BorderThickness="1"
                                                     CornerRadius="20"
-                                                    Padding="14"
+                                                    Padding="10"
                                                     ClipToBounds="True">
                                                 <Grid>
                                                     <Grid.RowDefinitions>
@@ -1188,36 +1258,36 @@
                                                     <StackPanel>
                                                         <TextBlock Text="FATURA TÜRÜ DAĞILIMI" Style="{StaticResource PremiumSectionTitle}"/>
                                                         <TextBlock Text="Seçili filtrelere göre ödeme tutarının fatura türlerine dağılımı."
-                                                                   Style="{StaticResource PremiumSectionSubtitle}" Margin="0,3,0,12"/>
+                                                                   Style="{StaticResource PremiumSectionSubtitle}" Margin="0,2,0,5"/>
                                                     </StackPanel>
 
-                                                    <Grid Grid.Row="1" Width="340" Height="340"
+                                                    <Grid Grid.Row="1" Width="290" Height="290"
                                                           HorizontalAlignment="Center" VerticalAlignment="Center">
                                                         <lvc:PieChart x:Name="StatisticsDonutChart"
-                                                                      Width="340" Height="340"
+                                                                      Width="290" Height="290"
                                                                       Background="Transparent"
                                                                       LegendPosition="Hidden"
                                                                       InitialRotation="-90"/>
-                                                        <Border Width="144" Height="144"
+                                                        <Border Width="124" Height="124"
                                                                 Background="#FFFFFF"
                                                                 BorderBrush="#DCE5EE"
                                                                 BorderThickness="1"
-                                                                CornerRadius="72"
+                                                                CornerRadius="62"
                                                                 HorizontalAlignment="Center"
                                                                 VerticalAlignment="Center"
                                                                 IsHitTestVisible="False">
                                                             <StackPanel HorizontalAlignment="Center"
                                                                         VerticalAlignment="Center"
-                                                                        Width="120">
+                                                                        Width="104">
                                                                 <TextBlock Text="TOPLAM ÖDEME"
                                                                            Foreground="#64778B"
-                                                                           FontSize="13"
+                                                                           FontSize="12"
                                                                            FontWeight="Bold"
                                                                            HorizontalAlignment="Center"/>
                                                                 <TextBlock x:Name="StatisticsDonutTotalText"
                                                                            Text="0,00 TL"
                                                                            Foreground="#031C38"
-                                                                           FontSize="23"
+                                                                           FontSize="20"
                                                                            FontWeight="Bold"
                                                                            TextAlignment="Center"
                                                                            TextWrapping="Wrap"
@@ -1233,7 +1303,7 @@
                                                     BorderBrush="#DCE5EE"
                                                     BorderThickness="1"
                                                     CornerRadius="20"
-                                                    Padding="16"
+                                                    Padding="12"
                                                     ClipToBounds="True">
                                                 <Grid>
                                                     <Grid.RowDefinitions>
@@ -1243,13 +1313,13 @@
                                                     <StackPanel>
                                                         <TextBlock Text="DAĞILIM DETAYI"
                                                                    Foreground="#031C38"
-                                                                   FontSize="17"
+                                                                   FontSize="15.5"
                                                                    FontWeight="Bold"/>
                                                         <TextBlock Text="Tür bazında fatura adedi, ödeme tutarı ve toplam içindeki pay."
                                                                    Foreground="#70839A"
-                                                                   FontSize="13.5"
+                                                                   FontSize="12.5"
                                                                    TextWrapping="Wrap"
-                                                                   Margin="0,4,0,16"/>
+                                                                   Margin="0,3,0,8"/>
                                                     </StackPanel>
 
                                                     <Grid Grid.Row="1">
