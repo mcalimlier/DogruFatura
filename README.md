@@ -1,10 +1,10 @@
-# DoğruFatura 1.1.0 RC1
+# DoğruFatura 1.1.0
 
 DoğruFatura; fatura ödeme listelerinin hazırlanması, mali hesap kontrolü, PDF/çıktı üretimi, HYS arşiv yönetimi, istatistik analizi ve kullanıcı verisi güvenliği için geliştirilmiş .NET 8 / WPF Windows masaüstü uygulamasıdır.
 
-## 1.1.0 RC1
+## 1.1.0 Final
 
-Bu dal 1.1 final öncesi release adayıdır. Final paket, son Windows smoke turu ve 126/126 otomatik test kapısı doğrulandıktan sonra hazırlanacaktır.
+RC1 kullanıcı doğrulaması tamamlandı ve sürüm numarası 1.1.0 final durumuna geçirildi. Dağıtım paketi yalnız son final build/test/setup kapısı yeşil olduğunda yayınlanmalıdır.
 
 ### 1.1 öne çıkanlar
 
@@ -28,10 +28,10 @@ Bu dal 1.1 final öncesi release adayıdır. Final paket, son Windows smoke turu
 
 ## Kalite ve dağıtım
 
-GitHub Actions; Release build, otomatik testler, NuGet güvenlik taraması, PDF regresyon kontrolleri ve Windows Setup smoke testini yürütür. RC Setup yalnız test amacıyla üretilebilir; final dağıtımda sürüm eki kaldırılır ve dağıtım bütünlüğü SHA-256 ile doğrulanır.
+GitHub Actions; Release build, otomatik testler, NuGet güvenlik taraması, PDF regresyon kontrolleri ve Windows Setup smoke testini yürütür. Final dağıtım paketi sürüm eki olmadan `1.1.0` olarak üretilir ve SHA-256 ile doğrulanır.
 
 Ayrıntılar:
 - `RELEASE_NOTES_1.1.0.md`
-- `QUALITY_CHECKLIST_1.1_RC1.md`
+- `QUALITY_CHECKLIST_1.1_FINAL.md`
 - `KULLANICI_KILAVUZU.md`
 - `CODE_SIGNING.md`
