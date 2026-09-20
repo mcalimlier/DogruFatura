@@ -3729,3 +3729,151 @@ Geçti:
    - donut renkleri ve sağ dağılım detayları korunmalı.
 4. `TESTLERI_CALISTIR.bat`
    - hedef **124/124**.
+
+
+## 20.09.2026 — Donut halka kalınlığı + Aşama 5.4 boş fatura numarası olası mükerrer uyarısı KODLANDI
+
+### Donut görsel düzeltmesi
+
+Kullanıcı geri bildirimi:
+- Fatura Türü Dağılımı halkası biraz daha kalın olmalı.
+- yüzde etiketleri hâlâ dışarı taşıyordu.
+
+`DogruFatura.Wpf/MainWindow.Statistics.cs`:
+- `InnerRadius: 122 -> 108`
+- `HoverPushout: 6 -> 4`
+- `DataLabelsSize: 14 -> 13`
+- `OuterRadiusOffset = 0` korundu.
+- `DataLabelsPosition = PolarLabelsPosition.Middle` korundu.
+
+Amaç:
+- halka kalınlığını artırmak,
+- yüzde etiketlerini dilimlerin orta bölgesine daha fazla taşımak,
+- dış kenar kırpılmasını azaltmak,
+- hover sırasında gereksiz dış taşmayı azaltmak.
+
+Commit:
+- `3185277fd231b8cae1d0c50e03cedf458ca35a46`
+
+---
+
+## Aşama 5.4 — Boş fatura numarası için olası mükerrer uyarısı
+
+Amaç:
+- fatura numarası girilmiş kayıtlardaki mevcut kesin mükerrer engelini değiştirmemek,
+- fatura numarası boş olduğunda sessizce mükerrer ihtimalini atlamak yerine kullanıcıyı uyarmak,
+- yanlış pozitiflerde kullanıcıya kayda devam etme hakkı vermek.
+
+### Core
+
+`InvoiceDuplicateService` içine:
+- `InvoicePossibleDuplicateResult`
+- `CheckPossibleWhenNumberMissing(...)`
+
+eklendi.
+
+Olası mükerrer yalnız aday fatura numarası boşsa değerlendirilir.
+
+Eşleşme ölçütleri:
+- düzenlenen kayıt hariç,
+- mevcut kaydın fatura numarası da boş,
+- aynı kurum kimliği:
+  - iki kayıtta da `SchoolId` varsa aynı `SchoolId`,
+  - legacy durumda aynı VKN + kurum adı,
+- aynı fatura türü,
+- aynı hizmet numarası,
+- aynı fatura tarihi,
+- aynı son ödeme tarihi,
+- aynı fatura tutarı,
+- aynı KDV tutarı.
+
+Fatura numarası doluysa bu yeni olası kontrol devreye girmez; mevcut kesin numara kontrolü aynen çalışır.
+
+### UI
+
+`MainWindow.InvoiceEntry.cs`:
+
+Kesin mükerrer kontrolünden sonra olası mükerrer kontrolü çalışır.
+
+Benzer boş-numaralı kayıt bulunursa:
+- kullanıcıya `Evet / Hayır` onayı gösterilir,
+- varsayılan cevap `Hayır`,
+- Hayır -> kayıt yapılmaz,
+- Evet -> normal kayıt akışı devam eder.
+
+Bu kontrol:
+- veri otomatik silmez,
+- adayı otomatik reddetmez,
+- yalnız kullanıcı kararını destekleyen uyarıdır.
+
+### Regresyon testi
+
+Yeni test dosyası:
+- `DogruFatura.Tests/InvoiceDuplicateServiceTests.cs`
+
+Test:
+- `BlankInvoiceNumberWarnsOnlyForMatchingInvoice`
+
+Doğrular:
+- aynı kurum/tür/hizmet/tarih/tutar bilgileriyle boş numaralı aday olası mükerrer bulunur,
+- tutar değişince olası mükerrer bulunmaz.
+
+Test hedefi:
+- önce: **124**
+- yeni: **125/125**
+
+### Commitler
+
+- Core olası mükerrer kontrolü:
+  `3703c175683da5910f627351e318f5e61ff1a11e`
+- UI kullanıcı onayı:
+  `195ca8537520c94de8e79f29ab55d4be8eeaab62`
+- regresyon testi:
+  `1d4ed98bc0de1a80180a0d5cc29be55b8529e5f8`
+
+### Statik doğrulama
+
+Geçti:
+- olası mükerrer sonuç modeli mevcut,
+- kontrol yalnız boş fatura numarasında çalışıyor,
+- SchoolId / legacy kurum eşleşmesi mevcut,
+- tür/hizmet/tarih/tutar eşleşmeleri mevcut,
+- UI onayı `YesNo`,
+- varsayılan `No`,
+- kullanıcı `Yes` ile kayda devam edebilir,
+- yeni regresyon testi mevcut,
+- donut yeni değerleri:
+  - `InnerRadius = 108`
+  - `HoverPushout = 4`
+  - `DataLabelsSize = 13`.
+
+### Zorunlu yerel doğrulama kapısı
+
+1. GitHub Desktop -> **Fetch origin -> Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - hedef: **0 warning / 0 error**
+3. İstatistik smoke:
+   - donut halkası önceki halden biraz daha kalın görünmeli,
+   - yüzde etiketleri tam okunmalı,
+   - etiketler dış kenardan kırpılmamalı.
+4. Olası mükerrer smoke:
+   - boş fatura numarasıyla bir fatura kaydet,
+   - aynı kurum/tür/hizmet/tarih/tutarlarla ikinci boş-numaralı faturayı kaydetmeyi dene,
+   - olası mükerrer uyarısı çıkmalı,
+   - varsayılan Hayır ile kayıt yapılmamalı,
+   - tekrar deneyip Evet denirse kayıt yapılabilmeli,
+   - fatura numarası dolu kesin mükerrer davranışı önceki gibi engelleyici kalmalı.
+5. `TESTLERI_CALISTIR.bat`
+   - yeni hedef: **125/125**.
+
+Bu kapı yeşil olmadan Aşama 5.5'e geçilmemeli.
+
+### Sıradaki iş
+
+Aşama 5.5:
+**Tanılama paketinde daha güçlü kişisel veri temizleme.**
+
+Ardından:
+- PDF metadata formatı,
+- Aşama 5.1 tarihsel PDF gerçek dosya smoke testi uygun örnek set bulunduğunda,
+- 1.1 release hazırlığı.
