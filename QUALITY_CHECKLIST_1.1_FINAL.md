@@ -2,6 +2,9 @@
 
 ## Mevcut durum — 20.09.2026
 
+- Son `FINAL_DOGRULAMA.bat` gerçek Windows koşusu **[OK] FINAL SMOKE PAKETI HAZIR VE SHA-256 DOGRULANDI** sonucu ile tamamlandı.
+- Üretilen smoke Setup: `DAGITIM\DogruFatura_Setup_1.1.0_x64.exe`.
+- Bu paket **imzasız smoke paketidir**; kullanıcı dağıtımı için kullanılmaz.
 - NSIS `/SOLID lzma` self-contained pakette uzun süre `Compressed data:` satırında kalabildiği için normal `lzma` sıkıştırmasına geçirildi. Tek EXE/self-contained yapı değişmedi.
 - Kullanıcı Fatura Türü Dağılımı son WPF/ClearType yüzde görünümünü kabul etti: **olmuş**.
 - LiveCharts/Skia yüzde yazıları görsel olarak hâlâ bulanık kaldığı için built-in data label'lar kapatıldı; yüzdeler artık WPF/ClearType overlay ile çiziliyor.
@@ -63,8 +66,10 @@ RC1 kullanıcı doğrulaması tamamlandıktan sonra 1.1.0 sürüm numarası fina
 
 ## D. Final Setup
 
-- Final `FINAL_DOGRULAMA.bat` koşusunda NSIS, `DogruFatura_Setup_1.1.0_x64.exe` çıktısını oluşturma aşamasına ulaştı.
-- Paylaşılan log `Compressed data:` satırında kesildiği için final SHA-256 ikinci doğrulama sonucu henüz bu kayıtta görünmüyor.
+- Final `FINAL_DOGRULAMA.bat` koşusu tamamlandı.
+- `DogruFatura_Setup_1.1.0_x64.exe` üretildi.
+- Setup SHA-256 değeri betik tarafından yeniden hesaplandı ve SHA dosyasıyla eşleşti.
+- Otomatik final smoke kapısı **başarılı**.
 
 Yerel smoke için önerilen tek tık doğrulama:
 
@@ -91,7 +96,7 @@ Beklenen dosya:
 Kontroller:
 
 - [ ] Kurulum sihirbazı **DoğruFatura 1.1.0** gösteriyor
-- [ ] Setup dosya adı doğru
+- [x] Setup dosya adı doğru
 - [ ] Temiz kurulum başarılı
 - [ ] 1.0.x / önceki sürüm üstüne güncelleme başarılı
 - [ ] Program kaldırma başarılı
@@ -100,7 +105,7 @@ Kontroller:
 - [ ] Eski Program Files artıkları temizleniyor
 - [ ] `RELEASE_NOTES_1.1.0.md` dağıtım klasöründe
 - [ ] `KULLANICI_KILAVUZU.md` dağıtım klasöründe
-- [ ] SHA-256 dosyası Setup ile eşleşiyor
+- [x] SHA-256 dosyası Setup ile eşleşiyor
 - [ ] İmza kullanılıyorsa Authenticode doğrulaması geçiyor
 
 ## E. Yayın
