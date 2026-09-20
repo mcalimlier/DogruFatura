@@ -17,7 +17,20 @@ public sealed class DiagnosticAndRecoveryTests
         Directory.CreateDirectory(safety.LogFolder);
         File.WriteAllText(Path.Combine(safety.DataFolder, "Okullar.json"), "[{\"secret\":true}]", Encoding.UTF8);
         File.WriteAllBytes(Path.Combine(safety.ActivePdfFolder, "secret.pdf"), Encoding.ASCII.GetBytes("%PDF-1.4\nsecret"));
-        File.WriteAllText(Path.Combine(safety.LogFolder, "test.log"), "C:\\Users\\TestUser\\DoğruFatura hata", Encoding.UTF8);
+        var sensitiveGuid = "2f7e1282-c25d-4d35-9a62-9d3d2ae477e1";
+        var sensitiveLog = string.Join(
+            Environment.NewLine,
+            "C:\\Users\\TestUser\\DoğruFatura hata",
+            "Kurum: Atatürk İlkokulu",
+            "VKN=1234567890",
+            "Hizmet No: 9876543210",
+            "Fatura No: ELK-2026-000123",
+            "Yetkili: Ayşe Yılmaz",
+            "E-posta: ayse@example.com",
+            "Kayıt Id: " + sensitiveGuid,
+            "İstemci: 192.168.1.24",
+            "Veri yolu: " + Path.Combine(safety.DataFolder, "AktifFaturalar.json"));
+        File.WriteAllText(Path.Combine(safety.LogFolder, "test.log"), sensitiveLog, Encoding.UTF8);
 
         var package = DiagnosticPackageService.Create(safety);
 
@@ -28,6 +41,24 @@ public sealed class DiagnosticAndRecoveryTests
         Assert.Contains("Loglar/test.log", names);
         Assert.DoesNotContain(names, name => name.EndsWith(".json", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(names, name => name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase));
+
+        var logEntry = Assert.Single(zip.Entries, entry => entry.FullName == "Loglar/test.log");
+        using var reader = new StreamReader(logEntry.Open(), Encoding.UTF8);
+        var sanitizedLog = reader.ReadToEnd();
+
+        Assert.DoesNotContain("Atatürk İlkokulu", sanitizedLog, StringComparison.Ordinal);
+        Assert.DoesNotContain("1234567890", sanitizedLog, StringComparison.Ordinal);
+        Assert.DoesNotContain("9876543210", sanitizedLog, StringComparison.Ordinal);
+        Assert.DoesNotContain("ELK-2026-000123", sanitizedLog, StringComparison.Ordinal);
+        Assert.DoesNotContain("Ayşe Yılmaz", sanitizedLog, StringComparison.Ordinal);
+        Assert.DoesNotContain("ayse@example.com", sanitizedLog, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(sensitiveGuid, sanitizedLog, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("192.168.1.24", sanitizedLog, StringComparison.Ordinal);
+        Assert.DoesNotContain(safety.DataFolder, sanitizedLog, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("[GİZLENDİ]", sanitizedLog, StringComparison.Ordinal);
+        Assert.Contains("%EMAIL%", sanitizedLog, StringComparison.Ordinal);
+        Assert.Contains("%GUID%", sanitizedLog, StringComparison.Ordinal);
+        Assert.Contains("%IP%", sanitizedLog, StringComparison.Ordinal);
     }
 
     [Fact]
