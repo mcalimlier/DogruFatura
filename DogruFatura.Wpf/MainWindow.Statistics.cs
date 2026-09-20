@@ -305,13 +305,12 @@ public partial class MainWindow
                     Text = "%" + (percentage * 100m).ToString(
                         "N0",
                         CultureInfo.GetCultureInfo("tr-TR")),
-                    Width = labelWidth,
-                    Height = labelHeight,
                     FontFamily = new FontFamily("Segoe UI"),
                     FontSize = 14,
                     FontWeight = FontWeights.Bold,
                     Foreground = StatisticsDataLabelBrush(StatisticsSkColor(item.InvoiceType)),
                     TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
                     VerticalAlignment = VerticalAlignment.Center,
                     SnapsToDevicePixels = true,
                     UseLayoutRounding = true,
@@ -321,9 +320,23 @@ public partial class MainWindow
                 TextOptions.SetTextFormattingMode(label, TextFormattingMode.Display);
                 TextOptions.SetTextRenderingMode(label, TextRenderingMode.ClearType);
 
-                Canvas.SetLeft(label, Math.Round(x - (labelWidth / 2d)));
-                Canvas.SetTop(label, Math.Round(y - (labelHeight / 2d)));
-                StatisticsDonutLabelsCanvas.Children.Add(label);
+                var labelHost = new Border
+                {
+                    Width = labelWidth,
+                    Height = labelHeight,
+                    Background = Brushes.Transparent,
+                    Child = label,
+                    SnapsToDevicePixels = true,
+                    UseLayoutRounding = true,
+                    IsHitTestVisible = false
+                };
+
+                TextOptions.SetTextFormattingMode(labelHost, TextFormattingMode.Display);
+                TextOptions.SetTextRenderingMode(labelHost, TextRenderingMode.ClearType);
+
+                Canvas.SetLeft(labelHost, Math.Round(x - (labelWidth / 2d)));
+                Canvas.SetTop(labelHost, Math.Round(y - (labelHeight / 2d)));
+                StatisticsDonutLabelsCanvas.Children.Add(labelHost);
             }
 
             angle += sweep;
