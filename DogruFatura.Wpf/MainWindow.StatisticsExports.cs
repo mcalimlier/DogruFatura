@@ -308,10 +308,11 @@ public partial class MainWindow
         var donutPng = CaptureStatisticsElementPng(StatisticsDonutChart, 2d);
 
         using var document = new PdfDocument();
-        document.Info.Title = "DoğruFatura İstatistik Raporu";
-        document.Info.Author = "DoğruFatura";
-        document.Info.Subject = StatisticsFilterDescription();
-        document.Info.Creator = $"DoğruFatura {AppVersionInfo.InformationalVersion}";
+        PdfMetadataContract.Apply(
+            document,
+            "DoğruFatura İstatistik Raporu",
+            "Mali istatistik ve fatura türü dağılım raporu",
+            PdfMetadataContract.StatisticsReportDocumentType);
 
         var page = document.AddPage();
         page.Size = PageSize.A4;
