@@ -2,6 +2,8 @@
 
 ## Mevcut durum — 20.09.2026
 
+- GitHub Desktop'ta `_YAYIN/` ve `DAGITIM/` altındaki yüzlerce generated dosyanın Changes ekranını doldurmaması için bu klasörler `.gitignore` içine alındı.
+- Final yeşil koşudan sonra donut yüzde etiketlerine son görsel düzeltme uygulandı; bu nedenle final doğrulama bir kez daha çalıştırılmalı.
 - İlk `FINAL_DOGRULAMA.bat` gerçek Windows koşusunda Release build başarılı oldu; testler **125/126** kaldı.
 - Tek hata: `DiagnosticPackageContainsSummaryAndLogsButNeverUserJsonOrPdf` içinde `RegexMatchTimeoutException`.
 - Setup doğru şekilde üretilmedi; kalite kapısı çalıştı.
@@ -43,7 +45,7 @@ RC1 kullanıcı doğrulaması tamamlandıktan sonra 1.1.0 sürüm numarası fina
 
 - [ ] 5 sütunlu filtre/işlem düzeni düzgün
 - [ ] Fatura Türü Dağılımı kesilmiyor
-- [ ] Yüzde etiketleri halka içinde ve okunur
+- [ ] Yüzde etiketleri halka içinde, ortalanmış ve keskin/okunur
 - [ ] Açık dilimde koyu / koyu dilimde beyaz yüzde etiketi doğru
 - [ ] Hover detayı merkez kartın arkasında kalmıyor
 - [ ] PDF çıktı
