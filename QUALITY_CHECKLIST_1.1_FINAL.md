@@ -2,6 +2,9 @@
 
 ## Mevcut durum — 20.09.2026
 
+- Repo kökü temizlendi: eski 1.0/RC notları `docs/archive/` altına taşındı; aktif final belgeleri kökte bırakıldı.
+- Donut font API'si `SKTypeface` kullanımına geçirildi; son koşuda görülen iki CS0618 warning bu paketle kapatıldı.
+- `SETUP_HAZIRLA.ps1` hata ile çıkarsa geçici `_YAYIN` klasörünü otomatik temizler.
 - GitHub Desktop'ta `_YAYIN/` ve `DAGITIM/` altındaki yüzlerce generated dosyanın Changes ekranını doldurmaması için bu klasörler `.gitignore` içine alındı.
 - Final yeşil koşudan sonra donut yüzde etiketlerine son görsel düzeltme uygulandı; bu nedenle final doğrulama bir kez daha çalıştırılmalı.
 - İlk `FINAL_DOGRULAMA.bat` gerçek Windows koşusunda Release build başarılı oldu; testler **125/126** kaldı.
