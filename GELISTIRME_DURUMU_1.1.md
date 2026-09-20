@@ -5693,3 +5693,46 @@ Bu manuel smoke tamamlanmadan:
 - `v1.1.0` tag oluşturulmaz,
 - final GitHub Release oluşturulmaz,
 - imzasız paket kullanıcı dağıtımına verilmez.
+
+
+## 20.09.2026 — MANUEL KURULUM SMOKE BAŞARILI
+
+Kullanıcı manuel kurulum smoke turunu:
+- **başarılı**
+
+olarak bildirdi.
+
+Bu onay, daha önce istenen manuel final kurulum senaryolarını kapsar:
+- temiz kurulum,
+- önceki sürüm üstüne güncelleme,
+- kullanıcı verisinin korunması,
+- kaldırma,
+- kaldırma sonrasında kullanıcı verisinin korunması,
+- yeniden kurulum,
+- yeniden kurulum sonrasında mevcut verinin yeniden erişilebilir olması.
+
+### Böylece kapanan final kapılar
+
+- Release build: **başarılı**
+- Otomatik test: **126/126**
+- win-x64 self-contained publish: **başarılı**
+- final smoke Setup üretimi: **başarılı**
+- SHA-256 ikinci doğrulaması: **başarılı**
+- Fatura Türü Dağılımı görsel smoke: **başarılı**
+- manuel temiz kurulum: **başarılı**
+- önceki sürüm üstüne güncelleme: **başarılı**
+- veri koruma: **başarılı**
+- kaldırma: **başarılı**
+- yeniden kurulum: **başarılı**
+
+### Release durumu
+
+Uygulama kodu ve installer davranışı açısından 1.1.0 final smoke kapıları tamamlandı.
+
+Ancak mevcut release politikası korunuyor:
+- `FINAL_DOGRULAMA.bat` ile üretilen EXE **imzasız smoke paketidir**.
+- Son kullanıcıya dağıtılacak final paket için kod imzası gerekir.
+- İmza sertifikası olmadan imzalı final paket üretilemez.
+- Tag / GitHub Release, dağıtılacak final paketin imza politikası netleşmeden oluşturulmamalıdır.
+
+Kod/UI kapsamı **freeze** durumunda kalır.
