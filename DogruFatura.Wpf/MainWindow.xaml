@@ -1265,7 +1265,8 @@
                                                     <Grid Grid.Row="1" Width="340" Height="340"
                                                           HorizontalAlignment="Center" VerticalAlignment="Center">
                                                         <lvc:PieChart x:Name="StatisticsDonutChart"
-                                                                      Width="340" Height="340"
+                                                                      Width="328" Height="328"
+                                                                      Panel.ZIndex="2"
                                                                       Background="Transparent"
                                                                       LegendPosition="Hidden"
                                                                       InitialRotation="-90"/>
@@ -1274,6 +1275,7 @@
                                                                 BorderBrush="#DCE5EE"
                                                                 BorderThickness="1"
                                                                 CornerRadius="72"
+                                                                Panel.ZIndex="1"
                                                                 HorizontalAlignment="Center"
                                                                 VerticalAlignment="Center"
                                                                 IsHitTestVisible="False">
