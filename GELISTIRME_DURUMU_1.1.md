@@ -4980,3 +4980,107 @@ Yeni özellik/refaktör yapılmayacaktır.
 Sıradaki gerçek doğrulama:
 - Windows üzerinde `FINAL_DOGRULAMA.bat`
 - ardından manuel temiz kurulum / güncelleme / kaldırma / yeniden kurulum smoke.
+
+
+## 20.09.2026 — FINAL_DOGRULAMA gerçek Windows koşusu: 125/126, tanılama regex timeout düzeltildi
+
+Kullanıcı `FINAL_DOGRULAMA.bat` çalıştırdı.
+
+### Gerçek sonuç
+
+Release build:
+- restore başarılı,
+- Core Release build başarılı,
+- WPF Release build başarılı,
+- Tests Release build başarılı.
+
+Test:
+- toplam: **126**
+- başarılı: **125**
+- başarısız: **1**
+- skipped: **0**
+
+Başarısız test:
+- `DiagnosticAndRecoveryTests.DiagnosticPackageContainsSummaryAndLogsButNeverUserJsonOrPdf`
+
+Hata:
+- `RegexMatchTimeoutException`
+- `DiagnosticPackageService.Sanitize(...)`
+- regex timeout: 250 ms.
+
+Setup:
+- otomatik test kapısı başarısız olduğu için **üretilmedi**.
+- Bu beklenen ve doğru davranıştır; final paket hatalı testle oluşturulmadı.
+
+### Kök neden
+
+Tanılama sanitize akışı:
+- özet/log metninin tamamını regex zincirinden geçiriyordu.
+- `SensitiveLabelRegex.Replace(...)` gibi sanitization regex'lerinden biri ortam/veri uzunluğuna bağlı olarak 250 ms timeout'a girebiliyordu.
+- özellikle final Release test koşusunda bu gerçek olarak yeniden üretildi.
+
+### Düzeltme
+
+`DogruFatura.Wpf/DiagnosticPackageService.cs`:
+
+Sanitize artık:
+1. bilinen klasör/kullanıcı değerlerini önce doğrudan replacement ile maskeler,
+2. kalan içeriği `StringReader` ile **satır satır** işler,
+3. her satırı `SanitizeLine(...)` ile mevcut kişisel veri regex'lerinden geçirir,
+4. herhangi bir satırda `RegexMatchTimeoutException` oluşursa:
+   - paketi çökertmez,
+   - satırı ham halde bırakmaz,
+   - satırın tamamını:
+     `[GİZLENDİ: satır güvenli biçimde işlenemedi]`
+     ile değiştirir.
+
+Bu yaklaşım:
+- tanılama paketinin regex timeout nedeniyle tamamen başarısız olmasını engeller,
+- timeout durumunda kişisel veri sızıntısına izin vermez,
+- mevcut normal maskeleme davranışını korur.
+
+Commit:
+- `e137496d2f5c812da32b75f2b536ffa71d87e30f`
+
+### Regresyon testi güçlendirmesi
+
+Yeni test metodu eklenmedi; toplam test sayısı **126** olarak kaldı.
+
+Mevcut tanılama testi içine:
+- 100.000 karakterlik uzun tek satır,
+- satırın sonunda `Kurum: Çok Uzun Satırdaki Gizli Kurum`
+
+örneği eklendi.
+
+Doğrulama:
+- paket oluşturulmalı,
+- uzun satırdaki gizli kurum metni ZIP logunda yer almamalı.
+
+Commit:
+- `4e2be85fb36b4178660b092324dc0f9cee580f23`
+
+### Statik kontrol
+
+Geçti:
+- satır-bazlı sanitize,
+- `RegexMatchTimeoutException` catch,
+- güvenli tam-satır fallback redaction,
+- tüm mevcut sanitizer regex'leri `SanitizeLine` içinde korunuyor,
+- 100k karakter stres girdisi mevcut,
+- stres girdisindeki gizli kurumun yokluğu assert ediliyor.
+
+### Yeni zorunlu kapı
+
+Fetch/Pull sonrası:
+- `FINAL_DOGRULAMA.bat`
+
+Beklenen:
+- Release build başarılı,
+- **126/126** test,
+- final smoke Setup oluşur,
+- SHA-256 ikinci doğrulaması geçer.
+
+Bu sonuç gelmeden:
+- tag yok,
+- release yok,
+- dağıtım yok.
