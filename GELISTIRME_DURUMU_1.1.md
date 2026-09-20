@@ -4088,3 +4088,61 @@ Yerel doğrulama:
 2. `DERLE_CALISTIR.bat`
 3. Hakkında / Güvenlik ekranında `TANILAMA PAKETİ` doğrudan görünmeli.
 4. Butona basınca tanılama ZIP'i oluşmalı.
+
+
+## 20.09.2026 — Hakkında / Güvenlik buton sadeleştirmesi
+
+Kullanıcı geri bildirimi:
+- Veri Güvenliği bölümündeki buton sayısı fazla ve ekranı gereksiz kalabalıklaştırıyordu.
+- Özellikle klasör açma kısayollarının ne işe yaradığı ve gerçekten gerekli olup olmadığı sorgulandı.
+
+### Sadeleştirme kararı
+
+Ana görünürde yalnız günlük ve güvenlik açısından anlamlı üç işlem bırakıldı:
+- KONTROL ET
+- YEDEK OLUŞTUR
+- GERİ YÜKLE
+
+`TANILAMA PAKETİ`:
+- günlük kullanım işlemi olmadığı için tekrar `GELİŞMİŞ / DESTEK` içine alındı.
+- gizlilik sanitize davranışı ve handler korunuyor.
+
+Tamamen kaldırıldı:
+- VERİ KLASÖRÜ
+- PDF KLASÖRÜ
+- YEDEK KLASÖRÜ
+- LOG KLASÖRÜ
+
+Neden:
+- bunlar yalnız Windows Explorer klasör kısayollarıydı,
+- uygulamanın veri güvenliği/iş akışı için zorunlu değiller,
+- tanılama paketi ve yedekleme işlevlerine ek işlev sağlamıyorlardı,
+- UI kalabalığı oluşturuyorlardı.
+
+Kod temizliği:
+- `OpenDataFolder_Click`
+- `OpenDocumentFolder_Click`
+- `OpenBackupFolder_Click`
+- `OpenLogFolder_Click`
+- ortak `OpenFolder(...)`
+
+kaldırıldı.
+
+Commitler:
+- UI sadeleştirmesi: `971f0b6d2c1d95d8aeab63b9ba3b4dc4f4c6468b`
+- gereksiz handler temizliği: `0c66fce7ed3dc9367a4dec9aafd5a3f6d2a9c14b`
+
+Statik kontrol:
+- ana üç güvenlik butonu mevcut: geçti
+- Tanılama Paketi Gelişmiş / Destek içinde: geçti
+- dört klasör butonu yok: geçti
+- eski folder handler'ları yok: geçti
+
+Yerel doğrulama:
+1. Fetch origin -> Pull origin
+2. `DERLE_CALISTIR.bat`
+3. Hakkında / Güvenlik:
+   - ana bölümde yalnız 3 buton görünmeli,
+   - Gelişmiş / Destek açıldığında yalnız TANILAMA PAKETİ görünmeli.
+4. `TESTLERI_CALISTIR.bat`
+   - hedef **125/125**.
