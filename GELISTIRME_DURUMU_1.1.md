@@ -4954,3 +4954,29 @@ Bundan sonra yalnız:
 Sıradaki gerçek kapı:
 - `FINAL_DOGRULAMA.bat`
 - ardından temiz kurulum / güncelleme / kaldırma / yeniden kurulum manuel smoke.
+
+
+## 20.09.2026 — release/1.1.0 final araç senkronizasyonu
+
+Final doğrulama betiği ve son checklist/MD güncellemeleri:
+- `0ef91a789bb1f11eacd1798ba11e38e594f3b87d`
+
+commit'ine kadar `release/1.1.0` dalına fast-forward edildi.
+
+Release dalında doğrulandı:
+- `FINAL_DOGRULAMA.bat` mevcut,
+- `VersionPrefix = 1.1.0`,
+- `VersionSuffix = boş`.
+
+Bu senkronizasyon GitHub Actions run **#514**'ü tetikledi.
+
+Sonuç:
+- run #514 de önceki #505/#507 örüntüsüyle `failure`,
+- gerçek build/test adımı başlamadan düşen CI altyapı sorunu devam ediyor.
+
+Release dalı bu noktada dondurulmuştur.
+Yeni özellik/refaktör yapılmayacaktır.
+
+Sıradaki gerçek doğrulama:
+- Windows üzerinde `FINAL_DOGRULAMA.bat`
+- ardından manuel temiz kurulum / güncelleme / kaldırma / yeniden kurulum smoke.
