@@ -36,7 +36,7 @@ public static class PdfMetadataContract
 
         return string.Join(
             ';',
-            "DoğruFatura",
+            "DogruFatura",
             "Schema=" + Schema,
             "DocumentType=" + NormalizeToken(documentType),
             "AppVersion=" + NormalizeToken(AppVersionInfo.InformationalVersion));
