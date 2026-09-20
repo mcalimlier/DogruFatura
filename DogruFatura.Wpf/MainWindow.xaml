@@ -1045,16 +1045,24 @@
                                     <TextBlock Text="HYS ile kapanmış arşiv kayıtlarından kurum, dönem ve fatura türü bazında mali analiz ve çıktı alın." Style="{StaticResource PageSubtitle}"/>
                                 </StackPanel>
                                 <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Top">
-                                    <Button Style="{StaticResource ModernButton}" Content="PDF RAPORU" Width="104" Margin="0,0,6,0"
-                                            Background="#2468D8" Click="ExportStatisticsPdf_Click"/>
-                                    <Button Style="{StaticResource ModernButton}" Content="YAZDIR" Width="82" Margin="0,0,6,0"
-                                            Background="#315371" Click="PrintStatistics_Click"/>
-                                    <Button Style="{StaticResource ModernButton}" Content="CSV" Width="68" Margin="0,0,6,0"
-                                            Background="#315371" Click="ExportStatisticsCsv_Click"/>
-                                    <Button Style="{StaticResource ModernButton}" Content="EXCEL" Width="78" Margin="0,0,6,0"
-                                            Background="#248A50" Click="ExportStatisticsExcel_Click"/>
-                                    <Button Style="{StaticResource ModernButton}" Content="PNG" Width="68" Margin="0,0,6,0"
-                                            Background="#8A5A12" Click="ExportStatisticsPng_Click"/>
+                                    <Button x:Name="StatisticsExportMenuButton"
+                                            Style="{StaticResource ModernButton}"
+                                            Content="ÇIKTI AL ▼"
+                                            Width="118"
+                                            Margin="0,0,6,0"
+                                            Background="#2468D8"
+                                            Click="StatisticsExportMenu_Click">
+                                        <Button.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="PDF RAPORU" Click="ExportStatisticsPdf_Click"/>
+                                                <MenuItem Header="YAZDIR" Click="PrintStatistics_Click"/>
+                                                <Separator/>
+                                                <MenuItem Header="CSV" Click="ExportStatisticsCsv_Click"/>
+                                                <MenuItem Header="EXCEL" Click="ExportStatisticsExcel_Click"/>
+                                                <MenuItem Header="PNG" Click="ExportStatisticsPng_Click"/>
+                                            </ContextMenu>
+                                        </Button.ContextMenu>
+                                    </Button>
                                     <Button Style="{StaticResource ModernButton}" Content="YENİLE" Width="86"
                                             Background="#248A50" Click="RefreshStatistics_Click"/>
                                 </WrapPanel>
@@ -1149,20 +1157,20 @@
                                 </Border>
                             </UniformGrid>
 
-                            <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                <StackPanel x:Name="StatisticsReportSurface" Margin="0,0,8,12">
+                            <Grid Grid.Row="4">
+                                <StackPanel x:Name="StatisticsReportSurface" Margin="0">
                                     <Border x:Name="StatisticsDonutCard"
                                             Background="#F7F9FC"
                                             BorderBrush="#DCE5EE"
                                             BorderThickness="1"
                                             CornerRadius="20"
-                                            Padding="18"
+                                            Padding="14"
                                             ClipToBounds="True"
                                             Margin="0,0,0,10">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="520"/>
-                                                <ColumnDefinition Width="20"/>
+                                                <ColumnDefinition Width="430"/>
+                                                <ColumnDefinition Width="14"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
 
@@ -1170,7 +1178,7 @@
                                                     BorderBrush="#DCE5EE"
                                                     BorderThickness="1"
                                                     CornerRadius="20"
-                                                    Padding="18"
+                                                    Padding="14"
                                                     ClipToBounds="True">
                                                 <Grid>
                                                     <Grid.RowDefinitions>
@@ -1183,24 +1191,24 @@
                                                                    Style="{StaticResource PremiumSectionSubtitle}" Margin="0,3,0,12"/>
                                                     </StackPanel>
 
-                                                    <Grid Grid.Row="1" Width="420" Height="420"
+                                                    <Grid Grid.Row="1" Width="340" Height="340"
                                                           HorizontalAlignment="Center" VerticalAlignment="Center">
                                                         <lvc:PieChart x:Name="StatisticsDonutChart"
-                                                                      Width="420" Height="420"
+                                                                      Width="340" Height="340"
                                                                       Background="Transparent"
                                                                       LegendPosition="Hidden"
                                                                       InitialRotation="-90"/>
-                                                        <Border Width="176" Height="176"
+                                                        <Border Width="144" Height="144"
                                                                 Background="#FFFFFF"
                                                                 BorderBrush="#DCE5EE"
                                                                 BorderThickness="1"
-                                                                CornerRadius="88"
+                                                                CornerRadius="72"
                                                                 HorizontalAlignment="Center"
                                                                 VerticalAlignment="Center"
                                                                 IsHitTestVisible="False">
                                                             <StackPanel HorizontalAlignment="Center"
                                                                         VerticalAlignment="Center"
-                                                                        Width="148">
+                                                                        Width="120">
                                                                 <TextBlock Text="TOPLAM ÖDEME"
                                                                            Foreground="#64778B"
                                                                            FontSize="13"
@@ -1225,7 +1233,7 @@
                                                     BorderBrush="#DCE5EE"
                                                     BorderThickness="1"
                                                     CornerRadius="20"
-                                                    Padding="22"
+                                                    Padding="16"
                                                     ClipToBounds="True">
                                                 <Grid>
                                                     <Grid.RowDefinitions>
@@ -1273,38 +1281,8 @@
                                         </Grid>
                                     </Border>
 
-                                    <Grid Margin="0,0,0,10">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="10"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Border Background="#FFFFFF" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="16" Padding="16">
-                                            <Grid>
-                                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="260"/></Grid.RowDefinitions>
-                                                <StackPanel>
-                                                    <TextBlock Text="AYLIK ÖDEME TRENDİ" Foreground="#031C38" FontSize="16.5" FontWeight="Bold"/>
-                                                    <TextBlock Text="Seçili filtrelerde aylara göre toplam ödeme." Foreground="#70839A" FontSize="13" Margin="0,3,0,8"/>
-                                                </StackPanel>
-                                                <lvc:CartesianChart x:Name="StatisticsMonthlyTrendChart" Grid.Row="1"
-                                                                    LegendPosition="Hidden" Background="Transparent"/>
-                                            </Grid>
-                                        </Border>
-
-                                        <Border Grid.Column="2" Background="#FFFFFF" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="16" Padding="16">
-                                            <Grid>
-                                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="260"/></Grid.RowDefinitions>
-                                                <StackPanel>
-                                                    <TextBlock Text="FATURA TÜRÜ KARŞILAŞTIRMASI" Foreground="#031C38" FontSize="16.5" FontWeight="Bold"/>
-                                                    <TextBlock Text="Türlerin seçili dönemdeki toplam ödeme karşılaştırması." Foreground="#70839A" FontSize="13" Margin="0,3,0,8"/>
-                                                </StackPanel>
-                                                <lvc:CartesianChart x:Name="StatisticsTypeComparisonChart" Grid.Row="1"
-                                                                    LegendPosition="Hidden" Background="Transparent"/>
-                                            </Grid>
-                                        </Border>
-                                    </Grid>
                                 </StackPanel>
-                            </ScrollViewer>
+                            </Grid>
                         </Grid>
                         <ScrollViewer x:Name="AboutView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                             <StackPanel Margin="0,0,8,16">
