@@ -252,13 +252,13 @@ public partial class MainWindow
             {
                 Name = item.InvoiceType,
                 Values = new[] { (double)item.PaymentTotal },
-                InnerRadius = 108,
+                InnerRadius = 92,
                 OuterRadiusOffset = 0,
-                HoverPushout = 4,
+                HoverPushout = 2,
                 Fill = new SolidColorPaint(skColor),
-                Stroke = new SolidColorPaint(SKColors.White) { StrokeThickness = 2 },
+                Stroke = new SolidColorPaint(SKColors.White) { StrokeThickness = 2.4f },
                 ShowDataLabels = true,
-                DataLabelsPaint = new SolidColorPaint(SKColors.White),
+                DataLabelsPaint = new SolidColorPaint(StatisticsDataLabelColor(skColor)),
                 DataLabelsSize = 13,
                 DataLabelsPosition = PolarLabelsPosition.Middle,
                 DataLabelsFormatter = _ => percentage >= 0.06m ? percentageText : string.Empty,
@@ -370,6 +370,18 @@ public partial class MainWindow
         "İnternet" => new SKColor(60, 179, 113),
         _ => new SKColor(112, 128, 144)
     };
+
+    private static SKColor StatisticsDataLabelColor(SKColor background)
+    {
+        var luminance =
+            (0.299d * background.Red)
+            + (0.587d * background.Green)
+            + (0.114d * background.Blue);
+
+        return luminance >= 150d
+            ? new SKColor(3, 28, 56)
+            : SKColors.White;
+    }
 
     private sealed record StatisticsDonutItem(
         string InvoiceType,
