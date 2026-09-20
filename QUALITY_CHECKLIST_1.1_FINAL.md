@@ -1,5 +1,15 @@
 # DoğruFatura 1.1.0 — Final Dağıtım Kontrolü
 
+## Mevcut durum — 20.09.2026
+
+- Kullanıcı final kodun çalıştığını bildirdi.
+- `release/1.1.0` dalı oluşturuldu.
+- Release dalı head: `7db72bdfcec1a8a3c581fd6d2a14c116c2298569`.
+- GitHub Actions run #505 ve #507, `build-and-test` adımına ait hiçbir step/log oluşturmadan birkaç saniyede failure oldu.
+- `setup-smoke` bu nedenle çalışmadı.
+- Bu durum gerçek bir C# build/test hatası olarak kabul edilmemektedir; GitHub Actions job başlangıç/runner tarafında ayrı bir engeldir.
+- Final tag ve kullanıcıya dağıtılacak Setup, gerçek Windows build/test/setup-smoke kapısı tamamlanana kadar bekletilir.
+
 RC1 kullanıcı doğrulaması tamamlandıktan sonra 1.1.0 sürüm numarası finale alınmıştır. Bu liste gerçek dağıtım paketi oluşturulmadan önce tamamlanır.
 
 ## A. Final kod kapısı
