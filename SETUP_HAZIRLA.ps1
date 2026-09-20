@@ -9,7 +9,14 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-function Fail([string]$Message) { Write-Host "HATA: $Message" -ForegroundColor Red; exit 1 }
+function Fail([string]$Message) {
+    if ($publish -and (Test-Path $publish)) {
+        Remove-Item $publish -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    Write-Host "HATA: $Message" -ForegroundColor Red
+    exit 1
+}
 
 function Find-SignTool {
     $command = Get-Command signtool.exe -ErrorAction SilentlyContinue
