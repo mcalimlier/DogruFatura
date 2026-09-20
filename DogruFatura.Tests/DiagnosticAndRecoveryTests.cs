@@ -29,7 +29,8 @@ public sealed class DiagnosticAndRecoveryTests
             "E-posta: ayse@example.com",
             "Kayıt Id: " + sensitiveGuid,
             "İstemci: 192.168.1.24",
-            "Veri yolu: " + Path.Combine(safety.DataFolder, "AktifFaturalar.json"));
+            "Veri yolu: " + Path.Combine(safety.DataFolder, "AktifFaturalar.json"),
+            new string('X', 100_000) + " Kurum: Çok Uzun Satırdaki Gizli Kurum");
         File.WriteAllText(Path.Combine(safety.LogFolder, "test.log"), sensitiveLog, Encoding.UTF8);
 
         var package = DiagnosticPackageService.Create(safety);
@@ -55,6 +56,7 @@ public sealed class DiagnosticAndRecoveryTests
         Assert.DoesNotContain(sensitiveGuid, sanitizedLog, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("192.168.1.24", sanitizedLog, StringComparison.Ordinal);
         Assert.DoesNotContain(safety.DataFolder, sanitizedLog, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Çok Uzun Satırdaki Gizli Kurum", sanitizedLog, StringComparison.Ordinal);
         Assert.Contains("[GİZLENDİ]", sanitizedLog, StringComparison.Ordinal);
         Assert.Contains("%EMAIL%", sanitizedLog, StringComparison.Ordinal);
         Assert.Contains("%GUID%", sanitizedLog, StringComparison.Ordinal);
