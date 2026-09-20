@@ -5490,3 +5490,31 @@ Hedef:
 - **126/126**
 - Setup + SHA başarılı
 - İstatistik donut yüzdeleri artık WPF/ClearType ile keskin ve tam merkezlenmiş görünmeli.
+
+
+## 20.09.2026 — Fatura Türü Dağılımı görsel smoke BAŞARILI
+
+Kullanıcı son WPF/ClearType yüzde overlay değişikliğinden sonra:
+- **"Fatura Türü Dağılımı olmuş"**
+
+geri bildirimini verdi.
+
+Bu nedenle aşağıdaki görsel kapı kabul edildi:
+- yüzde yazıları keskin,
+- dilim merkezine düzgün oturuyor,
+- WPF/ClearType yaklaşımı başarılı,
+- LiveCharts/Skia built-in yüzde label sorunu kapanmış kabul edildi.
+
+Son gerçek Windows final doğrulama logunda ayrıca:
+- Release build başarılı,
+- testler **126/126**,
+- win-x64 publish başarılı
+durumundadır.
+
+Kalan tek dağıtım kapısı:
+- NSIS sıkıştırma işleminin tamamlanması,
+- `FINAL_DOGRULAMA.bat` [2/3] dosya kontrolü,
+- [3/3] SHA-256 ikinci doğrulaması,
+- ardından manuel temiz kurulum / güncelleme / kaldırma smoke.
+
+Bu aşamadan sonra donut görseline yeni değişiklik yapılmamalıdır.
