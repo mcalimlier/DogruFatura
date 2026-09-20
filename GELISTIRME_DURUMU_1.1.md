@@ -5231,3 +5231,121 @@ Beklenen:
 - İstatistik ekranında yüzdeler net ve ortalanmış
 
 Yeni özellik/refaktör eklenmeyecektir.
+
+
+## 20.09.2026 — Explorer/repo kök temizliği + donut obsolete warning temizliği
+
+Kullanıcı Windows Explorer tarafında proje kökünün eski notlar ve gereksiz dosyalar nedeniyle dağınık olduğunu bildirdi.
+
+Aynı anda son `FINAL_DOGRULAMA.bat` logunda donut font ayarından gelen iki warning görüldü:
+- `SkiaPaint.FontFamily` obsolete
+- `SkiaPaint.SKFontStyle` obsolete
+
+### Repo kök temizliği
+
+Aktif 1.1 final akışında artık kullanılmayan tarihsel belgeler silinmedi; geçmişi korumak için:
+- `docs/archive/`
+
+altına taşındı.
+
+Taşınan dosyalar:
+- `ASAMA10_R2_DEGISIKLIK_NOTU.txt`
+- `QUALITY_CHECKLIST_RC1.md`
+- `RC1_DEGISIKLIK_NOTU.md`
+- `RELEASE_NOTES_1.0.0.md`
+- `RELEASE_NOTES_1.0.1.md`
+- `QUALITY_CHECKLIST_1.1_RC1.md`
+
+Ek olarak:
+- `docs/archive/README.md`
+
+oluşturuldu ve arşiv klasörünün amacı açıklandı.
+
+Repo kökünde yalnız aktif/gerekli belgeler bırakıldı:
+- `README.md`
+- `RELEASE_NOTES_1.1.0.md`
+- `QUALITY_CHECKLIST_1.1_FINAL.md`
+- `GELISTIRME_DURUMU_1.1.md`
+- `KULLANICI_KILAVUZU.md`
+- `KURULUM_NOTU.txt`
+- `CODE_SIGNING.md`
+
+Kod/proje/script dosyaları doğal olarak kökte korunuyor.
+
+### Donut warning temizliği
+
+`MainWindow.Statistics.cs`:
+
+Eski obsolete API:
+- `FontFamily = "Segoe UI"`
+- `SKFontStyle = SKFontStyle.Bold`
+
+yerine:
+- statik `SKTypeface`
+- `SKTypeface.FromFamilyName("Segoe UI", SKFontStyle.Bold)`
+- paint üzerinde `SKTypeface = StatisticsDataLabelTypeface`
+
+kullanıldı.
+
+Amaç:
+- önceki keskin/bold yüzde görünümünü korumak,
+- LiveCharts/Skia önerilen API'sine geçmek,
+- final hedefi olan **0 warning** durumunu geri getirmek.
+
+Commit:
+- `9cb85b9c4610be28d173d0c0433458f6a517d8bf`
+
+### Geçici _YAYIN klasörü temizliği
+
+`SETUP_HAZIRLA.ps1` zaten başarılı akış sonunda `_YAYIN` klasörünü siliyordu.
+
+Sorun:
+- test/build/setup hata verirse `Fail(...)` ile erken çıkıldığı için geçici yüzlerce publish dosyası Explorer'da kalabiliyordu.
+
+Düzeltme:
+- `Fail(...)` artık `_YAYIN` yolu mevcutsa hata mesajından önce güvenli biçimde recursive temizliyor.
+
+Commit:
+- `de6473f42674d5c6fb2114d5ff80e6e20526eae4`
+
+Böylece:
+- başarılı final doğrulama -> `_YAYIN` silinir,
+- başarısız final doğrulama -> `_YAYIN` yine silinir,
+- `DAGITIM` yalnız gerçek dağıtım çıktıları için kalır.
+
+### Arşiv taşıma commitleri
+
+Arşiv kopyaları:
+- `208e0177fa7412b1be8117adf6382e8dec8f6768`
+- `b7f4b6c48fc5a86c3fc88d9edf943ff28ef54d78`
+- `7ee918be16a5b87f6d26a3b4fd1d9c684b1afc21`
+- `a9d6e40b9efc6952bf6129b6b7bd9cf3e606d553`
+- `7bd244b4110bc2ac67363b35adc2f97a9c014245`
+- `6d549834e7cc9b02bd8bdc5a0059668cf788574c`
+- arşiv index: `563aca0ee5a1ecff7bc4a3227b45b18048628a76`
+
+Kökten kaldırma commitleri:
+- `75d7dcbb2c2a7803c257ceb725d2f3d0d362d0de`
+- `8c912a5368842a06ea83a57845a08141401b63a4`
+- `0707c7aa4cbfcc92908cee65c59e241131c41d21`
+- `9d3866cf6dbfa4b0886625bb1315c3ee2a5340b3`
+- `843fb80cc3b1a329dd46d14314da1da7443468b2`
+- `4fce7941aafb4640857c8b1216f4548552429945`
+
+### Son durum
+
+Repo kökü sadeleştirildi.
+Eski tarihçe kaybolmadı; `docs/archive/` altında tutuluyor.
+Generated build/setup çıktıları Git ignore altında ve Setup hata akışında otomatik temizleniyor.
+Donut font obsolete warning düzeltildi.
+
+Son final doğrulama yeniden:
+- `FINAL_DOGRULAMA.bat`
+
+ile yapılmalı.
+
+Hedef:
+- **0 warning / 0 error**
+- **126/126**
+- final Setup + SHA başarılı
+- donut yüzde görünümü net/ortalanmış.
