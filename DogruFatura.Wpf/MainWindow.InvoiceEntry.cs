@@ -434,6 +434,31 @@ public partial class MainWindow
             return;
         }
 
+        var possibleDuplicate = InvoiceDuplicateService.CheckPossibleWhenNumberMissing(
+            ActiveInvoices,
+            invoice,
+            editingInvoice?.Id);
+        if (possibleDuplicate.IsPossibleDuplicate)
+        {
+            var confirmation = MessageBox.Show(
+                this,
+                "Fatura numarası boş. Aynı kurum/hizmet, fatura türü, tarihler ve tutarlarla aktif listede benzer bir kayıt bulundu.\n\n"
+                + possibleDuplicate.Message
+                + "\n\nBu faturayı yine de kaydetmek istiyor musunuz?",
+                "DoğruFatura - Olası Mükerrer Fatura",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+
+            if (confirmation != MessageBoxResult.Yes)
+            {
+                SetInvoiceSaveStatus(
+                    "Olası mükerrer fatura uyarısı nedeniyle kayıt kullanıcı tarafından iptal edildi.",
+                    true);
+                return;
+            }
+        }
+
         if (editingInvoice is null)
         {
             ActiveInvoices.Add(invoice);
