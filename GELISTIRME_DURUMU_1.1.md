@@ -4727,3 +4727,101 @@ Son zorunlu kapı:
 Bu final kapı yeşil olmadan:
 - `v1.1.0` release etiketi oluşturulmamalı,
 - final Setup kullanıcı dağıtımına hazır kabul edilmemeli.
+
+
+## 20.09.2026 — Final kullanıcı smoke BAŞARILI, release/1.1.0 dalı oluşturuldu; GitHub Actions altyapı engeli
+
+Kullanıcı final kod durumunun çalıştığını bildirdi ve devam edilmesini istedi.
+
+### Release dalı
+
+Final kod commit'i:
+- `eb5cf4a7ef5f89082bd33503921a3039b9a37972`
+
+üzerinden yeni:
+- `release/1.1.0`
+
+dalı oluşturuldu.
+
+Amaç:
+- final dağıtım adayını hardening geliştirme dalından ayırmak,
+- mevcut `.github/workflows/build.yml` içindeki `release/**` push tetikleyicisiyle temiz Windows CI build/test/setup-smoke kapısını çalıştırmak.
+
+### GitHub Actions sonucu
+
+Release dalının oluşturulmasıyla:
+- workflow: `DogruFatura Windows CI`
+- run: **#505**
+- run id: `35519244225`
+- head: `eb5cf4a7ef5f89082bd33503921a3039b9a37972`
+
+tetiklendi.
+
+İlk deneme:
+- `build-and-test`: failure
+- `setup-smoke`: skipped
+- job içinde step/log oluşmadı
+- çalışma birkaç saniye içinde sonlandı.
+
+Başarısız job'lar bir kez yeniden çalıştırıldı.
+
+İkinci deneme:
+- aynı biçimde `build-and-test`: failure
+- `setup-smoke`: skipped
+- step/log yok
+- çalışma yine birkaç saniye içinde bitti.
+
+### Geçmiş CI örüntüsü
+
+`hardening/1.1-data-safety` dalındaki son çok sayıda workflow da aynı davranışı gösteriyor:
+- run #455–#504 aralığındaki son çalışmaların büyük bölümü 3–5 saniyede failure,
+- ardışık commitlerde gerçek build adımlarına girilmemiş,
+- concurrency nedeniyle bazı ara run'lar cancelled,
+- başarısız joblarda step/log üretilmemiş.
+
+Bu nedenle mevcut CI kırmızısı:
+- bir C# derleme hatasını,
+- test başarısızlığını,
+- Setup script çalışma hatasını
+
+kanıtlamıyor; GitHub Actions job'u runner üzerinde başlamadan önce kesiliyor.
+
+Kesin altyapı nedeni mevcut API çıktısından görülemiyor; runner/Actions hesap/altyapı tarafı ayrıca kontrol edilmelidir.
+
+### Release kararı
+
+Korunan gerçek doğrulamalar:
+- kullanıcı final kodun çalıştığını bildirdi,
+- önceki yerel build/test kapıları başarılıydı,
+- final NSIS/Setup statik üretim simülasyonu geçti,
+- final sürüm `1.1.0`,
+- release dalı hazır.
+
+Ancak:
+- gerçek GitHub Windows build/test/setup-smoke yeşil sonucu alınmadı,
+- final Setup artefactı bu CI çalışmasından üretilemedi,
+- bu nedenle `v1.1.0` etiketi/release henüz oluşturulmayacak.
+
+### Sıradaki kapı
+
+İki kabul edilebilir yol:
+
+1. GitHub Actions altyapısı tekrar çalışır hale geldiğinde `release/1.1.0` CI'sını yeniden çalıştırmak.
+2. Aynı final commit üzerinde gerçek Windows makinede:
+   - `DERLE_CALISTIR.bat`
+   - `TESTLERI_CALISTIR.bat`
+   - `SETUP_HAZIRLA.ps1 -AllowUnsignedFinal` (yalnız smoke)
+   ile final Setup akışını doğrulamak.
+
+Gerçek dağıtım paketi için kod imzası politikası ayrıca korunur:
+- imza sertifikası varsa normal `SETUP_HAZIRLA.ps1`,
+- `-AllowUnsignedFinal` ile oluşturulan paket dağıtım için değil yalnız smoke içindir.
+
+### Durum özeti
+
+- Kod: **1.1.0 final**
+- Kullanıcı smoke: **çalışıyor**
+- Release branch: **release/1.1.0 hazır**
+- GitHub Actions: **runner/job başlangıç aşamasında bloklu**
+- Tag/release: **bekliyor**
+- Final Setup dağıtımı: **bekliyor**
