@@ -1212,7 +1212,7 @@
                                 </Grid>
                             </Border>
 
-                            <UniformGrid Grid.Row="3" Columns="4" Margin="0,0,0,9">
+                            <UniformGrid Grid.Row="3" Columns="4" Margin="0" Visibility="Collapsed">
                                 <Border Background="#FFF9EC" BorderBrush="#E8C067" BorderThickness="1" CornerRadius="10" Padding="13,9" Margin="0,0,4,0">
                                     <StackPanel><TextBlock Text="ORTALAMA FATURA" Foreground="#8A681A" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="StatisticsAverageText" Text="0,00 TL" Foreground="#B7791F" FontSize="19" FontWeight="Bold" Margin="0,3,0,0"/></StackPanel>
                                 </Border>
@@ -1236,7 +1236,8 @@
                                             CornerRadius="20"
                                             Padding="14"
                                             ClipToBounds="True"
-                                            Margin="0">
+                                            Margin="0,4,0,0"
+                                            VerticalAlignment="Stretch">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="430"/>
