@@ -4146,3 +4146,171 @@ Yerel doğrulama:
    - Gelişmiş / Destek açıldığında yalnız TANILAMA PAKETİ görünmeli.
 4. `TESTLERI_CALISTIR.bat`
    - hedef **125/125**.
+
+
+## 20.09.2026 — Aşama 5.5 + güvenlik UI sadeleştirmesi kullanıcı doğrulaması BAŞARILI
+
+Kullanıcı son güvenlik ekranı sadeleştirmesinin çalıştığını bildirdi ve devam edilmesini istedi.
+
+Kabul edilen durum:
+- ana Veri Güvenliği alanında yalnız:
+  - KONTROL ET
+  - YEDEK OLUŞTUR
+  - GERİ YÜKLE
+  görünür.
+- TANILAMA PAKETİ Gelişmiş / Destek içinde kalır.
+- klasör kısayolları kaldırılmıştır.
+- Aşama 5.5 tanılama gizlilik paketi kapanış için kabul edildi.
+- test başlangıç tabanı: **125/125**.
+
+---
+
+## 20.09.2026 — Aşama 5.6 PDF metadata formatı KODLANDI
+
+Amaç:
+- DoğruFatura tarafından üretilen PDF'lerde ortak, kararlı ve makine-okunur metadata sözleşmesi kullanmak,
+- farklı PDF üreticilerinin metadata alanlarını ayrı ayrı yönetmesini kaldırmak,
+- metadata içine gereksiz kullanıcı/kurum filtresi bilgisi koymamak,
+- tarihsel PDF importunun eski belgelerle geriye uyumlu kalmasını sağlamak.
+
+### Yeni ortak sözleşme
+
+Yeni dosya:
+- `DogruFatura.Wpf/PdfMetadataContract.cs`
+
+Sabit metadata şeması:
+- `Schema = DogruFaturaPdf/1`
+
+Belge türleri:
+- ödeme listesi: `PaymentList`
+- istatistik raporu: `StatisticsReport`
+
+Ortak alanlar:
+- `Title`
+- `Author = DoğruFatura`
+- `Subject`
+- `Creator = DoğruFatura <uygulama sürümü>`
+- `Keywords`
+
+Makine-okunur `Keywords` biçimi:
+`DogruFatura;Schema=DogruFaturaPdf/1;DocumentType=<type>;AppVersion=<version>`
+
+Token değerlerinde:
+- noktalı virgül,
+- CR,
+- LF
+
+gibi ayraç bozabilecek karakterler normalize edilir.
+
+### Fatura ödeme listesi PDF
+
+`FinalReportPdfService` artık metadata alanlarını doğrudan ayrı ayrı yazmıyor.
+
+Yeni:
+- `PdfMetadataContract.Apply(...)`
+- `DocumentType=PaymentList`
+
+Görsel içerik, tablo, sayfa planı ve tarihsel import tarafından okunan PDF metni değiştirilmedi.
+
+### İstatistik PDF
+
+`MainWindow.StatisticsExports.cs`:
+- ortak metadata helper kullanıyor,
+- `DocumentType=StatisticsReport`.
+
+Önce:
+- `Subject = StatisticsFilterDescription()`
+- kurum/yıl/tür gibi aktif filtre açıklaması PDF metadata'sına yazılabiliyordu.
+
+Yeni:
+- `Subject = "Mali istatistik ve fatura türü dağılım raporu"`
+- filtre bilgileri yalnız raporun görünür içeriğinde bulunur,
+- teknik metadata kişisel/kurumsal filtre bilgisinden bağımsızdır.
+
+### Tarihsel PDF geriye uyumluluğu
+
+`HistoricalPdfImportService`:
+- metadata'yı zorunlu kabul etmez,
+- mevcut belge metni/tablo yapısı + HYS dosya adı doğrulamasıyla çalışmaya devam eder.
+
+Bu nedenle:
+- eski metadata'sız DoğruFatura PDF'leri desteklenmeye devam eder,
+- yeni metadata formatı import için zorunlu kapı değildir,
+- mevcut PDF SHA-256 / arşiv bütünlüğü semantiği değiştirilmedi.
+
+### Regresyon testi
+
+`PdfRegressionTests` içine yeni:
+- `PdfMetadataContractUsesStableMachineReadableKeywords`
+
+Doğrulanan alanlar:
+- Title
+- Author
+- Subject
+- Creator
+- `Schema=DogruFaturaPdf/1`
+- `DocumentType=PaymentList`
+- `AppVersion=`
+
+Mevcut:
+- `GeneratedPdfCanBeReadBackByHistoricalArchiveImporter`
+
+testi korunuyor; böylece yeni metadata entegrasyonunun tarihsel importu bozmaması da aynı test takımında kalır.
+
+Test sayısı:
+- önce: **125**
+- yeni hedef: **126/126**
+
+### Commitler
+
+- ortak metadata sözleşmesi:
+  `0268fce6c9b43e57006250315c7a2ddaeac13538`
+- ödeme listesi PDF entegrasyonu:
+  `b36583b95d346207e5f337259a0467542f8581d5`
+- istatistik PDF entegrasyonu:
+  `51f3f61bce5947202b75fd5e2ebe574a6be084d9`
+- metadata anahtar prefix ASCII standardizasyonu:
+  `6c3ea4aa892f4486779100a2d67813f01da1071a`
+- metadata regresyon testi:
+  `901187aebe117686ebc93043c5aedbf6221552db`
+
+### Statik doğrulama
+
+Geçti:
+- tek metadata sözleşmesi mevcut,
+- schema `DogruFaturaPdf/1`,
+- PaymentList / StatisticsReport türleri mevcut,
+- ödeme listesi PDF ortak helper kullanıyor,
+- istatistik PDF ortak helper kullanıyor,
+- istatistik metadata Subject alanında aktif filtre açıklaması artık yok,
+- metadata regresyon testi mevcut,
+- tarihsel PDF import regresyon testi korunuyor.
+
+### Zorunlu yerel doğrulama kapısı
+
+1. GitHub Desktop -> **Fetch origin -> Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - hedef: **0 warning / 0 error**
+3. `TESTLERI_CALISTIR.bat`
+   - hedef: **126/126**
+4. Normal bir ödeme listesi PDF oluştur:
+   - PDF oluşmalı,
+   - mevcut görünüm değişmemeli.
+5. İstatistik -> ÇIKTI AL -> PDF Raporu:
+   - PDF oluşmalı,
+   - mevcut rapor görünümü değişmemeli.
+6. Uygun tarihsel test PDF seti varsa import regression smoke yapılabilir; metadata yeni PDF'lerde zorunlu olmadığı için eski belgeler desteklenmeye devam eder.
+
+Bu kapı yeşil olmadan release hazırlığına geçilmemeli.
+
+### Sıradaki aşama
+
+Aşama 5.6 doğrulanınca:
+- Aşama 5 kapanış değerlendirmesi,
+- uygun tarihsel PDF seti varsa Aşama 5.1 gerçek dosya smoke,
+- ardından **DoğruFatura 1.1 release hazırlığı**:
+  - sürüm/assembly bilgileri,
+  - changelog/release notu,
+  - son build/test,
+  - kritik smoke kontrol listesi,
+  - release adayı etiketi/branch hazırlığı.
