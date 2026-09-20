@@ -2,6 +2,7 @@
 
 ## Mevcut durum — 20.09.2026
 
+- Kullanıcı Fatura Türü Dağılımı son WPF/ClearType yüzde görünümünü kabul etti: **olmuş**.
 - LiveCharts/Skia yüzde yazıları görsel olarak hâlâ bulanık kaldığı için built-in data label'lar kapatıldı; yüzdeler artık WPF/ClearType overlay ile çiziliyor.
 - Yüzde overlay'i 328×328 chart ile birebir hizalı, dilim orta açısı + sabit orta yarıçap hesabıyla tam piksel koordinatlarına yerleştiriliyor.
 - Repo kökü temizlendi: eski 1.0/RC notları `docs/archive/` altına taşındı; aktif final belgeleri kökte bırakıldı.
@@ -50,7 +51,7 @@ RC1 kullanıcı doğrulaması tamamlandıktan sonra 1.1.0 sürüm numarası fina
 
 - [ ] 5 sütunlu filtre/işlem düzeni düzgün
 - [ ] Fatura Türü Dağılımı kesilmiyor
-- [ ] WPF/ClearType yüzde etiketleri halka içinde, tam ortalanmış ve keskin/okunur
+- [x] WPF/ClearType yüzde etiketleri halka içinde, tam ortalanmış ve keskin/okunur
 - [ ] Açık dilimde koyu / koyu dilimde beyaz yüzde etiketi doğru
 - [ ] Hover detayı merkez kartın arkasında kalmıyor
 - [ ] PDF çıktı
