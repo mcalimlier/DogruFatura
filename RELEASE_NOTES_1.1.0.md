@@ -1,6 +1,6 @@
 # DoğruFatura 1.1.0 — Release Notları
 
-**Durum:** Final sürüm kodu — dağıtım öncesi son kalite kapısı  
+**Durum:** Final sürüm — otomatik ve manuel smoke kapıları tamamlandı  
 **Sürüm:** 1.1.0  
 **Platform:** Windows 10/11 x64, .NET 8 WPF
 
@@ -73,3 +73,28 @@ Sürüm numarası `1.1.0` final durumundadır. Dağıtım paketi yayınlanmadan 
 3. Otomatik testler **126/126** olmalı.
 4. Final Setup smoke testi temiz kurulumu, güncellemeyi, kaldırmayı ve kullanıcı verisi korumasını doğrulamalı.
 5. SHA-256 değeri dağıtım EXE'siyle eşleşmelidir.
+
+
+## Dağıtım biçimi
+
+DoğruFatura 1.1.0:
+- Windows 10/11 x64 için tek EXE self-contained Setup olarak dağıtılır,
+- hedef bilgisayarda ayrıca .NET Runtime / SDK gerektirmez,
+- kod imzalama sertifikası bulunmadığı için kullanıcı kararıyla **imzasız** dağıtılabilir,
+- Windows SmartScreen / "Bilinmeyen yayıncı" uyarısı gösterebilir,
+- paketle birlikte SHA-256 doğrulama dosyası verilmelidir.
+
+Final otomatik doğrulama:
+- Release build başarılı,
+- **126/126** test,
+- Setup üretimi başarılı,
+- SHA-256 ikinci doğrulaması başarılı.
+
+Manuel kurulum smoke:
+- temiz kurulum,
+- önceki sürüm üstüne güncelleme,
+- kullanıcı verisi koruma,
+- kaldırma,
+- yeniden kurulum
+
+başarılı olarak kabul edilmiştir.
