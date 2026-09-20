@@ -1,6 +1,7 @@
 param(
     [switch]$AllowPrerelease,
     [switch]$AllowUnsignedFinal,
+    [switch]$AllowUnsignedDistribution,
     [string]$OutputRoot = '',
     [string]$CertificateThumbprint = $env:DOGRUFATURA_SIGN_CERT_SHA1,
     [string]$TimestampUrl = 'http://timestamp.digicert.com'
@@ -64,11 +65,15 @@ if ($isPrerelease -and -not $AllowPrerelease) {
 if ($isPrerelease) {
     Write-Host "UYARI: $packageVersion yalnız RC/CI kurulum testi için üretilecek." -ForegroundColor Yellow
 }
-if (-not $isPrerelease -and [string]::IsNullOrWhiteSpace($CertificateThumbprint) -and -not $AllowUnsignedFinal) {
-    Fail 'Final Setup için kod imzalama sertifikası zorunludur. DOGRUFATURA_SIGN_CERT_SHA1 tanımlayın. Yalnız CI/yerel smoke testi için -AllowUnsignedFinal kullanılabilir.'
+if (-not $isPrerelease -and [string]::IsNullOrWhiteSpace($CertificateThumbprint) -and -not $AllowUnsignedFinal -and -not $AllowUnsignedDistribution) {
+    Fail 'Final Setup için kod imzası yok. Yerel smoke için -AllowUnsignedFinal, bilinçli imzasız dağıtım için -AllowUnsignedDistribution kullanın.'
 }
 if (-not $isPrerelease -and [string]::IsNullOrWhiteSpace($CertificateThumbprint) -and $AllowUnsignedFinal) {
-    Write-Host 'UYARI: Final sürüm CI/yerel smoke testi amacıyla imzasız üretilecek. Bu paket dağıtım için kullanılmamalıdır.' -ForegroundColor Yellow
+    Write-Host 'UYARI: Final sürüm yerel/CI smoke testi amacıyla imzasız üretilecek.' -ForegroundColor Yellow
+}
+if (-not $isPrerelease -and [string]::IsNullOrWhiteSpace($CertificateThumbprint) -and $AllowUnsignedDistribution) {
+    Write-Host 'UYARI: Kullanıcı kararıyla final paket IMZASIZ dağıtım için üretilecek.' -ForegroundColor Yellow
+    Write-Host 'Windows SmartScreen / Bilinmeyen yayıncı uyarısı gösterebilir. SHA-256 dosyasını paketle birlikte dağıtın.' -ForegroundColor Yellow
 }
 
 $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
