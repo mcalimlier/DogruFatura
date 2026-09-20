@@ -42,6 +42,11 @@ $suffix = [string]$group.VersionSuffix
 $assemblyVersion = [string]$group.AssemblyVersion
 if ([string]::IsNullOrWhiteSpace($version)) { Fail 'VersionPrefix okunamadı.' }
 $packageVersion = if ([string]::IsNullOrWhiteSpace($suffix)) { $version } else { "$version-$suffix" }
+$displayVersion = if ([string]::IsNullOrWhiteSpace($suffix)) {
+    $version
+} else {
+    "$version $($suffix.ToUpperInvariant())"
+}
 $isPrerelease = -not [string]::IsNullOrWhiteSpace($suffix)
 
 if ($isPrerelease -and -not $AllowPrerelease) {
@@ -104,6 +109,7 @@ if ([string]::IsNullOrWhiteSpace($CertificateThumbprint)) {
 $template = Join-Path $PSScriptRoot 'Kurulum\DogruFatura_NSIS.nsi'
 $nsi = Get-Content $template -Raw -Encoding UTF8
 $nsi = $nsi.Replace('!define APPVERSION "1.0.0"', "!define APPVERSION `"$version`"")
+$nsi = $nsi.Replace('!define APPDISPLAYVERSION "1.0.0"', "!define APPDISPLAYVERSION `"$displayVersion`"")
 $nsi = $nsi.Replace('OutFile "..\_YAYIN\Setup\DogruFatura_Setup_1.0.0_x64.exe"', "OutFile `"..\_YAYIN\Setup\DogruFatura_Setup_${packageVersion}_x64.exe`"")
 $nsi = $nsi.Replace('VIProductVersion "1.0.0.0"', "VIProductVersion `"$assemblyVersion`"")
 $nsi = $nsi.Replace('VIAddVersionKey /LANG=1055 "FileVersion" "1.0.0.0"', "VIAddVersionKey /LANG=1055 `"FileVersion`" `"$assemblyVersion`"")
