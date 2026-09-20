@@ -4365,3 +4365,155 @@ Kontrol edilmesi gereken yeni değerler:
 
 Aşama 5 kapanışından sonra **DoğruFatura 1.1 release hazırlığı** başlatılır.
 Release adayı oluşturulmadan önce bu son donut görsel ayarı yerel build + smoke ile birlikte son kez doğrulanmalıdır.
+
+
+## 20.09.2026 — DoğruFatura 1.1.0 RC1 release hazırlığı KODLANDI
+
+Aşama 5.6 kullanıcı doğrulaması başarılı kabul edildikten sonra 1.1 release adayı hazırlığı başlatıldı.
+
+### Sürüm
+
+`Directory.Build.props`:
+- `VersionPrefix: 1.0.1 -> 1.1.0`
+- `VersionSuffix: boş -> rc1`
+- `AssemblyVersion: 1.0.1.0 -> 1.1.0.0`
+- `FileVersion: 1.0.1.0 -> 1.1.0.0`
+
+Sonuç:
+- uygulama teknik sürümü: `1.1.0-rc1`
+- kullanıcı görünümü: `v1.1.0 RC1`
+- final Setup yanlışlıkla normal akışta üretilemez; prerelease koruması çalışır.
+
+`AppVersionInfo` fallback sürümü `1.1.0` olarak güncellendi.
+
+### Release dokümantasyonu
+
+Yeni:
+- `RELEASE_NOTES_1.1.0.md`
+- `QUALITY_CHECKLIST_1.1_RC1.md`
+
+Release notları 1.1 kapsamını özetler:
+- İstatistik ekranı ve çıktı seçenekleri,
+- tarihsel PDF import ilerleme/iptal,
+- boş numaralı olası mükerrer uyarısı,
+- güçlü tanılama gizlilik temizliği,
+- PDF metadata sözleşmesi,
+- veri şema / kimlik / bütünlük sertleştirmeleri.
+
+Kalite listesi:
+- build 0/0,
+- 126/126 test,
+- tüm ekran smoke,
+- İstatistik donut/yüzde/çıktı smoke,
+- mükerrer kontrolü,
+- PDF/arşiv,
+- güvenlik/yedek/tanılama,
+- DPI/ölçekleme,
+- Setup temiz kurulum/güncelleme/kaldırma
+kapılarını içerir.
+
+### README ve kullanıcı kılavuzu
+
+`README.md`:
+- 1.1.0 RC1 durumuna güncellendi.
+- 1.1 öne çıkanlar ve final yayın koşulu eklendi.
+
+`KULLANICI_KILAVUZU.md`:
+- 1.1 kullanım akışı,
+- İstatistik,
+- olası mükerrer,
+- async tarihsel PDF import,
+- sadeleştirilmiş güvenlik ekranı,
+- Gelişmiş / Destek içindeki Tanılama Paketi
+ile güncellendi.
+
+### Setup hazırlama
+
+`SETUP_HAZIRLA.ps1`:
+- artık `RELEASE_NOTES_1.0.0.md` dosyasını sabit kopyalamıyor.
+- `VersionPrefix` değerine göre:
+  `RELEASE_NOTES_<version>.md`
+  dosyasını dağıtım paketine ekliyor.
+- 1.1 için `RELEASE_NOTES_1.1.0.md` kullanılır.
+
+`KURULUM_NOTU.txt`:
+- eski 1.0.0 sabit dosya adlarından temizlendi,
+- sürümden bağımsız `DogruFatura_Setup_<sürüm>_x64.exe` anlatımına geçirildi,
+- RC/final ayrımı açıklandı.
+
+### Donut son görsel ayarı
+
+Aynı release adayı öncesi görsel turda:
+- `InnerRadius = 92`
+- `HoverPushout = 2`
+- dilim stroke `2.4`
+- etiket rengi dilim parlaklığına göre beyaz/lacivert
+olarak ayarlandı.
+
+Bu değişiklik:
+- yüzdeyi daha içte tutar,
+- açık altın dilimde koyu yazı kullanarak kontrastı artırır,
+- koyu dilimlerde beyaz yazıyı korur.
+
+### Commitler
+
+Donut:
+- `0a9deaf06f0ae7b46acd128043cd0b289a7132c0`
+
+Donut + Aşama 5.6 MD:
+- `efa9136373f36849fa6e45d27a7a867abb6c7abe`
+
+Release hazırlığı:
+- sürüm 1.1.0-rc1: `f349149d7ae63406ce7da981cca250214b58db6a`
+- AppVersion fallback: `e58d7af55b0b516e77d474cd21ba46f2cecaab50`
+- Setup release note seçimi: `dc54c0ab81da9e6a264c198e826eab33f0c9141d`
+- README: `e95b62531b589b565c95b321c7c01b28e61cae67`
+- kullanıcı kılavuzu: `e26bce5e1a86ffba6fc50b4f35b691303f97652e`
+- kurulum notu: `5713982e6abf23a8c14c4ce860bb693e0d55fb35`
+- release notes: `fa5373bc8d27eff814ee883c497d7d8ec1c6cf9d`
+- kalite checklist: `3e1b0de34cf1db5caca43a1d136d6c791598e24b`
+
+### Statik doğrulama
+
+Geçti:
+- VersionPrefix 1.1.0
+- VersionSuffix rc1
+- Assembly/FileVersion 1.1.0.0
+- AppVersion RC1 gösterim desteği mevcut
+- Setup güncel sürüm release notunu dinamik seçiyor
+- README 1.1.0 RC1
+- kullanıcı kılavuzu 1.1
+- release notes mevcut
+- 1.1 RC1 kalite checklist mevcut
+- donut son geometri ve kontrast helper mevcut.
+
+### Zorunlu RC1 yerel kapısı
+
+1. GitHub Desktop -> **Fetch origin -> Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - hedef: **0 warning / 0 error**
+   - üst sürüm göstergesi: **v1.1.0 RC1**
+3. `TESTLERI_CALISTIR.bat`
+   - hedef: **126/126**
+4. İstatistik:
+   - yüzdeler tamamen halka içinde,
+   - yüzde kontrastları net,
+   - hover düzgün,
+   - kesilme yok.
+5. `QUALITY_CHECKLIST_1.1_RC1.md` kritik smoke maddeleri.
+6. RC Setup smoke gerekiyorsa:
+   `SETUP_HAZIRLA.ps1 -AllowPrerelease -AllowUnsignedFinal`
+   - beklenen dosya: `DogruFatura_Setup_1.1.0-rc1_x64.exe`
+
+### Final geçiş kuralı
+
+RC1 kapısı kullanıcı tarafından başarılı doğrulanmadan:
+- `VersionSuffix` boşaltılmayacak,
+- `v1.1.0` final kabul edilmeyecek,
+- final dağıtım Setup'ı hazırlanmış sayılmayacak.
+
+RC1 yeşil olduğunda sonraki küçük paket:
+- `VersionSuffix = boş`
+- final doküman durumu
+- final 1.1.0 build/test/setup kapısı
+- ardından release etiketi/paketleme.
