@@ -18,6 +18,8 @@ public partial class MainWindow
     private bool _suppressStatisticsEvents;
     private ArchiveStatisticsFilter _statisticsFilter = new();
     private ArchiveStatisticsResult? _statisticsResult;
+    private static readonly SKTypeface StatisticsDataLabelTypeface =
+        SKTypeface.FromFamilyName("Segoe UI", SKFontStyle.Bold);
 
     private void RefreshStatistics()
     {
@@ -264,8 +266,7 @@ public partial class MainWindow
                 ShowDataLabels = true,
                 DataLabelsPaint = new SolidColorPaint(StatisticsDataLabelColor(skColor))
                 {
-                    FontFamily = "Segoe UI",
-                    SKFontStyle = SKFontStyle.Bold,
+                    SKTypeface = StatisticsDataLabelTypeface,
                     IsAntialias = true
                 },
                 DataLabelsSize = 13,
