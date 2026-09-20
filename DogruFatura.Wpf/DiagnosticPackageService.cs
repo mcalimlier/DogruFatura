@@ -119,17 +119,37 @@ public sealed class DiagnosticPackageService
         sanitized = ReplaceKnownValue(sanitized, Environment.UserName, "%USERNAME%");
         sanitized = ReplaceKnownValue(sanitized, Environment.MachineName, "%COMPUTERNAME%");
 
-        sanitized = SensitiveLabelRegex.Replace(
-            sanitized,
-            match => match.Groups["label"].Value + ": [GİZLENDİ]");
-        sanitized = EmailRegex.Replace(sanitized, "%EMAIL%");
-        sanitized = GuidRegex.Replace(sanitized, "%GUID%");
-        sanitized = IpV4Regex.Replace(sanitized, "%IP%");
-        sanitized = LongNumberRegex.Replace(sanitized, "%NUMBER%");
-        sanitized = WindowsPathRegex.Replace(sanitized, "%PATH%");
-        sanitized = UncPathRegex.Replace(sanitized, "%PATH%");
+        using var reader = new StringReader(sanitized);
+        var builder = new StringBuilder(sanitized.Length);
+        string? line;
+        while ((line = reader.ReadLine()) is not null)
+            builder.AppendLine(SanitizeLine(line));
 
-        return sanitized;
+        return builder.ToString();
+    }
+
+    private static string SanitizeLine(string line)
+    {
+        try
+        {
+            var sanitized = SensitiveLabelRegex.Replace(
+                line,
+                match => match.Groups["label"].Value + ": [GİZLENDİ]");
+            sanitized = EmailRegex.Replace(sanitized, "%EMAIL%");
+            sanitized = GuidRegex.Replace(sanitized, "%GUID%");
+            sanitized = IpV4Regex.Replace(sanitized, "%IP%");
+            sanitized = LongNumberRegex.Replace(sanitized, "%NUMBER%");
+            sanitized = WindowsPathRegex.Replace(sanitized, "%PATH%");
+            sanitized = UncPathRegex.Replace(sanitized, "%PATH%");
+            return sanitized;
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            // Tanılama paketi bir regex yüzünden tamamen başarısız olmamalı.
+            // Timeout olan satırı olduğu gibi bırakmak kişisel veri sızdırabilir;
+            // bu nedenle satırın tamamını güvenli biçimde kapat.
+            return "[GİZLENDİ: satır güvenli biçimde işlenemedi]";
+        }
     }
 
     private static string ReplaceKnownValue(string source, string? value, string replacement)
