@@ -49,6 +49,16 @@ RC1 kullanıcı doğrulaması tamamlandıktan sonra 1.1.0 sürüm numarası fina
 
 ## D. Final Setup
 
+Yerel smoke için önerilen tek tık doğrulama:
+
+`FINAL_DOGRULAMA.bat`
+
+Bu betik:
+- final sürümün gerçekten `1.1.0` olduğunu kontrol eder,
+- `SETUP_HAZIRLA.ps1 -AllowUnsignedFinal` çağrısıyla Release build + test + publish + Setup üretimini çalıştırır,
+- `DogruFatura_Setup_1.1.0_x64.exe` ve SHA-256 dosyasının varlığını kontrol eder,
+- Setup hash'ini tekrar hesaplayıp SHA dosyasıyla eşleştirir.
+
 Kod imzalama sertifikası varsa normal final komutu kullanılır:
 
 `SETUP_HAZIRLA.ps1`
