@@ -1429,9 +1429,9 @@
                                                     <Button Style="{StaticResource ModernButton}" Content="TANILAMA PAKETİ"
                                                             Width="190" Margin="0,0,8,8" Background="#315371"
                                                             Click="CreateDiagnosticPackage_Click"
-                                                            ToolTip="Destek için tanılama ZIP'i oluşturur. Fatura verileri ve PDF belgeleri pakete eklenmez."
+                                                            ToolTip="Destek için tanılama ZIP'i oluşturur. Fatura JSON/PDF içerikleri eklenmez; hata günlüklerindeki kişisel veri örüntüleri maskelenir."
                                                             AutomationProperties.Name="Tanılama paketi oluştur"
-                                                            AutomationProperties.HelpText="Fatura kayıtlarını ve PDF belgelerini içermeyen destek paketi oluşturur."/>
+                                                            AutomationProperties.HelpText="Fatura JSON/PDF içeriklerini dışarıda bırakan ve hata günlüklerindeki kişisel veri örüntülerini maskeleyen destek paketi oluşturur."/>
                                                 </WrapPanel>
                                             </Expander>
                                         </StackPanel>
