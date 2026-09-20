@@ -2,12 +2,14 @@
 
 ## Mevcut durum — 20.09.2026
 
+- Kullanıcıda kod imzalama sertifikası bulunmadığı için **1.1.0 imzasız dağıtım politikası kullanıcı tarafından açıkça kabul edildi**. SmartScreen/Bilinmeyen yayıncı uyarısı beklenebilir; SHA-256 dosyası paketle birlikte dağıtılacak.
+- `FINAL_EXE_OLUSTUR.bat` sertifika varsa imzalı, yoksa açık `-AllowUnsignedDistribution` modu ile imzasız final üretir ve SHA-256'yı ikinci kez doğrular.
 - Son kullanıcıya dağıtılacak imzalı final EXE için tek tık araç eklendi: `FINAL_EXE_OLUSTUR.bat`. Sertifika yoksa dağıtım-ready üretimi durdurur; imzasız smoke EXE'yi final gibi sunmaz.
 - Manuel kurulum smoke kullanıcı tarafından **başarılı** olarak onaylandı: temiz kurulum, önceki sürüm üstüne güncelleme, kullanıcı verisinin korunması, kaldırma ve yeniden kurulum geçti.
 - Final otomatik smoke tamamlandı: Setup üretildi ve SHA-256 ikinci doğrulaması geçti. Kullanıcı manuel temiz kurulum/güncelleme/veri koruma/kaldırma/yeniden kurulum smoke turunu da başarılı bildirdi.
 - Son `FINAL_DOGRULAMA.bat` gerçek Windows koşusu **[OK] FINAL SMOKE PAKETI HAZIR VE SHA-256 DOGRULANDI** sonucu ile tamamlandı.
 - Üretilen smoke Setup: `DAGITIM\DogruFatura_Setup_1.1.0_x64.exe`.
-- Bu paket **imzasız smoke paketidir**; kullanıcı dağıtımı için kullanılmaz.
+- Önceki `FINAL_DOGRULAMA.bat` çıktısı smoke modundaydı; final dağıtım artık ayrı `-AllowUnsignedDistribution` modu ile bilinçli olarak imzasız üretilebilir.
 - NSIS `/SOLID lzma` self-contained pakette uzun süre `Compressed data:` satırında kalabildiği için normal `lzma` sıkıştırmasına geçirildi. Tek EXE/self-contained yapı değişmedi.
 - Kullanıcı Fatura Türü Dağılımı son WPF/ClearType yüzde görünümünü kabul etti: **olmuş**.
 - LiveCharts/Skia yüzde yazıları görsel olarak hâlâ bulanık kaldığı için built-in data label'lar kapatıldı; yüzdeler artık WPF/ClearType overlay ile çiziliyor.
@@ -109,7 +111,7 @@ Kontroller:
 - [ ] `RELEASE_NOTES_1.1.0.md` dağıtım klasöründe
 - [ ] `KULLANICI_KILAVUZU.md` dağıtım klasöründe
 - [x] SHA-256 dosyası Setup ile eşleşiyor
-- [ ] İmza kullanılıyorsa Authenticode doğrulaması geçiyor
+- [x] Kod imzası: **uygulanmıyor** — kullanıcı 1.1.0 için imzasız dağıtımı kabul etti; SHA-256 doğrulaması zorunlu
 
 ## E. Yayın
 
