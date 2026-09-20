@@ -5637,3 +5637,59 @@ Bu manuel kapılar tamamlanana kadar:
 - dağıtım-ready kabul edilmez.
 
 Kod/UI kapsamı bu noktada **freeze** durumundadır.
+
+
+## 20.09.2026 — FINAL_DOGRULAMA TAMAMLANDI: Setup + SHA YEŞİL
+
+Kullanıcı final `FINAL_DOGRULAMA.bat` koşusunun sonunda şu sonucu aldı:
+
+`[OK] FINAL SMOKE PAKETI HAZIR VE SHA-256 DOGRULANDI`
+
+### Doğrulanan final otomatik kapılar
+
+Başarılı:
+- Release build
+- **0 başarısız test**
+- **126/126**
+- win-x64 self-contained publish
+- NSIS final smoke Setup üretimi
+- dağıtım Setup dosyasının varlığı
+- SHA-256 dosyasının varlığı
+- Setup SHA-256 değerinin ikinci kez hesaplanıp dosyadaki değerle eşleşmesi
+
+Üretilen Setup:
+- `DAGITIM\DogruFatura_Setup_1.1.0_x64.exe`
+
+Bu paket:
+- tek EXE,
+- win-x64 self-contained,
+- hedef Windows 10/11 64-bit bilgisayarda ayrıca .NET Runtime/SDK gerektirmeyecek şekilde hazırlanmıştır.
+
+### Önemli dağıtım durumu
+
+Bu koşu:
+- `-AllowUnsignedFinal`
+
+ile smoke amacıyla üretildiği için paket **imzasızdır**.
+
+Sonuç:
+- teknik kurulum smoke paketi hazır,
+- SHA doğrulaması başarılı,
+- fakat mevcut release politikası gereği bu imzasız EXE kullanıcıya final dağıtım paketi olarak verilmemelidir.
+
+### Kalan manuel smoke
+
+Sıradaki kapılar:
+1. hiç kurulu olmayan bilgisayarda temiz kurulum,
+2. mümkünse eski sürüm üstüne güncelleme,
+3. kullanıcı verilerinin korunması,
+4. kaldırma,
+5. yeniden kurulum,
+6. kullanıcı verilerinin yeniden erişilebilir olduğunun doğrulanması.
+
+Kullanıcı daha önce Fatura Türü Dağılımı WPF/ClearType görünümünü kabul etti; donut görseli kapalıdır.
+
+Bu manuel smoke tamamlanmadan:
+- `v1.1.0` tag oluşturulmaz,
+- final GitHub Release oluşturulmaz,
+- imzasız paket kullanıcı dağıtımına verilmez.
