@@ -1,25 +1,60 @@
 # DoğruFatura Windows Kod İmzalama
 
-DoğruFatura final dağıtım paketinde Authenticode kod imzası zorunludur. Depoya sertifika, PFX dosyası, özel anahtar veya parola **asla** eklenmez.
+DoğruFatura kod imzalamayı destekler ancak **1.1.0 dağıtımında kod imzası zorunlu değildir**.
 
-## Üretim kullanımı
+Kullanıcı, kod imzalama sertifikası bulunmadığı için 1.1.0 sürümünü bilinçli olarak **imzasız** dağıtmayı kabul etmiştir. İmzasız pakette Windows SmartScreen / "Bilinmeyen yayıncı" uyarısı görülebilir. Bu nedenle dağıtımda Setup EXE ile birlikte SHA-256 doğrulama dosyası verilmelidir.
 
-1. Windows kod imzalama sertifikasını bilgisayarın sertifika deposuna güvenli biçimde yükleyin.
-2. Sertifikanın SHA-1 thumbprint değerini yalnız üretim ortamında `DOGRUFATURA_SIGN_CERT_SHA1` ortam değişkenine verin.
-3. `SETUP_HAZIRLA.ps1` veya `SETUP_HAZIRLA.bat` çalıştırın.
-4. Araç önce yayınlanan `DogruFatura.exe` dosyasını, ardından Setup EXE'yi SHA-256 ile imzalar ve `signtool verify /pa` ile doğrular.
-5. Zaman damgası varsayılan olarak `http://timestamp.digicert.com` üzerinden SHA-256 ile alınır; gerekirse `-TimestampUrl` parametresiyle değiştirilebilir.
+Depoya sertifika, PFX dosyası, özel anahtar veya parola **asla** eklenmez.
+
+## İmzalı üretim varsa
+
+Windows kod imzalama sertifikası mevcutsa:
+
+1. Sertifikayı Windows sertifika deposuna güvenli biçimde yükleyin.
+2. SHA-1 thumbprint değerini `DOGRUFATURA_SIGN_CERT_SHA1` ortam değişkenine verin.
+3. `FINAL_EXE_OLUSTUR.bat` çalıştırın.
+4. Araç yayınlanan `DogruFatura.exe` ve Setup EXE'yi SHA-256 ile imzalar.
+5. `signtool verify /pa` ile imzayı doğrular.
 
 ```powershell
 $env:DOGRUFATURA_SIGN_CERT_SHA1 = '<sertifika-thumbprint>'
-.\SETUP_HAZIRLA.ps1
+.\FINAL_EXE_OLUSTUR.bat
 ```
 
-## Final güvenlik kilidi
+## İmzasız final dağıtım
 
-`Directory.Build.props` içindeki `VersionSuffix` boşsa sürüm final kabul edilir. Final sürümde sertifika tanımlı değilse Setup üretimi durur.
+Sertifika yoksa:
 
-`-AllowUnsignedFinal` yalnız GitHub Actions veya yerel smoke testi içindir. Bu seçenekle üretilen imzasız paket dağıtım paketi olarak kullanılmamalıdır.
+`FINAL_EXE_OLUSTUR.bat`
+
+otomatik olarak:
+
+`SETUP_HAZIRLA.ps1 -AllowUnsignedDistribution`
+
+modunu kullanır.
+
+Bu mod:
+- final sürüm için bilinçli imzasız dağıtımı açıkça işaretler,
+- tek self-contained Setup EXE üretir,
+- SHA-256 dosyası üretir,
+- SHA-256 değerini ikinci kez doğrular,
+- SmartScreen / Bilinmeyen yayıncı uyarısının beklenebileceğini ekranda belirtir.
+
+Dağıtımda birlikte verilmesi önerilir:
+- `DogruFatura_Setup_1.1.0_x64.exe`
+- `DogruFatura_Setup_1.1.0_x64_SHA256.txt`
+- `KURULUM_NOTU.txt`
+
+## Smoke modu ayrıdır
+
+`-AllowUnsignedFinal` yalnız yerel/CI smoke testi içindir.
+
+Gerçek imzasız dağıtım için:
+- `-AllowUnsignedDistribution`
+
+kullanılır.
+
+Bu ayrım, smoke paketinin yanlışlıkla dağıtım-ready final olarak değerlendirilmesini engeller.
 
 ## RC/test sürümleri
 
