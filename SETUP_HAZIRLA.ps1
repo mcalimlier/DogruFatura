@@ -108,6 +108,11 @@ $nsi = $nsi.Replace('OutFile "..\_YAYIN\Setup\DogruFatura_Setup_1.0.0_x64.exe"',
 $nsi = $nsi.Replace('VIProductVersion "1.0.0.0"', "VIProductVersion `"$assemblyVersion`"")
 $nsi = $nsi.Replace('VIAddVersionKey /LANG=1055 "FileVersion" "1.0.0.0"', "VIAddVersionKey /LANG=1055 `"FileVersion`" `"$assemblyVersion`"")
 $nsi = $nsi.Replace('VIAddVersionKey /LANG=1055 "ProductVersion" "1.0.0"', "VIAddVersionKey /LANG=1055 `"ProductVersion`" `"$packageVersion`"")
+
+if ($nsi -match '(?<!\d)1\.0\.0(?:\.0)?(?!\d)') {
+    Fail 'NSIS şablonunda güncel sürüme çevrilmemiş eski 1.0.0 sürüm sabiti kaldı.'
+}
+
 $tempNsi = Join-Path $publish 'DogruFatura_NSIS.generated.nsi'
 [IO.File]::WriteAllText($tempNsi, $nsi, (New-Object System.Text.UTF8Encoding($true)))
 
