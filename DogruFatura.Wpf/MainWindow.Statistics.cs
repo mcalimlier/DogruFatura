@@ -252,14 +252,14 @@ public partial class MainWindow
             {
                 Name = item.InvoiceType,
                 Values = new[] { (double)item.PaymentTotal },
-                InnerRadius = 128,
-                OuterRadiusOffset = 18,
-                HoverPushout = 8,
+                InnerRadius = 122,
+                OuterRadiusOffset = 0,
+                HoverPushout = 6,
                 Fill = new SolidColorPaint(skColor),
                 Stroke = new SolidColorPaint(SKColors.White) { StrokeThickness = 2 },
                 ShowDataLabels = true,
                 DataLabelsPaint = new SolidColorPaint(SKColors.White),
-                DataLabelsSize = 18,
+                DataLabelsSize = 14,
                 DataLabelsPosition = PolarLabelsPosition.Middle,
                 DataLabelsFormatter = _ => percentage >= 0.06m ? percentageText : string.Empty,
                 ToolTipLabelFormatter = _ =>
