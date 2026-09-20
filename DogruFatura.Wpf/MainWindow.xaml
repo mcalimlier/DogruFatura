@@ -1408,6 +1408,16 @@
                                                         Click="RestoreSafetyBackup_Click"/>
                                             </UniformGrid>
 
+                                            <Button Style="{StaticResource ModernButton}"
+                                                    Content="TANILAMA PAKETİ"
+                                                    HorizontalAlignment="Stretch"
+                                                    Margin="0,2,0,4"
+                                                    Background="#2468D8"
+                                                    Click="CreateDiagnosticPackage_Click"
+                                                    ToolTip="Destek için güvenli tanılama ZIP'i oluşturur. Fatura JSON/PDF içerikleri eklenmez; hata günlüklerindeki kişisel veri örüntüleri maskelenir."
+                                                    AutomationProperties.Name="Tanılama paketi oluştur"
+                                                    AutomationProperties.HelpText="Fatura JSON/PDF içeriklerini dışarıda bırakan ve hata günlüklerindeki kişisel veri örüntülerini maskeleyen destek paketi oluşturur."/>
+
                                             <Expander Margin="0,8,0,0" Foreground="White">
                                                 <Expander.Header>
                                                     <TextBlock Text="GELİŞMİŞ / DESTEK" Foreground="#B9CBDA"
@@ -1426,12 +1436,6 @@
                                                     <Button Style="{StaticResource ModernButton}" Content="LOG KLASÖRÜ"
                                                             Width="158" Margin="0,0,8,8" Background="#315371"
                                                             Click="OpenLogFolder_Click"/>
-                                                    <Button Style="{StaticResource ModernButton}" Content="TANILAMA PAKETİ"
-                                                            Width="190" Margin="0,0,8,8" Background="#315371"
-                                                            Click="CreateDiagnosticPackage_Click"
-                                                            ToolTip="Destek için tanılama ZIP'i oluşturur. Fatura JSON/PDF içerikleri eklenmez; hata günlüklerindeki kişisel veri örüntüleri maskelenir."
-                                                            AutomationProperties.Name="Tanılama paketi oluştur"
-                                                            AutomationProperties.HelpText="Fatura JSON/PDF içeriklerini dışarıda bırakan ve hata günlüklerindeki kişisel veri örüntülerini maskeleyen destek paketi oluşturur."/>
                                                 </WrapPanel>
                                             </Expander>
                                         </StackPanel>
