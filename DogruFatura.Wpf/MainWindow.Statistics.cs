@@ -74,8 +74,6 @@ public partial class MainWindow
         RefreshStatisticsPdfHealth();
         RefreshStatisticsInstitutionProfile(result);
         RefreshStatisticsDonut(result);
-        RefreshStatisticsMonthlyTrend(result);
-        RefreshStatisticsTypeComparison(result);
     }
 
     private ArchiveStatisticsFilter ReadStatisticsFilter()
@@ -212,104 +210,6 @@ public partial class MainWindow
             ? $"{_statisticsFilter.InstitutionName}: veri yok"
             : $"{_statisticsFilter.InstitutionName}: {result.InvoiceCount} fatura"
               + $" • {typeCount} tür • {NumberParser.Money(result.PaymentTotal)}";
-    }
-
-    private void RefreshStatisticsMonthlyTrend(ArchiveStatisticsResult result)
-    {
-        var rows = result.MonthlyRows;
-        if (rows.Count == 0)
-        {
-            StatisticsMonthlyTrendChart.Series = Array.Empty<ISeries>();
-            StatisticsMonthlyTrendChart.XAxes = Array.Empty<Axis>();
-            StatisticsMonthlyTrendChart.YAxes = Array.Empty<Axis>();
-            return;
-        }
-
-        var culture = CultureInfo.GetCultureInfo("tr-TR");
-        var labels = rows
-            .Select(row =>
-                culture.DateTimeFormat.GetAbbreviatedMonthName(row.Month)
-                + " "
-                + row.Year.ToString(CultureInfo.InvariantCulture))
-            .ToArray();
-
-        StatisticsMonthlyTrendChart.Series = new ISeries[]
-        {
-            new LineSeries<double>
-            {
-                Name = "Ödeme",
-                Values = rows.Select(row => (double)row.PaymentTotal).ToArray(),
-                Stroke = new SolidColorPaint(new SKColor(36, 104, 216)) { StrokeThickness = 3 },
-                Fill = null,
-                GeometryFill = new SolidColorPaint(new SKColor(255, 180, 31)),
-                GeometryStroke = new SolidColorPaint(SKColors.White) { StrokeThickness = 2 },
-                GeometrySize = 10,
-                LineSmoothness = 0.35
-            }
-        };
-        StatisticsMonthlyTrendChart.XAxes = new[]
-        {
-            new Axis
-            {
-                Labels = labels,
-                LabelsRotation = labels.Length > 8 ? 35 : 0
-            }
-        };
-        StatisticsMonthlyTrendChart.YAxes = new[]
-        {
-            new Axis
-            {
-                Labeler = value => value.ToString("N0", culture)
-            }
-        };
-    }
-
-    private void RefreshStatisticsTypeComparison(ArchiveStatisticsResult result)
-    {
-        var rows = result.Rows
-            .GroupBy(row => row.InvoiceType, StringComparer.OrdinalIgnoreCase)
-            .Select(group => new
-            {
-                InvoiceType = group.Key,
-                PaymentTotal = group.Sum(row => row.PaymentTotal)
-            })
-            .OrderBy(item => StatisticsInvoiceTypeOrder(item.InvoiceType))
-            .ThenBy(item => item.InvoiceType, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        if (rows.Length == 0)
-        {
-            StatisticsTypeComparisonChart.Series = Array.Empty<ISeries>();
-            StatisticsTypeComparisonChart.XAxes = Array.Empty<Axis>();
-            StatisticsTypeComparisonChart.YAxes = Array.Empty<Axis>();
-            return;
-        }
-
-        var culture = CultureInfo.GetCultureInfo("tr-TR");
-        StatisticsTypeComparisonChart.Series = new ISeries[]
-        {
-            new ColumnSeries<double>
-            {
-                Name = "Ödeme",
-                Values = rows.Select(row => (double)row.PaymentTotal).ToArray(),
-                Fill = new SolidColorPaint(new SKColor(138, 94, 216)),
-                Stroke = null,
-                ShowDataLabels = true,
-                DataLabelsPaint = new SolidColorPaint(new SKColor(3, 28, 56)),
-                DataLabelsSize = 12,
-                DataLabelsPosition = DataLabelsPosition.Top,
-                DataLabelsFormatter = point =>
-                    ((double)point.Coordinate.PrimaryValue).ToString("N0", culture)
-            }
-        };
-        StatisticsTypeComparisonChart.XAxes = new[]
-        {
-            new Axis { Labels = rows.Select(row => row.InvoiceType).ToArray() }
-        };
-        StatisticsTypeComparisonChart.YAxes = new[]
-        {
-            new Axis { Labeler = value => value.ToString("N0", culture) }
-        };
     }
 
     private void RefreshStatisticsDonut(ArchiveStatisticsResult result)
