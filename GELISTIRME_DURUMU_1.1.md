@@ -4517,3 +4517,96 @@ RC1 yeşil olduğunda sonraki küçük paket:
 - final doküman durumu
 - final 1.1.0 build/test/setup kapısı
 - ardından release etiketi/paketleme.
+
+
+## 20.09.2026 — 1.1 RC1 release statik denetimi ve NSIS sürüm sertleştirmesi
+
+Kullanıcı "devam et" talimatı sonrası final suffix'i kaldırmadan release hazırlığının statik denetimi yapıldı.
+
+### Bulunan sorun
+
+`Kurulum/DogruFatura_NSIS.nsi` içinde kurulum hoş geldiniz başlığı hâlâ sabit:
+- `DoğruFatura 1.0.0 Kurulumuna Hoş Geldiniz`
+
+metnini içeriyordu.
+
+`SETUP_HAZIRLA.ps1` APPVERSION / OutFile / VI version alanlarını dinamik değiştiriyordu; ancak bu kullanıcıya görünen başlık eski sürümde kalabiliyordu.
+
+### Düzeltme 1 — hoş geldiniz başlığı
+
+NSIS şablonunda başlık:
+- sabit `1.0.0` yerine `${APPVERSION}`
+üzerinden üretilecek hale getirildi.
+
+Commit:
+- `5be87eb385bcb9a711cef94d0758270bdaa193a5`
+
+### Düzeltme 2 — eski sürüm artığı koruması
+
+Setup üretiminde NSIS şablonu dinamik sürüme çevrildikten sonra eski `1.0.0` sürüm sabiti kalmışsa paket üretimini durduran koruma eklendi.
+
+İlk regex sürümünün `1.1.0.0` içindeki alt parçayı yanlış eşleştirebildiği statik simülasyonda tespit edildi ve hemen düzeltildi.
+
+Commitler:
+- ilk koruma: `6215fb3a2d6e4a2caac9aaf5c985a186aa317204`
+- regex düzeltmesi: `f5a5d76d17ce63ab2fcf93c8fb6d19d25afd26bf`
+
+### Düzeltme 3 — RC kullanıcı görünümü
+
+RC Setup dosya adı `1.1.0-rc1` olmasına rağmen kurulum sihirbazı yalnız `1.1.0` gösterebiliyordu.
+
+NSIS şablonuna ayrı:
+- `APPVERSION` — numeric sürüm / geri sürüm kontrolü
+- `APPDISPLAYVERSION` — kullanıcıya görünen sürüm
+
+ayrımı eklendi.
+
+RC1 için:
+- numeric: `1.1.0`
+- display: `1.1.0 RC1`
+- package: `1.1.0-rc1`
+- Windows VI numeric: `1.1.0.0`
+
+`Name`, `BrandingText`, hoş geldiniz başlığı ve uninstall DisplayName kullanıcı görünüm sürümünü kullanır.
+
+Commitler:
+- NSIS display version katmanı: branch üzerinde ilgili NSIS güncellemesi
+- Setup display version üretimi: `90a2d01de04c3e50b097ccfc4c1e9d4cb43b968f`
+
+### Statik Setup simülasyonu
+
+Mevcut `Directory.Build.props` değerleriyle NSIS üretimi kod seviyesinde simüle edildi.
+
+Geçen kontroller:
+- package version = `1.1.0-rc1`
+- display version = `1.1.0 RC1`
+- generated NSIS içinde eski `1.0.0` artığı yok
+- Setup dosya adı = `DogruFatura_Setup_1.1.0-rc1_x64.exe`
+- numeric APPVERSION = `1.1.0`
+- VIProductVersion = `1.1.0.0`
+- ProductVersion metadata = `1.1.0-rc1`
+- stale-version guard regex doğru
+- display version üretimi mevcut
+
+### Kalite checklist
+
+`QUALITY_CHECKLIST_1.1_RC1.md` içine ayrıca:
+- kurulum sihirbazı başlığının `DoğruFatura 1.1.0 RC1` göstermesi
+
+kontrolü eklendi.
+
+### Durum
+
+Bu paket gerçek Setup üretiminin yerine geçmez; yalnız release şablonundaki statik sürüm tutarsızlıklarını kapatır.
+
+Final suffix hâlâ:
+- `rc1`
+
+olarak korunuyor.
+
+Sıradaki zorunlu kapı:
+- yerel build 0/0
+- test 126/126
+- RC Setup üretimi / kurulum smoke
+- kritik UI smoke
+- ardından final `1.1.0` geçişi.
