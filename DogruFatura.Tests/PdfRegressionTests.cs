@@ -38,6 +38,27 @@ public sealed class PdfRegressionTests
     }
 
     [Fact]
+    public void PdfMetadataContractUsesStableMachineReadableKeywords()
+    {
+        using var document = new PdfSharp.Pdf.PdfDocument();
+
+        PdfMetadataContract.Apply(
+            document,
+            "DoğruFatura Test Belgesi",
+            "Teknik metadata regresyon testi",
+            PdfMetadataContract.PaymentListDocumentType);
+
+        Assert.Equal("DoğruFatura Test Belgesi", document.Info.Title);
+        Assert.Equal("DoğruFatura", document.Info.Author);
+        Assert.Equal("Teknik metadata regresyon testi", document.Info.Subject);
+        Assert.StartsWith("DoğruFatura ", document.Info.Creator, StringComparison.Ordinal);
+        Assert.Contains("DogruFatura", document.Info.Keywords, StringComparison.Ordinal);
+        Assert.Contains("Schema=DogruFaturaPdf/1", document.Info.Keywords, StringComparison.Ordinal);
+        Assert.Contains("DocumentType=PaymentList", document.Info.Keywords, StringComparison.Ordinal);
+        Assert.Contains("AppVersion=", document.Info.Keywords, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void GeneratedPdfCanBeReadBackByHistoricalArchiveImporter()
     {
         using var temp = new TempFile("48) HYS-2026-34546180.pdf");
