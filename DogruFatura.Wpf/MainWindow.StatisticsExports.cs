@@ -18,6 +18,17 @@ namespace DogruFatura.Wpf;
 
 public partial class MainWindow
 {
+    private void StatisticsExportMenu_Click(object sender, RoutedEventArgs e)
+    {
+        var menu = StatisticsExportMenuButton.ContextMenu;
+        if (menu is null)
+            return;
+
+        menu.PlacementTarget = StatisticsExportMenuButton;
+        menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        menu.IsOpen = true;
+    }
+
     private void ExportStatisticsCsv_Click(object sender, RoutedEventArgs e)
     {
         if (!TryGetStatisticsResult(out var result))
@@ -36,21 +47,9 @@ public partial class MainWindow
 
         try
         {
+            var csvCulture = CultureInfo.GetCultureInfo("tr-TR");
             var builder = new StringBuilder();
-            builder.AppendLine("sep=;");
-            builder.Append("Rapor;").AppendLine(CsvCell("DoğruFatura İstatistik Raporu"));
-            builder.Append("Tarih;").AppendLine(CsvCell(
-                DateTime.Now.ToString("dd.MM.yyyy HH:mm", CultureInfo.GetCultureInfo("tr-TR"))));
-            builder.Append("Filtre;").AppendLine(CsvCell(StatisticsFilterDescription()));
-            builder.Append("Arşiv;").AppendLine(result.ArchiveCount.ToString(CultureInfo.InvariantCulture));
-            builder.Append("Fatura;").AppendLine(result.InvoiceCount.ToString(CultureInfo.InvariantCulture));
-            builder.Append("Kurum;").AppendLine(result.InstitutionCount.ToString(CultureInfo.InvariantCulture));
-            builder.Append("Fatura Toplamı;").AppendLine(result.PayableTotal.ToString("0.00", CultureInfo.InvariantCulture));
-            builder.Append("KDV;").AppendLine(result.VatTotal.ToString("0.00", CultureInfo.InvariantCulture));
-            builder.Append("Damga;").AppendLine(result.StampDutyTotal.ToString("0.00", CultureInfo.InvariantCulture));
-            builder.Append("Ödeme;").AppendLine(result.PaymentTotal.ToString("0.00", CultureInfo.InvariantCulture));
-            builder.AppendLine();
-            builder.AppendLine("Kurum;Yıl;Tür;Adet;Fatura Tutarı;KDV;Damga;Ödeme");
+            builder.AppendLine("Kurum;Yıl;Fatura Türü;Fatura Adedi;Fatura Tutarı;KDV;Damga Vergisi;Ödeme");
 
             foreach (var row in result.Rows)
             {
@@ -58,10 +57,10 @@ public partial class MainWindow
                     .Append(row.Year.ToString(CultureInfo.InvariantCulture)).Append(';')
                     .Append(CsvCell(row.InvoiceType)).Append(';')
                     .Append(row.InvoiceCount.ToString(CultureInfo.InvariantCulture)).Append(';')
-                    .Append(row.PayableTotal.ToString("0.00", CultureInfo.InvariantCulture)).Append(';')
-                    .Append(row.VatTotal.ToString("0.00", CultureInfo.InvariantCulture)).Append(';')
-                    .Append(row.StampDutyTotal.ToString("0.00", CultureInfo.InvariantCulture)).Append(';')
-                    .AppendLine(row.PaymentTotal.ToString("0.00", CultureInfo.InvariantCulture));
+                    .Append(row.PayableTotal.ToString("0.00", csvCulture)).Append(';')
+                    .Append(row.VatTotal.ToString("0.00", csvCulture)).Append(';')
+                    .Append(row.StampDutyTotal.ToString("0.00", csvCulture)).Append(';')
+                    .AppendLine(row.PaymentTotal.ToString("0.00", csvCulture));
             }
 
             File.WriteAllText(
@@ -71,7 +70,7 @@ public partial class MainWindow
 
             MessageBox.Show(
                 this,
-                "CSV istatistik çıktısı kaydedildi.",
+                "CSV istatistik çıktısı düzenli tablo biçiminde kaydedildi.",
                 "DoğruFatura - İstatistik",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -307,8 +306,6 @@ public partial class MainWindow
     private void SaveStatisticsPdf(ArchiveStatisticsResult result, string filePath)
     {
         var donutPng = CaptureStatisticsElementPng(StatisticsDonutChart, 2d);
-        var monthlyPng = CaptureStatisticsElementPng(StatisticsMonthlyTrendChart, 1.6d);
-        var typePng = CaptureStatisticsElementPng(StatisticsTypeComparisonChart, 1.6d);
 
         using var document = new PdfDocument();
         document.Info.Title = "DoğruFatura İstatistik Raporu";
@@ -325,17 +322,6 @@ public partial class MainWindow
             DrawStatisticsPdfDonutAndDistribution(graphics, result, donutPng);
         }
 
-        var chartsPage = document.AddPage();
-        chartsPage.Size = PageSize.A4;
-        chartsPage.Orientation = PageOrientation.Landscape;
-        using (var graphics = XGraphics.FromPdfPage(chartsPage))
-        {
-            DrawStatisticsPdfCharts(
-                graphics,
-                chartsPage.Width.Point,
-                monthlyPng,
-                typePng);
-        }
 
         var directory = Path.GetDirectoryName(filePath);
         if (!string.IsNullOrWhiteSpace(directory))
@@ -471,35 +457,6 @@ public partial class MainWindow
                 Alignment = XStringAlignment.Near,
                 LineAlignment = XLineAlignment.Near
             });
-    }
-
-    private static void DrawStatisticsPdfCharts(
-        XGraphics graphics,
-        double pageWidth,
-        byte[] monthlyPng,
-        byte[] typePng)
-    {
-        var navy = XColor.FromArgb(3, 28, 56);
-        graphics.DrawString(
-            "AYLIK ÖDEME TRENDİ",
-            new XFont("Segoe UI", 13, XFontStyleEx.Bold),
-            new XSolidBrush(navy),
-            new XRect(35, 30, 350, 22),
-            XStringFormats.CenterLeft);
-        graphics.DrawString(
-            "FATURA TÜRÜ KARŞILAŞTIRMASI",
-            new XFont("Segoe UI", 13, XFontStyleEx.Bold),
-            new XSolidBrush(navy),
-            new XRect(pageWidth / 2 + 10, 30, 360, 22),
-            XStringFormats.CenterLeft);
-
-        using var monthlyStream = new MemoryStream(monthlyPng);
-        using var monthlyImage = XImage.FromStream(monthlyStream);
-        graphics.DrawImage(monthlyImage, 35, 62, 365, 420);
-
-        using var typeStream = new MemoryStream(typePng);
-        using var typeImage = XImage.FromStream(typeStream);
-        graphics.DrawImage(typeImage, pageWidth / 2 + 10, 62, 365, 420);
     }
 
     private FlowDocument BuildStatisticsPrintDocument(ArchiveStatisticsResult result)
