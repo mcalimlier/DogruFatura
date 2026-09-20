@@ -3429,3 +3429,105 @@ Geçti:
    - hedef **124/124**.
 
 Bu kapı yeşil olmadan Aşama 5.3 kapanmış sayılmamalı.
+
+
+## 20.09.2026 — İstatistik ekranı 5 sütun filtre/işlem düzeni + dağılım sığdırma KODLANDI
+
+Kullanıcı geri bildirimi:
+- Fatura türü dağılımı kartının altı kesiliyordu.
+- Filtre/işlem kartı yatayda 5 işlevsel bölüme ayrılmalı.
+- Üst başlıktaki çıktı/yenile düğmeleri filtre kartına taşınmalı.
+- Çıktı menüsü yazıları daha küçük ve daha sade olmalı.
+
+### Yeni 5 sütun düzeni
+
+1. sütun:
+- Yıl
+- Kurum
+
+2. sütun:
+- Başlangıç Tarihi
+- Bitiş Tarihi
+
+3. sütun:
+- Fatura Türü
+- Hızlı Rapor
+
+4. sütun:
+- ÇIKTI AL
+- YENİLE
+
+5. sütun:
+- TEMİZLE
+- UYGULA
+
+Sütun oranları içerik ihtiyacına göre:
+- 2.05*
+- 1.25*
+- 1.40*
+- 0.86*
+- 0.78*
+
+Aralarda 10 px boşluk kolonları kullanıldı.
+
+### Çıktı menüsü
+
+- Üst başlıktaki ayrı çıktı/yenile alanı tamamen kaldırıldı.
+- `StatisticsExportMenuButton` filtre kartının 4. sütununa taşındı.
+- ContextMenu yazıları `12.5` punto ve normal font ağırlığına indirildi.
+- Menü seçenekleri:
+  - PDF Raporu
+  - Yazdır
+  - CSV
+  - Excel
+  - PNG
+
+### Fatura türü dağılımı sığdırma
+
+- donut grafik: `340x340 -> 290x290`
+- sol grafik kolon genişliği: `430 -> 380`
+- dış kart padding: `14 -> 10`
+- sol iç kart padding: `14 -> 10`
+- sağ detay padding: `16 -> 12`
+- merkez daire: `144x144 -> 124x124`
+- dağılım başlık/açıklama boşlukları küçültüldü.
+- kart alt margin kaldırıldı.
+- İstatistik görünümünde ScrollViewer yine yok.
+
+### Commit
+
+- İstatistik 5 sütun düzeni + dağılım sığdırma:
+  `5fb534e88fa45e5a85bd38e8b526232659b386f0`
+
+### Statik doğrulama
+
+Geçti:
+- Yıl/Kurum/Tarih/Tür/Hızlı Rapor kontrollerinin her biri tek kez tanımlı.
+- `StatisticsExportMenuButton` tek kez tanımlı.
+- üstte eski çıktı/yenile WrapPanel kalmadı.
+- 5 sütun oranları XAML'de mevcut.
+- çıktı menüsü kompakt font kullanıyor.
+- donut `290x290`.
+- İstatistik görünümünde ScrollViewer yok.
+- `StatisticsExportMenu_Click` handler mevcut.
+
+### Zorunlu yerel doğrulama
+
+1. GitHub Desktop -> **Fetch origin -> Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - hedef: **0 warning / 0 error**
+3. İstatistik smoke:
+   - filtre kartı yatayda 5 bölüm görünmeli,
+   - Yıl/Kurum alt alta,
+   - Başlangıç/Bitiş Tarihi alt alta,
+   - Fatura Türü/Hızlı Rapor alt alta,
+   - ÇIKTI AL/YENİLE alt alta,
+   - TEMİZLE/UYGULA alt alta,
+   - çıktı menüsü yazıları kaba/büyük görünmemeli,
+   - Fatura Türü Dağılımı alt taraftan kesilmemeli,
+   - sayfada scrollbar oluşmamalı.
+4. `TESTLERI_CALISTIR.bat`
+   - yeni test metodu eklenmedi,
+   - hedef **124/124**.
+
+Bu görsel revizyon yerel build/smoke kapısı yeşil olmadan tamamlandı kabul edilmemeli.
