@@ -109,7 +109,7 @@ $nsi = $nsi.Replace('VIProductVersion "1.0.0.0"', "VIProductVersion `"$assemblyV
 $nsi = $nsi.Replace('VIAddVersionKey /LANG=1055 "FileVersion" "1.0.0.0"', "VIAddVersionKey /LANG=1055 `"FileVersion`" `"$assemblyVersion`"")
 $nsi = $nsi.Replace('VIAddVersionKey /LANG=1055 "ProductVersion" "1.0.0"', "VIAddVersionKey /LANG=1055 `"ProductVersion`" `"$packageVersion`"")
 
-if ($nsi -match '(?<!\d)1\.0\.0(?:\.0)?(?!\d)') {
+if ($nsi -match '(?<![\d.])1\.0\.0(?:\.0)?(?![\d.])') {
     Fail 'NSIS şablonunda güncel sürüme çevrilmemiş eski 1.0.0 sürüm sabiti kaldı.'
 }
 
