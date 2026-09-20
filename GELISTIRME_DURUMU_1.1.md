@@ -4610,3 +4610,120 @@ Sıradaki zorunlu kapı:
 - RC Setup üretimi / kurulum smoke
 - kritik UI smoke
 - ardından final `1.1.0` geçişi.
+
+
+## 20.09.2026 — RC1 kullanıcı doğrulaması BAŞARILI, 1.1.0 final kod durumuna geçildi
+
+Kullanıcı RC1'in çalıştığını bildirdi ve devam edilmesini istedi.
+
+Bu geri bildirim:
+- RC1 kullanıcı smoke kapısının kabul edildiği,
+- final sürüm numarası geçişinin yapılabileceği
+şeklinde değerlendirildi.
+
+### Sürüm geçişi
+
+`Directory.Build.props`:
+- `VersionPrefix = 1.1.0` korundu.
+- `VersionSuffix: rc1 -> boş`
+- `AssemblyVersion = 1.1.0.0`
+- `FileVersion = 1.1.0.0`
+
+Sonuç:
+- teknik sürüm: `1.1.0`
+- kullanıcı görünümü: `v1.1.0`
+- final Setup dosya hedefi: `DogruFatura_Setup_1.1.0_x64.exe`
+
+Commit:
+- `ff91664078d2a71d17d6b1b282422d7e6e715c77`
+
+### README / release notları
+
+`README.md`:
+- RC1 başlığı kaldırıldı.
+- `DoğruFatura 1.1.0` / `1.1.0 Final` durumuna geçirildi.
+- final dağıtımın son build/test/setup kapısından sonra yayınlanacağı açıklandı.
+- kalite checklist referansı `QUALITY_CHECKLIST_1.1_FINAL.md` olarak güncellendi.
+
+Commit:
+- `9c99f4e5086b4e650c70dbec104579eaf781b4f9`
+
+`RELEASE_NOTES_1.1.0.md`:
+- RC1 başlığı final release notuna çevrildi.
+- durum: `Final sürüm kodu — dağıtım öncesi son kalite kapısı`
+- final dağıtım öncesi 0/0 build, 126/126 test, Setup smoke ve SHA-256 şartları yazıldı.
+
+Commit:
+- `0e60897b04e1ca98c6ea7ebccf122725360afdbf`
+
+### RC1 checklist kapanışı
+
+`QUALITY_CHECKLIST_1.1_RC1.md`:
+- `Kabul Edildi` olarak işaretlendi.
+- kullanıcı 20.09.2026 tarihinde RC1'in çalıştığını bildirdiği not edildi.
+- final dağıtım için yeni checklist'e yönlendirildi.
+
+Commit:
+- `f1a3b2c61edd4640b7c227306dc15ec5461c3bbc`
+
+### Yeni final dağıtım checklist
+
+Yeni dosya:
+- `QUALITY_CHECKLIST_1.1_FINAL.md`
+
+Kapsam:
+- final build 0 warning / 0 error,
+- sürüm göstergesi `v1.1.0`,
+- 126/126 test,
+- kritik fatura/PDF/arşiv/güvenlik smoke,
+- İstatistik donut/çıktı smoke,
+- final Setup,
+- SHA-256,
+- opsiyonel Authenticode,
+- final release etiketi/paketleme.
+
+Commit:
+- `3976942711f93c543b25fe2b006b0c5a4a4fc702`
+
+### Final NSIS / Setup statik simülasyonu
+
+Final sürüm değerleriyle NSIS üretimi tekrar kod seviyesinde simüle edildi.
+
+Geçti:
+- `VersionSuffix` boş,
+- package version = `1.1.0`,
+- display version = `1.1.0`,
+- Setup = `DogruFatura_Setup_1.1.0_x64.exe`,
+- kurulum sihirbazı `DoğruFatura 1.1.0`,
+- `VIProductVersion = 1.1.0.0`,
+- `ProductVersion = 1.1.0`,
+- eski `1.0.0` artığı yok,
+- final kod imzalama koruması mevcut,
+- yalnız smoke için `-AllowUnsignedFinal` override mevcut,
+- README final durumda,
+- release notes final durumda,
+- final checklist mevcut.
+
+### Önemli yayın sınırı
+
+Bu noktada **kod sürümü final 1.1.0** durumundadır ancak gerçek dağıtım paketi henüz final olarak kabul edilmemelidir.
+
+Son zorunlu kapı:
+
+1. GitHub Desktop -> Fetch origin -> Pull origin
+2. `DERLE_CALISTIR.bat`
+   - hedef: **0 warning / 0 error**
+   - görünür sürüm: **v1.1.0**
+3. `TESTLERI_CALISTIR.bat`
+   - hedef: **126/126**
+4. kritik İstatistik smoke
+5. final Setup smoke:
+   - imzalı gerçek paket için `SETUP_HAZIRLA.ps1`
+   - yalnız yerel/CI smoke için `SETUP_HAZIRLA.ps1 -AllowUnsignedFinal`
+6. beklenen Setup:
+   `DogruFatura_Setup_1.1.0_x64.exe`
+7. SHA-256 doğrulaması
+
+Bu final kapı yeşil olmadan:
+- `v1.1.0` release etiketi oluşturulmamalı,
+- final Setup kullanıcı dağıtımına hazır kabul edilmemeli.
