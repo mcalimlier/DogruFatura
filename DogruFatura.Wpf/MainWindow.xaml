@@ -1270,6 +1270,16 @@
                                                                       Background="Transparent"
                                                                       LegendPosition="Hidden"
                                                                       InitialRotation="-90"/>
+                                                        <Canvas x:Name="StatisticsDonutLabelsCanvas"
+                                                                Width="328" Height="328"
+                                                                Panel.ZIndex="3"
+                                                                HorizontalAlignment="Center"
+                                                                VerticalAlignment="Center"
+                                                                IsHitTestVisible="False"
+                                                                SnapsToDevicePixels="True"
+                                                                UseLayoutRounding="True"
+                                                                TextOptions.TextFormattingMode="Display"
+                                                                TextOptions.TextRenderingMode="ClearType"/>
                                                         <Border Width="144" Height="144"
                                                                 Background="#FFFFFF"
                                                                 BorderBrush="#DCE5EE"
