@@ -177,28 +177,6 @@ public partial class MainWindow
         return "Son güvenlik yedeği oluşturuldu.";
     }
 
-    private void OpenDataFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(_safetyService.DataFolder);
-    private void OpenDocumentFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(_safetyService.DocumentRootFolder);
-    private void OpenBackupFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(_safetyService.BackupFolder);
-    private void OpenLogFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(_safetyService.LogFolder);
-
-    private static void OpenFolder(string folder)
-    {
-        try
-        {
-            Directory.CreateDirectory(folder);
-            Process.Start(new ProcessStartInfo { FileName = folder, UseShellExecute = true });
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(
-                "Klasör açılamadı:\n\n" + ex.Message,
-                "DoğruFatura",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-    }
-
     private static void RestartApplication()
     {
         try
