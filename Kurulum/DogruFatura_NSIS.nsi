@@ -38,7 +38,7 @@ VIAddVersionKey /LANG=1055 "LegalCopyright" "DoğruFatura"
 !define MUI_ICON "..\DogruFatura.Wpf\Assets\AppIcon.ico"
 !define MUI_UNICON "..\DogruFatura.Wpf\Assets\AppIcon.ico"
 !define MUI_ABORTWARNING
-!define MUI_WELCOMEPAGE_TITLE "DoğruFatura 1.0.0 Kurulumuna Hoş Geldiniz"
+!define MUI_WELCOMEPAGE_TITLE "DoğruFatura ${APPVERSION} Kurulumuna Hoş Geldiniz"
 !define MUI_WELCOMEPAGE_TEXT "ÖNEMLİ BİLGİ: Windows bazı bilgisayarlarda kurulum dosyasını ilk açarken SmartScreen / Bilinmeyen yayıncı uyarısı gösterebilir. Dosyayı kurumunuzdan veya güvenilir kaynaktan aldıysanız seçenek sunuluyorsa Daha fazla bilgi > Yine de çalıştır ile devam edebilirsiniz.$\r$\n$\r$\nDoğruFatura Windows 10/11 64-bit için self-contained hazırlanmıştır. Hedef bilgisayarda .NET SDK, .NET Runtime, Visual Studio veya Excel gerekmez.$\r$\n$\r$\nMevcut DoğruFatura kullanıcı verileri, yedekleri ve PDF arşivi korunur."
 !define MUI_FINISHPAGE_TITLE "DoğruFatura Kurulumu Tamamlandı"
 !define MUI_FINISHPAGE_TEXT "DoğruFatura başarıyla kuruldu.$\r$\n$\r$\nKullanıcı verileri, yedekler, loglar ve PDF belgeleri Masaüstü\DoğruFatura klasöründe birlikte tutulur. Program kaldırıldığında bu kayıtlar silinmez."
