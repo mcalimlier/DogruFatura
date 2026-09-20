@@ -3666,3 +3666,66 @@ Mevcut çıktı kodunda:
    - hedef **124/124**.
 
 Bu UI paketi yerel build/smoke doğrulaması yeşil olduktan sonra tamamlanmış sayılmalı.
+
+
+## 20.09.2026 — Donut yüzde etiketleri ve hover katmanı düzeltildi
+
+Kullanıcı geri bildirimi:
+- Fatura Türü Dağılımı yüzde etiketleri kenarlarda kesik görünüyordu.
+- Dilim üzerine gelindiğinde açılan detay kutusu merkezdeki beyaz toplam ödeme kartının arkasında kalıyordu.
+
+### XAML düzeltmesi
+
+`DogruFatura.Wpf/MainWindow.xaml`:
+- PieChart görsel alanı `340x340 -> 328x328` yapıldı; kartın genel alanı korunurken etiketlere güvenli kenar boşluğu açıldı.
+- PieChart için `Panel.ZIndex="2"` eklendi.
+- merkez toplam ödeme Border'ı için `Panel.ZIndex="1"` eklendi.
+- Böylece chart tooltip/hover katmanı merkez kartının üzerinde render edilir.
+
+### Grafik seri ayarları
+
+`DogruFatura.Wpf/MainWindow.Statistics.cs`:
+- `InnerRadius: 128 -> 122`
+- `OuterRadiusOffset: 18 -> 0`
+- `HoverPushout: 8 -> 6`
+- `DataLabelsSize: 18 -> 14`
+- `DataLabelsPosition = PolarLabelsPosition.Middle` korundu.
+- yüzde gösterim eşiği `%6` olarak korundu.
+
+Amaç:
+- yüzde etiketlerini dilimlerin güvenli orta bölgesinde tutmak,
+- kenar kırpılmasını önlemek,
+- hover sırasında gereksiz dış taşmayı azaltmak,
+- tooltip'in merkez kartının arkasında kalmasını engellemek.
+
+### Commitler
+
+- XAML tooltip / katman / güvenli chart alanı:
+  `f6f8e8313e911e30643f101129f77dc234f0570c`
+- Donut label/geometry ayarları:
+  `a5c669dd576810bb754992edd4e1c8853258470a`
+
+### Statik doğrulama
+
+Geçti:
+- chart `328x328`
+- chart ZIndex `2`
+- merkez kart ZIndex `1`
+- `InnerRadius = 122`
+- `OuterRadiusOffset = 0`
+- `HoverPushout = 6`
+- `DataLabelsSize = 14`
+- orta pozisyon label davranışı korunuyor.
+
+### Zorunlu yerel doğrulama
+
+1. GitHub Desktop -> **Fetch origin -> Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - hedef: **0 warning / 0 error**
+3. İstatistik smoke:
+   - % etiketleri tam okunmalı,
+   - kenarlarda kırpılmamalı,
+   - hover detay kutusu merkez toplam ödeme alanının üstünde görünmeli,
+   - donut renkleri ve sağ dağılım detayları korunmalı.
+4. `TESTLERI_CALISTIR.bat`
+   - hedef **124/124**.
