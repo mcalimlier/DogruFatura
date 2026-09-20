@@ -125,7 +125,9 @@ $finalExe = Join-Path $dist "DogruFatura_Setup_${packageVersion}_x64.exe"
 Move-Item $setupExe $finalExe -Force
 if (Test-Path 'KURULUM_NOTU.txt') { Copy-Item 'KURULUM_NOTU.txt' (Join-Path $dist 'KURULUM_NOTU.txt') -Force }
 if (Test-Path 'KULLANICI_KILAVUZU.md') { Copy-Item 'KULLANICI_KILAVUZU.md' (Join-Path $dist 'KULLANICI_KILAVUZU.md') -Force }
-if (Test-Path 'RELEASE_NOTES_1.0.0.md') { Copy-Item 'RELEASE_NOTES_1.0.0.md' (Join-Path $dist 'RELEASE_NOTES_1.0.0.md') -Force }
+$releaseNotesName = "RELEASE_NOTES_$version.md"
+$releaseNotesSource = Join-Path $PSScriptRoot $releaseNotesName
+if (Test-Path $releaseNotesSource) { Copy-Item $releaseNotesSource (Join-Path $dist $releaseNotesName) -Force }
 
 $hash = (Get-FileHash $finalExe -Algorithm SHA256).Hash
 $hashFile = Join-Path $dist "DogruFatura_Setup_${packageVersion}_x64_SHA256.txt"
