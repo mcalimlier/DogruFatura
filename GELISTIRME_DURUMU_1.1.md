@@ -3595,3 +3595,74 @@ Kullanıcı geri bildirimi:
    - hedef **124/124**.
 
 Bu görsel geri dönüş yerel build/smoke doğrulaması sonrası tamamlanmış sayılmalı.
+
+
+## 20.09.2026 — İkincil istatistik kartları ekrandan kaldırıldı, dağılıma alan açıldı
+
+Kullanıcı görsel geri bildirimi:
+- Ortalama Fatura
+- Önceki Dönem
+- PDF Sağlığı
+- Kurum Profili
+
+kartları ana İstatistik ekranında yer kaplıyor ve Fatura Türü Dağılımı kartının alt bölümünün kesilmesine neden oluyordu.
+Bu dört bilginin ekranda değil, rapor/çıktılarda kullanılması tercih edildi.
+
+### UI değişikliği
+
+`DogruFatura.Wpf/MainWindow.xaml`:
+
+- Grid.Row=3 içindeki dört ikincil bilgi kartı:
+  - `Visibility="Collapsed"`
+  - `Margin="0"`
+
+olarak ayarlandı.
+- Kartların içindeki named TextBlock kontrolleri silinmedi:
+  - `StatisticsAverageText`
+  - `StatisticsPreviousPeriodText`
+  - `StatisticsPdfHealthText`
+  - `StatisticsInstitutionProfileText`
+- Böylece code-behind hesaplamaları ve çıktı üretimi bu değerleri kullanmaya devam ederken kartlar ekranda sıfır yer kaplıyor.
+- Fatura Türü Dağılımı kartına `Margin="0,4,0,0"` ve `VerticalAlignment="Stretch"` verildi.
+- Donut tekrar küçültülmedi; doğrulanmış görsel ölçüler korunuyor:
+  - grafik `340x340`
+  - merkez daire `144x144`
+  - `InnerRadius = 128`
+
+### Çıktı davranışı korunuyor
+
+Mevcut çıktı kodunda:
+- Ortalama fatura değeri rapor sonucundan kullanılmaya devam ediyor.
+- PDF raporunda:
+  - PDF sağlığı,
+  - önceki dönem,
+  - kurum profili
+  bilgileri kullanılmaya devam ediyor.
+- Ekranda gizlenmeleri çıktı değerlerini silmiyor.
+
+### Commit
+
+- İkincil kartları kaldır / dağılıma alan aç:
+  `e209b5e160406f8e6c31bb18f48b39937dc8ea3c`
+
+### Zorunlu yerel doğrulama
+
+1. GitHub Desktop -> **Fetch origin -> Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - hedef: **0 warning / 0 error**
+3. İstatistik smoke:
+   - dört ikincil kart ekranda görünmemeli,
+   - aralarında boş satır kalmamalı,
+   - Fatura Türü Dağılımı daha yukarıdan başlamalı,
+   - donut 340x340 renkli/dolu görünmeli,
+   - üstten ve alttan kesilmemeli,
+   - dağılım detay bölümü tam görünmeli,
+   - scrollbar oluşmamalı,
+   - 5 sütunlu filtre/işlem düzeni korunmalı.
+4. Çıktı smoke:
+   - PDF raporunda önceki dönem / PDF sağlığı / kurum profili bilgileri korunmalı.
+5. `TESTLERI_CALISTIR.bat`
+   - yeni test metodu eklenmedi,
+   - hedef **124/124**.
+
+Bu UI paketi yerel build/smoke doğrulaması yeşil olduktan sonra tamamlanmış sayılmalı.
