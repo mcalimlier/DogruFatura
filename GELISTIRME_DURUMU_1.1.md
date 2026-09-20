@@ -3877,3 +3877,179 @@ Ardından:
 - PDF metadata formatı,
 - Aşama 5.1 tarihsel PDF gerçek dosya smoke testi uygun örnek set bulunduğunda,
 - 1.1 release hazırlığı.
+
+
+## 20.09.2026 — Aşama 5.4 doğrulama BAŞARILI
+
+Kullanıcı önceki zorunlu doğrulama kapısını **başarılı** olarak bildirdi.
+
+Buna göre:
+- donut halka/yüzde revizyonu kabul edildi,
+- boş fatura numarası olası mükerrer uyarısı kabul edildi,
+- Aşama 5.4 kapanmış sayıldı,
+- mevcut test tabanı **125 test** olarak Aşama 5.5 başlangıç tabanı kabul edildi.
+
+---
+
+## 20.09.2026 — Aşama 5.5 tanılama paketinde güçlü kişisel veri temizleme KODLANDI
+
+Amaç:
+- destek için üretilen tanılama ZIP'inin teknik teşhis değerini korumak,
+- fatura JSON verileri ve PDF belgelerini zaten mevcut olduğu gibi paket dışında tutmak,
+- hata günlüklerinde kalabilecek kişisel/veri tanımlayıcı izlerini daha güçlü biçimde maskelemek.
+
+### Önceki durum
+
+`DiagnosticPackageService`:
+- fatura JSON dosyalarını ZIP'e almıyordu,
+- PDF belgelerini ZIP'e almıyordu,
+- en fazla son 5 `.log` dosyasını ekliyordu,
+- yalnız:
+  - kullanıcı profili yolu,
+  - Windows kullanıcı adı,
+  - makine adı
+  değiştiriliyordu.
+
+Bu nedenle exception mesajlarında veya stack/log metninde:
+- kurum adı,
+- VKN,
+- hizmet/fatura/HYS numarası,
+- yetkili adı,
+- e-posta,
+- GUID,
+- IP,
+- uzun sayısal kimlikler,
+- farklı tam dosya yolları
+kalma ihtimali vardı.
+
+### Yeni temizleme katmanı
+
+`DogruFatura.Wpf/DiagnosticPackageService.cs`:
+
+Tanılama özeti ve loglar aynı merkezi `Sanitize(...)` akışından geçiriliyor.
+
+Bilinen uygulama yolları özel placeholder'larla değiştirilir:
+- aktif PDF klasörü -> `%ACTIVE_PDF_DIR%`
+- arşiv PDF klasörü -> `%ARCHIVED_PDF_DIR%`
+- veri klasörü -> `%DATA_DIR%`
+- yedek klasörü -> `%BACKUP_DIR%`
+- log klasörü -> `%LOG_DIR%`
+- belge kökü -> `%DOCUMENT_ROOT%`
+- kullanıcı profili -> `%USERPROFILE%`
+- temp kökü -> `%TEMP%`
+- kullanıcı adı -> `%USERNAME%`
+- bilgisayar adı -> `%COMPUTERNAME%`
+
+Ek örüntü temizliği:
+- etiketli kurum/okul/yetkili/ad-soyad değerleri -> `[GİZLENDİ]`
+- VKN / vergi kimlik bilgisi -> `[GİZLENDİ]`
+- hizmet numarası -> `[GİZLENDİ]`
+- fatura numarası -> `[GİZLENDİ]`
+- belge / HYS numarası -> `[GİZLENDİ]`
+- e-posta -> `%EMAIL%`
+- GUID -> `%GUID%`
+- IPv4 -> `%IP%`
+- 8+ haneli sayısal kimlik dizileri -> `%NUMBER%`
+- genel Windows/UNC tam yolları -> `%PATH%`
+
+Regex işlemleri:
+- `CultureInvariant`
+- explicit timeout
+ile çalışır; tek log girdisinin kötü biçimi paket üretimini sınırsız regex çalışmasına sokmamalıdır.
+
+### Korunan sınırlar
+
+Değişmedi:
+- JSON veri dosyaları pakete eklenmez.
+- PDF belgeleri pakete eklenmez.
+- en fazla son 5 log alınır.
+- log başına maksimum karakter sınırı korunur.
+- tek log okunamazsa tüm tanılama paketi başarısız olmaz.
+
+### Test güçlendirmesi
+
+Mevcut:
+- `DiagnosticPackageContainsSummaryAndLogsButNeverUserJsonOrPdf`
+
+testi genişletildi; yeni test metodu eklenmedi.
+
+Test loguna bilinçli olarak:
+- kurum adı,
+- VKN,
+- hizmet numarası,
+- fatura numarası,
+- yetkili adı,
+- e-posta,
+- GUID,
+- IP,
+- veri klasörü yolu
+
+yerleştiriliyor.
+
+ZIP içindeki sanitize edilmiş log için:
+- ham hassas değerlerin bulunmadığı,
+- ilgili placeholder/maskelerin bulunduğu
+doğrulanıyor.
+
+Test sayısı:
+- yeni test metodu yok,
+- hedef **125/125** olarak kalır.
+
+### UI açıklaması
+
+Hakkında / Güvenlik -> Tanılama Paketi tooltip ve erişilebilirlik açıklaması güncellendi:
+- fatura JSON/PDF içeriklerinin pakete eklenmediği,
+- hata günlüklerindeki kişisel veri örüntülerinin maskelendiği
+açıkça belirtiliyor.
+
+### Commitler
+
+- güçlü tanılama sanitize:
+  `59d0cfeba5b4129622f950c40e63191a83eaca86`
+- gizlilik regresyon testi güçlendirme:
+  `bfc9321d0edd76717806d941fd844cf1c3c7e690`
+- UI gizlilik açıklaması:
+  `d6376df45188ef1d8a176ec585a4b48125fd7999`
+
+### Statik doğrulama
+
+Geçti:
+- loglar `Sanitize(text, safetyService)` üzerinden yazılıyor,
+- tanılama özeti aynı sanitize akışından geçiyor,
+- bilinen uygulama yolları maskeleniyor,
+- hassas etiket temizliği mevcut,
+- e-posta/GUID/IP/uzun numara temizliği mevcut,
+- genel Windows/UNC path temizliği mevcut,
+- mevcut JSON/PDF dışlama davranışı korunuyor,
+- mevcut test yeni hassas örneklerle güçlendirildi,
+- yeni test metodu eklenmedi.
+
+### Zorunlu yerel doğrulama kapısı
+
+1. GitHub Desktop -> **Fetch origin -> Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - hedef: **0 warning / 0 error**
+3. `TESTLERI_CALISTIR.bat`
+   - hedef: **125/125**
+4. Hakkında / Güvenlik -> **TANILAMA PAKETİ**
+   - ZIP oluşturulmalı,
+   - `Tanilama.txt` bulunmalı,
+   - en fazla son loglar bulunmalı,
+   - JSON/PDF bulunmamalı.
+5. İstenirse ZIP içindeki bir log metni açılarak:
+   - gerçek kullanıcı/makine yolu,
+   - uzun VKN/hizmet benzeri numara,
+   - e-posta/GUID/IP
+   gibi değerlerin maskelendiği görülebilir.
+
+Bu kapı yeşil olmadan Aşama 5.6 değişiklikleri üst üste bindirilmeyecek.
+
+### Sıradaki aşama
+
+Aşama 5.6:
+**PDF metadata formatı**
+
+Hedef:
+- DoğruFatura'nın ürettiği PDF'lerde sürüm/üretim bilgisi için tek, kararlı metadata sözleşmesi,
+- tarihsel PDF import ve mevcut PDF SHA-256 bütünlük davranışını bozmadan geriye uyum,
+- PDF içerik/metin düzeninden bağımsız teknik metadata standardizasyonu.
