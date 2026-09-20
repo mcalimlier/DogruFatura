@@ -2,6 +2,7 @@
 
 ## Mevcut durum — 20.09.2026
 
+- NSIS `/SOLID lzma` self-contained pakette uzun süre `Compressed data:` satırında kalabildiği için normal `lzma` sıkıştırmasına geçirildi. Tek EXE/self-contained yapı değişmedi.
 - Kullanıcı Fatura Türü Dağılımı son WPF/ClearType yüzde görünümünü kabul etti: **olmuş**.
 - LiveCharts/Skia yüzde yazıları görsel olarak hâlâ bulanık kaldığı için built-in data label'lar kapatıldı; yüzdeler artık WPF/ClearType overlay ile çiziliyor.
 - Yüzde overlay'i 328×328 chart ile birebir hizalı, dilim orta açısı + sabit orta yarıçap hesabıyla tam piksel koordinatlarına yerleştiriliyor.
