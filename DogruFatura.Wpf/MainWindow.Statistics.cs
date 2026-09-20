@@ -18,8 +18,6 @@ public partial class MainWindow
     private bool _suppressStatisticsEvents;
     private ArchiveStatisticsFilter _statisticsFilter = new();
     private ArchiveStatisticsResult? _statisticsResult;
-    private static readonly SKTypeface StatisticsDataLabelTypeface =
-        SKTypeface.FromFamilyName("Segoe UI", SKFontStyle.Bold);
 
     private void RefreshStatistics()
     {
@@ -217,6 +215,7 @@ public partial class MainWindow
     private void RefreshStatisticsDonut(ArchiveStatisticsResult result)
     {
         StatisticsDonutLegendPanel.Children.Clear();
+        StatisticsDonutLabelsCanvas.Children.Clear();
         StatisticsDonutTotalText.Text = NumberParser.Money(result.PaymentTotal);
 
         var distribution = result.Rows
@@ -263,17 +262,7 @@ public partial class MainWindow
                     StrokeThickness = 2.4f,
                     IsAntialias = true
                 },
-                ShowDataLabels = true,
-                DataLabelsPaint = new SolidColorPaint(StatisticsDataLabelColor(skColor))
-                {
-                    SKTypeface = StatisticsDataLabelTypeface,
-                    IsAntialias = true
-                },
-                DataLabelsSize = 13,
-                DataLabelsPadding = new LiveChartsCore.Drawing.Padding(0),
-                DataLabelsRotation = 0,
-                DataLabelsPosition = PolarLabelsPosition.Middle,
-                DataLabelsFormatter = _ => percentage >= 0.06m ? percentageText : string.Empty,
+                ShowDataLabels = false,
                 ToolTipLabelFormatter = _ =>
                     $"{item.InvoiceType}: {NumberParser.Money(item.PaymentTotal)} ({percentageText})"
             });
@@ -285,6 +274,66 @@ public partial class MainWindow
         }
 
         StatisticsDonutChart.Series = series;
+        RefreshStatisticsDonutLabels(distribution, total);
+    }
+
+    private void RefreshStatisticsDonutLabels(
+        IReadOnlyList<StatisticsDonutItem> distribution,
+        decimal total)
+    {
+        const double chartSize = 328d;
+        const double center = chartSize / 2d;
+        const double labelRadius = 121d;
+        const double labelWidth = 52d;
+        const double labelHeight = 24d;
+
+        var angle = -90d;
+        foreach (var item in distribution)
+        {
+            var percentage = item.PaymentTotal / total;
+            var sweep = (double)percentage * 360d;
+
+            if (percentage >= 0.06m)
+            {
+                var middleAngle = angle + (sweep / 2d);
+                var radians = middleAngle * Math.PI / 180d;
+                var x = center + (Math.Cos(radians) * labelRadius);
+                var y = center + (Math.Sin(radians) * labelRadius);
+
+                var label = new TextBlock
+                {
+                    Text = "%" + (percentage * 100m).ToString(
+                        "N0",
+                        CultureInfo.GetCultureInfo("tr-TR")),
+                    Width = labelWidth,
+                    Height = labelHeight,
+                    FontFamily = new FontFamily("Segoe UI"),
+                    FontSize = 14,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = StatisticsDataLabelBrush(StatisticsSkColor(item.InvoiceType)),
+                    TextAlignment = TextAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    SnapsToDevicePixels = true,
+                    UseLayoutRounding = true,
+                    IsHitTestVisible = false
+                };
+
+                TextOptions.SetTextFormattingMode(label, TextFormattingMode.Display);
+                TextOptions.SetTextRenderingMode(label, TextRenderingMode.ClearType);
+
+                Canvas.SetLeft(label, Math.Round(x - (labelWidth / 2d)));
+                Canvas.SetTop(label, Math.Round(y - (labelHeight / 2d)));
+                StatisticsDonutLabelsCanvas.Children.Add(label);
+            }
+
+            angle += sweep;
+        }
+    }
+
+    private static SolidColorBrush StatisticsDataLabelBrush(SKColor background)
+    {
+        var color = StatisticsDataLabelColor(background);
+        return new SolidColorBrush(Color.FromRgb(color.Red, color.Green, color.Blue));
     }
 
     private void AddStatisticsLegendItem(
