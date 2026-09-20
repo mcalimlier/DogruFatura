@@ -2,6 +2,7 @@
 
 ## Mevcut durum — 20.09.2026
 
+- Final otomatik smoke tamamlandı: Setup üretildi ve SHA-256 ikinci doğrulaması geçti. Manuel temiz kurulum/güncelleme/kaldırma/yeniden kurulum smoke bekliyor.
 - Son `FINAL_DOGRULAMA.bat` gerçek Windows koşusu **[OK] FINAL SMOKE PAKETI HAZIR VE SHA-256 DOGRULANDI** sonucu ile tamamlandı.
 - Üretilen smoke Setup: `DAGITIM\DogruFatura_Setup_1.1.0_x64.exe`.
 - Bu paket **imzasız smoke paketidir**; kullanıcı dağıtımı için kullanılmaz.
