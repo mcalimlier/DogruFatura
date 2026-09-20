@@ -2,7 +2,8 @@
 
 ## Mevcut durum — 20.09.2026
 
-- Final otomatik smoke tamamlandı: Setup üretildi ve SHA-256 ikinci doğrulaması geçti. Manuel temiz kurulum/güncelleme/kaldırma/yeniden kurulum smoke bekliyor.
+- Manuel kurulum smoke kullanıcı tarafından **başarılı** olarak onaylandı: temiz kurulum, önceki sürüm üstüne güncelleme, kullanıcı verisinin korunması, kaldırma ve yeniden kurulum geçti.
+- Final otomatik smoke tamamlandı: Setup üretildi ve SHA-256 ikinci doğrulaması geçti. Kullanıcı manuel temiz kurulum/güncelleme/veri koruma/kaldırma/yeniden kurulum smoke turunu da başarılı bildirdi.
 - Son `FINAL_DOGRULAMA.bat` gerçek Windows koşusu **[OK] FINAL SMOKE PAKETI HAZIR VE SHA-256 DOGRULANDI** sonucu ile tamamlandı.
 - Üretilen smoke Setup: `DAGITIM\DogruFatura_Setup_1.1.0_x64.exe`.
 - Bu paket **imzasız smoke paketidir**; kullanıcı dağıtımı için kullanılmaz.
@@ -98,11 +99,11 @@ Kontroller:
 
 - [ ] Kurulum sihirbazı **DoğruFatura 1.1.0** gösteriyor
 - [x] Setup dosya adı doğru
-- [ ] Temiz kurulum başarılı
-- [ ] 1.0.x / önceki sürüm üstüne güncelleme başarılı
-- [ ] Program kaldırma başarılı
-- [ ] Yeniden kurulum başarılı
-- [ ] Masaüstü\DoğruFatura kullanıcı verileri korunuyor
+- [x] Temiz kurulum başarılı
+- [x] 1.0.x / önceki sürüm üstüne güncelleme başarılı
+- [x] Program kaldırma başarılı
+- [x] Yeniden kurulum başarılı
+- [x] Masaüstü\DoğruFatura kullanıcı verileri korunuyor
 - [ ] Eski Program Files artıkları temizleniyor
 - [ ] `RELEASE_NOTES_1.1.0.md` dağıtım klasöründe
 - [ ] `KULLANICI_KILAVUZU.md` dağıtım klasöründe
