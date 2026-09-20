@@ -2,6 +2,7 @@
 
 ## Mevcut durum — 20.09.2026
 
+- Son kullanıcıya dağıtılacak imzalı final EXE için tek tık araç eklendi: `FINAL_EXE_OLUSTUR.bat`. Sertifika yoksa dağıtım-ready üretimi durdurur; imzasız smoke EXE'yi final gibi sunmaz.
 - Manuel kurulum smoke kullanıcı tarafından **başarılı** olarak onaylandı: temiz kurulum, önceki sürüm üstüne güncelleme, kullanıcı verisinin korunması, kaldırma ve yeniden kurulum geçti.
 - Final otomatik smoke tamamlandı: Setup üretildi ve SHA-256 ikinci doğrulaması geçti. Kullanıcı manuel temiz kurulum/güncelleme/veri koruma/kaldırma/yeniden kurulum smoke turunu da başarılı bildirdi.
 - Son `FINAL_DOGRULAMA.bat` gerçek Windows koşusu **[OK] FINAL SMOKE PAKETI HAZIR VE SHA-256 DOGRULANDI** sonucu ile tamamlandı.
