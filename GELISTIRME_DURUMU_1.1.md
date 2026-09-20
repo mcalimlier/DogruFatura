@@ -3324,3 +3324,108 @@ Visual Studio kullanılmıyor.
 - Yerel build ve GitHub Actions CI statüleri ayrı tutulacak.
 - CI runner sorunu çözülmeden “CI doğrulandı” denmeyecek.
 - Her paket ve doğrulama sonucu bu MD'ye işlenecek.
+
+
+## 20.09.2026 — Aşama 5.3 İstatistik ekranı kompaktlaştırma + CSV düzeltmesi KODLANDI
+
+Kullanıcı geri bildirimi:
+- İstatistik bölümünde dikey scrollbar istenmiyor; sayfa aşağı kaydırılmadan temel içerik görünmeli.
+- `FATURA TÜRÜ KARŞILAŞTIRMASI` kartı kaldırılmalı.
+- `AYLIK ÖDEME TRENDİ` kartı kaldırılmalı.
+- PDF / Yazdır / CSV / Excel / PNG için ayrı ayrı düğmeler yerine tek çıktı seçim düğmesi kullanılmalı.
+- CSV çıktısı bozuk/karmaşık görünmemeli.
+
+### UI değişiklikleri
+
+`DogruFatura.Wpf/MainWindow.xaml`:
+- İstatistik görünümünün kendi `ScrollViewer` katmanı kaldırıldı.
+- Alt bölümdeki `AYLIK ÖDEME TRENDİ` ve `FATURA TÜRÜ KARŞILAŞTIRMASI` kartları kaldırıldı.
+- Fatura türü dağılımı kartı daha kompakt boyutlandırıldı.
+- Beş ayrı çıktı düğmesi kaldırıldı.
+- Tek `ÇIKTI AL ▼` düğmesi eklendi.
+- Açılır menü seçenekleri:
+  - PDF RAPORU
+  - YAZDIR
+  - CSV
+  - EXCEL
+  - PNG
+- `YENİLE` düğmesi ayrı tutuldu; çıktı seçeneği değildir.
+
+### Kod sadeleştirmesi
+
+`DogruFatura.Wpf/MainWindow.Statistics.cs`:
+- kaldırılan iki grafik için refresh çağrıları kaldırıldı.
+- `RefreshStatisticsMonthlyTrend` kaldırıldı.
+- `RefreshStatisticsTypeComparison` kaldırıldı.
+- Fatura türü dağılımı / donut hesaplaması korunuyor.
+
+`DogruFatura.Wpf/MainWindow.StatisticsExports.cs`:
+- `StatisticsExportMenu_Click` eklendi; tek düğmenin ContextMenu'sunu açıyor.
+- mevcut PDF / Yazdır / CSV / Excel / PNG event handler'ları yeniden kullanılıyor.
+- PDF raporundaki ikinci trend/karşılaştırma grafik sayfası kaldırıldı.
+- PDF ana özet + fatura türü dağılımı korunuyor.
+
+### CSV düzeltmesi
+
+Önceki CSV:
+- rapor bilgileri,
+- filtre bilgileri,
+- özet değerleri,
+- boş satır,
+- ardından detay tablosu
+
+şeklinde farklı kolon sayılarına sahip satırlar içeriyordu; ayrıca para değerleri `InvariantCulture` ile noktalı ondalık olarak yazılıyordu.
+
+Yeni CSV:
+- yalnız tek, düzenli dikdörtgen tablo üretir.
+- başlık:
+  `Kurum;Yıl;Fatura Türü;Fatura Adedi;Fatura Tutarı;KDV;Damga Vergisi;Ödeme`
+- metin alanlarında mevcut CSV quote/formül güvenliği korunur.
+- parasal değerler açık `tr-TR` kültürüyle virgüllü ondalık biçimde yazılır.
+- ayraç `;` olarak korunur.
+- UTF-8 BOM korunur.
+- `sep=;` özel satırı kaldırıldı.
+
+### Commitler
+
+- İstatistik UI / scroll / çıktı menüsü: `53b4047fd28e4b7a01b0a31981a52e3b9b846d68`
+- Alt grafik kod temizliği: `83c6d08e887a633eb1b515d81123d9cab62e214e`
+- CSV + çıktı/PDF sadeleştirmesi: `05ec8fc42ff10e19b8957d85890db1a5efe805fc`
+
+### Statik doğrulama
+
+Geçti:
+- İstatistik XAML içinde `ScrollViewer` kalmadı.
+- `StatisticsMonthlyTrendChart` referansı kalmadı.
+- `StatisticsTypeComparisonChart` referansı kalmadı.
+- kaldırılan iki refresh metodu ve çağrısı kalmadı.
+- tek çıktı menüsü ve menu handler eşleşiyor.
+- CSV tek tablo başlığıyla üretiliyor.
+- CSV para değerleri `tr-TR`.
+- CSV UTF-8 BOM korunuyor.
+
+### Zorunlu yerel doğrulama
+
+1. GitHub Desktop → **Fetch origin → Pull origin**
+2. `DERLE_CALISTIR.bat`
+3. Hedef:
+   - restore warning: **0**
+   - Core warning/error: **0 / 0**
+   - WPF warning/error: **0 / 0**
+4. İstatistik smoke:
+   - sayfa açıldığında dikey scrollbar görünmemeli,
+   - tüm temel kartlar aşağı kaydırmadan görünmeli,
+   - Aylık Ödeme Trendi görünmemeli,
+   - Fatura Türü Karşılaştırması görünmemeli,
+   - `ÇIKTI AL ▼` menüsü açılmalı,
+   - PDF / Yazdır / CSV / Excel / PNG seçenekleri çalışmalı.
+5. CSV smoke:
+   - Excel ile açıldığında kolonlar düzenli ayrılmalı,
+   - Türkçe karakterler doğru görünmeli,
+   - tutarlar sayı gibi ve virgüllü ondalık görünmeli,
+   - başlık dışında farklı kolon sayılı rapor/özet satırları bulunmamalı.
+6. `TESTLERI_CALISTIR.bat`
+   - yeni test metodu eklenmedi,
+   - hedef **124/124**.
+
+Bu kapı yeşil olmadan Aşama 5.3 kapanmış sayılmamalı.
