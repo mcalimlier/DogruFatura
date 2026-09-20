@@ -5518,3 +5518,78 @@ Kalan tek dağıtım kapısı:
 - ardından manuel temiz kurulum / güncelleme / kaldırma smoke.
 
 Bu aşamadan sonra donut görseline yeni değişiklik yapılmamalıdır.
+
+
+## 20.09.2026 — Final Setup sıkıştırma beklemesi: SOLID LZMA kaldırıldı
+
+Kullanıcı final Setup üretiminde NSIS çıktısının:
+- `Compressed data:`
+
+satırında uzun süre ilerlemeden kaldığını bildirdi.
+
+İlgili paket:
+- self-contained win-x64,
+- yaklaşık 230 MB install data,
+- NSIS `SetCompressor /SOLID lzma`.
+
+### Neden
+
+`/SOLID` LZMA:
+- tüm installer veri bloğunu tek büyük solid akış olarak sıkıştırır,
+- self-contained .NET/WPF paketindeki yüzlerce DLL üzerinde uzun süre konsol çıktısı vermeden çalışabilir,
+- bu durum kullanıcıya takılmış gibi görünür.
+
+Tek EXE üretmek için `/SOLID` zorunlu değildir.
+
+### Düzeltme
+
+`Kurulum/DogruFatura_NSIS.nsi`:
+
+Önce:
+- `SetCompressor /SOLID lzma`
+
+Yeni:
+- `SetCompressor lzma`
+
+Korunan:
+- `SetCompressorDictSize 32`
+- tek `DogruFatura_Setup_1.1.0_x64.exe`
+- self-contained win-x64 uygulama içeriği
+- tüm .NET/WPF runtime bağımlılıkları
+- mevcut kurulum/uninstall mantığı
+
+Beklenen fark:
+- Setup üretimi daha öngörülebilir ve hızlı,
+- paket boyutu bir miktar artabilir,
+- kullanıcı açısından yine tek EXE kurulum dosyasıdır,
+- hedef bilgisayarda ayrıca .NET Runtime/SDK gerekmez.
+
+Commit:
+- `f032b154c719d95796e0513f37cbefaba014b57b`
+
+### Statik doğrulama
+
+Geçti:
+- `SetCompressor lzma` mevcut,
+- `SetCompressor /SOLID lzma` artık yok,
+- dictionary 32 MB korunuyor,
+- tek EXE OutFile tanımı korunuyor.
+
+### Kullanıcı işlemi
+
+Mevcut uzun süren NSIS süreci güvenle `Ctrl+C` ile durdurulabilir.
+Bu işlem:
+- kaynak kodu değiştirmez,
+- kullanıcı verisini değiştirmez,
+- kurulu uygulamayı değiştirmez.
+
+Sonraki `FINAL_DOGRULAMA.bat` başlangıcında geçici `_YAYIN` zaten temizlenir.
+
+Fetch/Pull sonrası final doğrulama yeniden çalıştırılmalı.
+
+Hedef:
+- 0 warning / 0 error
+- 126/126
+- Setup üretimi tamamlanır
+- SHA-256 ikinci doğrulaması geçer
+- tek self-contained EXE oluşur.
