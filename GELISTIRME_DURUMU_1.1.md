@@ -5736,3 +5736,29 @@ Ancak mevcut release politikası korunuyor:
 - Tag / GitHub Release, dağıtılacak final paketin imza politikası netleşmeden oluşturulmamalıdır.
 
 Kod/UI kapsamı **freeze** durumunda kalır.
+
+
+## 20.09.2026 — Tek tık imzalı final EXE aracı eklendi
+
+Kullanıcı final EXE'nin doğrudan oluşturulmasını istedi.
+
+Repo köküne:
+- `FINAL_EXE_OLUSTUR.bat`
+
+eklendi.
+
+Davranış:
+- normal `SETUP_HAZIRLA.ps1` çağrılır,
+- `-AllowUnsignedFinal` kullanılmaz,
+- böylece son kullanıcı dağıtımı için kod imzası zorunlu tutulur,
+- `DOGRUFATURA_SIGN_CERT_SHA1` tanımlı değilse işlem güvenli biçimde durur,
+- imzasız smoke EXE yanlışlıkla dağıtım-ready final olarak sunulmaz,
+- başarılı üretimden sonra `DAGITIM` klasörü otomatik açılır.
+
+Commit:
+- `02e6cea89941513cfa64dc1c2355921ecfda9c85`
+
+Mevcut imzasız smoke EXE:
+- `DAGITIM\DogruFatura_Setup_1.1.0_x64.exe`
+
+teknik/manüel smoke testleri geçmiştir; ancak release politikası gereği imzalı final yerine geçmez.
