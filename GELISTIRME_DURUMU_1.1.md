@@ -5147,3 +5147,87 @@ Kod değişikliği gerekmiyor.
 - NSIS final Setup üretimi: **başladı / çıktı yolu doğrulandı**
 - SHA-256 ikinci doğrulaması: **paylaşılan logda henüz görünmüyor**
 - tag/release: **SHA + manuel kurulum smoke tamamlanana kadar bekliyor**
+
+
+## 20.09.2026 — GitHub Desktop generated dosya temizliği + donut yüzde keskinlik/merkezleme son ayarı
+
+Kullanıcı GitHub Desktop'ta `FINAL_DOGRULAMA.bat` sonrası **514 changed files** gördü ve Fatura Türü Dağılımı yüzde etiketlerinin hâlâ bulanık/merkezden kaçık olduğunu bildirdi.
+
+### GitHub Desktop / generated dosyalar
+
+Ekrandaki dosyalar:
+- `_YAYIN\DogruFatura_NSIS.generated.nsi`
+- `_YAYIN\Uygulama\...`
+- `_YAYIN\Setup\DogruFatura_Setup_1.1.0_x64.exe`
+- paketleme sırasında oluşan yüzlerce runtime/publish dosyası
+
+kaynak kod değildir.
+
+`.gitignore` içine eklendi:
+- `_YAYIN/`
+- `DAGITIM/`
+
+Amaç:
+- build/publish/setup çıktılarının yanlışlıkla commit edilmesini önlemek,
+- `FINAL_DOGRULAMA.bat` sonrası GitHub Desktop Changes ekranını temiz tutmak,
+- EXE/SHA/generated NSIS/publish runtime dosyalarını kaynak geçmişinden ayırmak.
+
+Commit:
+- `a2b31013a38b1df4a7d9cda00caff42e1165351c`
+
+### Fatura Türü Dağılımı yüzde etiketleri
+
+`MainWindow.Statistics.cs` son görsel ayarı:
+
+Önce:
+- `InnerRadius = 92`
+- `HoverPushout = 2`
+- normal Skia font paint
+- varsayılan label padding
+
+Yeni:
+- `InnerRadius = 82`
+- `HoverPushout = 0`
+- dilim stroke antialias açık
+- yüzde fontu: `Segoe UI`
+- `SKFontStyle.Bold`
+- text paint antialias açık
+- `DataLabelsPadding = 0`
+- `DataLabelsRotation = 0`
+- `DataLabelsPosition = Middle`
+- `DataLabelsSize = 13`
+
+Amaç:
+- halkayı biraz daha kalınlaştırarak etiket merkezini güvenli şekilde içeri almak,
+- hover sırasında dilimin dışarı oynamasını kaldırmak,
+- varsayılan label padding kaynaklı görsel merkez kaymasını kaldırmak,
+- yüzde yazısını kalın ve antialias Skia fontuyla daha keskin göstermek,
+- dilimin geometrik orta konumunu korumak.
+
+Commit:
+- `9c20b9f36b3d67cd61717c6d5d36480f7e5adf0d`
+
+### Statik doğrulama
+
+Geçti:
+- `_YAYIN/` ignore
+- `DAGITIM/` ignore
+- `InnerRadius = 82`
+- `HoverPushout = 0`
+- Segoe UI Bold
+- Skia antialias
+- sıfır label padding
+- sıfır label rotation
+- Middle label position
+
+### Final kapı etkisi
+
+Bu değişikliklerden biri üretim UI kodunu değiştirdiği için önceki 126/126 sonucu önemli ve geçerli bir ara doğrulama olsa da final tag öncesi **FINAL_DOGRULAMA.bat bir kez daha** çalıştırılmalıdır.
+
+Beklenen:
+- Release build başarılı
+- 126/126
+- Setup + SHA doğrulaması başarılı
+- İstatistik ekranında yüzdeler net ve ortalanmış
+
+Yeni özellik/refaktör eklenmeyecektir.
