@@ -3531,3 +3531,67 @@ Geçti:
    - hedef **124/124**.
 
 Bu görsel revizyon yerel build/smoke kapısı yeşil olmadan tamamlandı kabul edilmemeli.
+
+
+## 20.09.2026 — Fatura Türü Dağılımı görsel geri dönüşü KODLANDI
+
+Kullanıcı geri bildirimi:
+- 5 sütunlu filtre düzeni doğru yönde ilerledi.
+- Ancak donut kartının 290x290'a küçültülmesiyle halka görseli aşırı inceldi ve eski görünüm kayboldu.
+- İstenen: yeni 5 sütunlu üst düzen korunsun, Fatura Türü Dağılımı eski görsel boyutlarına dönsün.
+
+### Uygulanan geri dönüş
+
+`DogruFatura.Wpf/MainWindow.xaml` içinde yalnız dağılım kartının son küçültmeleri geri alındı:
+
+- sol grafik kolon genişliği: `380 -> 430`
+- ara kolon: `12 -> 14`
+- dış kart padding: `10 -> 14`
+- sol iç kart padding: `10 -> 14`
+- grafik: `290x290 -> 340x340`
+- merkez daire: `124x124 -> 144x144`
+- merkez radius: `62 -> 72`
+- merkez metin alanı: `104 -> 120`
+- merkez başlık fontu: `12 -> 13`
+- toplam ödeme fontu: `20 -> 23`
+- sağ detay padding: `12 -> 16`
+- sağ başlık/açıklama font ve boşlukları eski değerlerine döndürüldü.
+
+### Korunan yeni düzen
+
+- 5 sütunlu filtre/işlem kartı aynen korunuyor.
+- ÇIKTI AL / YENİLE filtre kartı içinde kalıyor.
+- TEMİZLE / UYGULA filtre kartı içinde kalıyor.
+- üst başlıkta eski çıktı düğmeleri geri gelmedi.
+- İstatistik sayfasında ScrollViewer geri eklenmedi.
+- CSV düzeltmeleri korunuyor.
+
+### Kod tarafı
+
+`MainWindow.Statistics.cs` içindeki mevcut donut ayarları korunuyor:
+- `InnerRadius = 128`
+- `OuterRadiusOffset = 18`
+- `HoverPushout = 8`
+- renkli dilimler, yüzde etiketleri ve tooltip davranışı değişmedi.
+
+### Commit
+
+- Dağılım görselini eski boyutlarına geri getir:
+  `60fd565595af957c1caf16d542417afd3b3e5564`
+
+### Zorunlu yerel doğrulama
+
+1. GitHub Desktop -> **Fetch origin -> Pull origin**
+2. `DERLE_CALISTIR.bat`
+   - hedef: **0 warning / 0 error**
+3. İstatistik smoke:
+   - 5 sütunlu filtre/işlem düzeni korunmalı,
+   - donut renkli/dolu eski görseline dönmeli,
+   - merkez toplam ödeme alanı okunaklı olmalı,
+   - dağılım detay listesi görünmeli,
+   - sayfada scrollbar oluşmamalı,
+   - kart alttan kesilmemeli.
+4. `TESTLERI_CALISTIR.bat`
+   - hedef **124/124**.
+
+Bu görsel geri dönüş yerel build/smoke doğrulaması sonrası tamamlanmış sayılmalı.
