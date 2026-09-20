@@ -252,14 +252,25 @@ public partial class MainWindow
             {
                 Name = item.InvoiceType,
                 Values = new[] { (double)item.PaymentTotal },
-                InnerRadius = 92,
+                InnerRadius = 82,
                 OuterRadiusOffset = 0,
-                HoverPushout = 2,
+                HoverPushout = 0,
                 Fill = new SolidColorPaint(skColor),
-                Stroke = new SolidColorPaint(SKColors.White) { StrokeThickness = 2.4f },
+                Stroke = new SolidColorPaint(SKColors.White)
+                {
+                    StrokeThickness = 2.4f,
+                    IsAntialias = true
+                },
                 ShowDataLabels = true,
-                DataLabelsPaint = new SolidColorPaint(StatisticsDataLabelColor(skColor)),
+                DataLabelsPaint = new SolidColorPaint(StatisticsDataLabelColor(skColor))
+                {
+                    FontFamily = "Segoe UI",
+                    SKFontStyle = SKFontStyle.Bold,
+                    IsAntialias = true
+                },
                 DataLabelsSize = 13,
+                DataLabelsPadding = new LiveChartsCore.Drawing.Padding(0),
+                DataLabelsRotation = 0,
                 DataLabelsPosition = PolarLabelsPosition.Middle,
                 DataLabelsFormatter = _ => percentage >= 0.06m ? percentageText : string.Empty,
                 ToolTipLabelFormatter = _ =>
