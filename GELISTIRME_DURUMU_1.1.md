@@ -4314,3 +4314,54 @@ Aşama 5.6 doğrulanınca:
   - son build/test,
   - kritik smoke kontrol listesi,
   - release adayı etiketi/branch hazırlığı.
+
+
+## 20.09.2026 — Aşama 5.6 doğrulama BAŞARILI + donut yüzde okunabilirlik son ayarı
+
+Kullanıcı Aşama 5.6 yerel doğrulamasının başarılı olduğunu bildirdi.
+
+Kabul edilen kapı:
+- build: başarılı
+- PDF metadata paketi: kabul edildi
+- test tabanı: **126/126**
+- Aşama 5.6 kapanmış sayıldı.
+
+### Fatura Türü Dağılımı yüzde etiketi son ayarı
+
+Kullanıcı geri bildirimi:
+- yüzde etiketleri hâlâ biraz dışa kayıyordu,
+- etiketlerin daha içeride ve daha net okunması istendi.
+
+`DogruFatura.Wpf/MainWindow.Statistics.cs`:
+- `InnerRadius: 108 -> 92`
+- `HoverPushout: 4 -> 2`
+- dilim ayırıcı çizgi: `2 -> 2.4`
+- `OuterRadiusOffset = 0` korundu.
+- `DataLabelsSize = 13` korundu.
+- yüzde gösterim eşiği `%6` olarak korundu.
+- etiket rengi artık dilim parlaklığına göre otomatik seçiliyor:
+  - açık/parlak dilimlerde koyu lacivert,
+  - koyu dilimlerde beyaz.
+
+Amaç:
+- halka kalınlığını artırarak yüzde etiketlerinin geometrik merkezini içeri almak,
+- hover sırasında dışa taşmayı azaltmak,
+- sarı/altın gibi açık dilimlerde beyaz yazının kontrast sorununu gidermek,
+- dilim sınırlarını daha keskin göstermek.
+
+Commit:
+- `0a9deaf06f0ae7b46acd128043cd0b289a7132c0`
+
+### Statik doğrulama
+
+Kontrol edilmesi gereken yeni değerler:
+- `InnerRadius = 92`
+- `HoverPushout = 2`
+- `StrokeThickness = 2.4f`
+- `StatisticsDataLabelColor(...)`
+- açık dilimde lacivert / koyu dilimde beyaz yüzde etiketi.
+
+### Sonraki adım
+
+Aşama 5 kapanışından sonra **DoğruFatura 1.1 release hazırlığı** başlatılır.
+Release adayı oluşturulmadan önce bu son donut görsel ayarı yerel build + smoke ile birlikte son kez doğrulanmalıdır.
