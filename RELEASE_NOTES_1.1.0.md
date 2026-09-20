@@ -1,10 +1,10 @@
-# DoğruFatura 1.1.0 RC1 — Release Notları
+# DoğruFatura 1.1.0 — Release Notları
 
-**Durum:** Release Candidate 1  
-**Hedef final sürüm:** 1.1.0  
+**Durum:** Final sürüm kodu — dağıtım öncesi son kalite kapısı  
+**Sürüm:** 1.1.0  
 **Platform:** Windows 10/11 x64, .NET 8 WPF
 
-Bu paket 1.1 final öncesi son kullanıcı ve dağıtım doğrulaması içindir. Kullanıcı verileri üzerinde çalışan işlevler geriye uyum ve veri güvenliği önceliğiyle geliştirilmiştir.
+RC1 kullanıcı doğrulaması tamamlandı. Bu doküman 1.1.0 final sürüm kapsamını tanımlar; dağıtım EXE'si son final build/test/setup kapısından sonra hazırlanmalıdır.
 
 ## Başlıca yenilikler
 
@@ -54,9 +54,9 @@ Bu paket 1.1 final öncesi son kullanıcı ve dağıtım doğrulaması içindir.
 
 ## Kalite tabanı
 
-RC1 hazırlığı öncesi son doğrulanan otomatik test tabanı: **126/126**.
+Son doğrulanan otomatik test tabanı: **126/126**.
 
-Release adayı için tekrar doğrulanması gereken kapılar:
+Final dağıtım öncesi tekrar doğrulanması gereken kapılar:
 - Release build: 0 warning / 0 error
 - Otomatik testler: 126/126
 - PDF oluşturma ve tarihsel PDF regresyonu
@@ -65,10 +65,11 @@ Release adayı için tekrar doğrulanması gereken kapılar:
 - Tanılama ZIP gizlilik kontrolü
 - Setup temiz kurulum / güncelleme / kaldırma ve kullanıcı veri koruma smoke testi
 
-## Bilinen yayın koşulu
+## Yayın koşulu
 
-Bu sürüm `1.1.0-rc1` olarak işaretlidir. Final `1.1.0` için:
-1. `QUALITY_CHECKLIST_1.1_RC1.md` kritik hata olmadan tamamlanmalı.
-2. CI build-and-test ve setup-smoke yeşil olmalı.
-3. Son Windows kullanıcı smoke turu kabul edilmeli.
-4. Sonrasında `VersionSuffix` boşaltılarak final Setup hazırlanmalıdır.
+Sürüm numarası `1.1.0` final durumundadır. Dağıtım paketi yayınlanmadan önce:
+1. `QUALITY_CHECKLIST_1.1_FINAL.md` kritik hata olmadan tamamlanmalı.
+2. Release build **0 warning / 0 error** olmalı.
+3. Otomatik testler **126/126** olmalı.
+4. Final Setup smoke testi temiz kurulumu, güncellemeyi, kaldırmayı ve kullanıcı verisi korumasını doğrulamalı.
+5. SHA-256 değeri dağıtım EXE'siyle eşleşmelidir.
