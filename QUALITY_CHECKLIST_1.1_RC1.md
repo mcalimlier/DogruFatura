@@ -1,6 +1,6 @@
-# DoğruFatura 1.1.0 RC1 — Final Kalite Kontrolü
+# DoğruFatura 1.1.0 RC1 — Kalite Kontrolü (Kabul Edildi)
 
-Bu liste 1.1.0 final etiketi verilmeden önce gerçek Windows oturumunda tamamlanır. Otomatik CI kontrollerine ek kullanıcı smoke turudur.
+Kullanıcı 20.09.2026 tarihinde RC1'in çalıştığını bildirdi ve final geçişine devam edilmesini istedi. Bu dosya RC1 kontrol geçmişi olarak korunur; final dağıtım için `QUALITY_CHECKLIST_1.1_FINAL.md` kullanılır.
 
 ## A. Kalite kapısı
 
