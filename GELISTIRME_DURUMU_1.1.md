@@ -5349,3 +5349,144 @@ Hedef:
 - **126/126**
 - final Setup + SHA başarılı
 - donut yüzde görünümü net/ortalanmış.
+
+
+## 20.09.2026 — Donut yüzde yazısı: LiveCharts label yerine WPF/ClearType overlay
+
+Kullanıcı önceki:
+- kalın halka,
+- Segoe UI Bold,
+- Skia antialias,
+- sıfır padding,
+- SKTypeface
+
+ayarlarına rağmen Fatura Türü Dağılımı yüzde yazılarının hâlâ yeterince keskin olmadığını bildirdi.
+
+Son gerçek final log:
+- Release build uyarısız başarılı,
+- test **126/126**,
+- win-x64 publish başarılı
+durumundaydı.
+
+### Kök yaklaşım değişikliği
+
+Sorunun Skia/LiveCharts built-in `DataLabels` render katmanından kaynaklandığı kabul edildi.
+
+Artık:
+- `PieSeries.ShowDataLabels = false`
+
+ve yüzdeler LiveCharts tarafından çizilmiyor.
+
+### Yeni WPF yüzde overlay'i
+
+`MainWindow.xaml`:
+
+PieChart ile birebir aynı:
+- `328 x 328`
+
+ölçüsünde:
+- `StatisticsDonutLabelsCanvas`
+
+eklendi.
+
+Canvas:
+- chart üzerinde `Panel.ZIndex = 3`,
+- hit-test kapalı,
+- `SnapsToDevicePixels = true`,
+- `UseLayoutRounding = true`,
+- `TextFormattingMode = Display`,
+- `TextRenderingMode = ClearType`.
+
+Commit:
+- `d3196cbb9096a25ebd62a8c6356342fb27d71db3`
+
+### Dilim merkezine kesin yerleşim
+
+`MainWindow.Statistics.cs`:
+
+Yeni:
+- `RefreshStatisticsDonutLabels(...)`
+
+Her dilim için:
+1. yüzde hesaplanır,
+2. sweep açısı hesaplanır,
+3. başlangıç `-90°`,
+4. `middleAngle = angle + sweep / 2`,
+5. 328 px chart merkezi = 164 px,
+6. label radius = 121 px,
+7. trigonometrik x/y hesaplanır,
+8. koordinatlar `Math.Round(...)` ile tam piksele oturtulur.
+
+Yüzde gösterim eşiği:
+- `>= %6`
+
+korundu.
+
+### Yazı render
+
+Yüzde:
+- normal WPF `TextBlock`,
+- `Segoe UI`,
+- `14 px`,
+- `Bold`,
+- `ClearType`,
+- `Display` text formatting,
+- pixel snapping,
+- layout rounding
+
+ile çizilir.
+
+Renk davranışı korunur:
+- açık dilim -> koyu lacivert,
+- koyu dilim -> beyaz.
+
+LiveCharts Skia metin katmanı artık yüzde yazısına karışmaz.
+
+Ana overlay commit:
+- `ad3bc1dd9eec99d09ad9caa0a155dc1268b290d7`
+
+### Dikey/yatay merkezleme
+
+Yüzde yazısı doğrudan Canvas'a bırakılmıyor.
+
+Her yüzde:
+- `52 x 24` görünmez WPF `Border` host içine alınır,
+- TextBlock host içinde yatay stretch + dikey center,
+- host'un merkezi dilimin hesaplanan orta noktasına konur.
+
+Bu sayede:
+- metin baseline kaynaklı yukarı/aşağı kaçma,
+- kutu merkezinin dilim merkezinden sapması
+
+engellenir.
+
+Commit:
+- `58edce10a1680d99154b3829b32d9bbfe2c3b300`
+
+### Statik doğrulama
+
+Geçti:
+- built-in LiveCharts labels kapalı,
+- WPF overlay canvas mevcut,
+- chart ve overlay aynı 328x328 ölçü,
+- ClearType / Display aktif,
+- middle-angle hesabı mevcut,
+- radius 121,
+- koordinatlar tam piksele yuvarlanıyor,
+- görünmez host içinde yatay/dikey merkezleme,
+- yüzde renk kontrast helper'ı korunuyor.
+
+### Final kapı
+
+Bu bir üretim UI değişikliğidir.
+
+Fetch/Pull sonrası:
+- `FINAL_DOGRULAMA.bat`
+
+yeniden çalıştırılmalı.
+
+Hedef:
+- **0 warning / 0 error**
+- **126/126**
+- Setup + SHA başarılı
+- İstatistik donut yüzdeleri artık WPF/ClearType ile keskin ve tam merkezlenmiş görünmeli.
