@@ -4858,3 +4858,99 @@ Karar:
 - GitHub Actions yeşil koşusu veya gerçek Windows final Setup smoke doğrulaması beklenir.
 
 `QUALITY_CHECKLIST_1.1_FINAL.md` mevcut CI altyapı engelini gösterecek şekilde güncellendi.
+
+
+## 20.09.2026 — Final sağlık kontrolü ve tek tık smoke doğrulama paketi
+
+Kullanıcı final öncesi son tavsiye sonrası "devam" talimatı verdi.
+
+Yeni özellik eklenmedi; kapsam donduruldu ve yalnız final doğrulama/paketleme ergonomisi iyileştirildi.
+
+### Son sağlık taraması
+
+Repo genelinde:
+- `TODO`
+- `FIXME`
+- `ertelendi`
+- `bekliyor`
+- `deferred`
+
+aramaları yapıldı.
+
+Sonuç:
+- uygulama kodunda yeni kritik açık işaret eden eşleşme bulunmadı.
+- bilinen kalan yayın engeli GitHub Actions'ın step başlamadan düşmesi ve gerçek final Setup smoke'un henüz bu oturumda çalıştırılamamış olmasıdır.
+
+### DERLE_CALISTIR.bat başlık temizliği
+
+Eski:
+- `DogruFatura 1.0 - Asama 10 R2`
+- `DOGRU FATURA 1.0 - ASAMA 10 R2`
+
+başlıkları final sürümle uyumlu hale getirildi:
+
+- `DogruFatura 1.1 Final - Derle ve Calistir`
+- `DOGRU FATURA 1.1 FINAL - DERLE VE CALISTIR`
+
+Commit:
+- `4e1e235f0ec0cd53062c3984ec0d6cd4a35e3f6d`
+
+### FINAL_DOGRULAMA.bat
+
+Yeni dosya:
+- `FINAL_DOGRULAMA.bat`
+
+Amaç:
+- kullanıcıya kod düzenletmeden final smoke paketini tek komutla hazırlamak,
+- Release build/test/publish/Setup akışını mevcut `SETUP_HAZIRLA.ps1` üzerinden çalıştırmak,
+- imzasız final smoke paketinin dağıtım için olmadığını açıkça belirtmek,
+- Setup SHA-256 değerini ikinci kez hesaplayıp dosyadaki hash ile karşılaştırmak.
+
+Akış:
+1. `Directory.Build.props` sürümünü kontrol eder:
+   - `VersionPrefix = 1.1.0`
+   - `VersionSuffix = boş`
+2. `SETUP_HAZIRLA.ps1 -AllowUnsignedFinal` çalıştırır.
+3. Beklenen:
+   - `DAGITIM\DogruFatura_Setup_1.1.0_x64.exe`
+   - `DAGITIM\DogruFatura_Setup_1.1.0_x64_SHA256.txt`
+4. Setup SHA-256 tekrar hesaplanır.
+5. Hash dosyasındaki değerle eşleşme zorunludur.
+6. Başarılı olursa manuel kurulum/güncelleme/kaldırma smoke adımları ekrana yazılır.
+
+Commit:
+- `24d9cf038fb8b084e261e629e5cf4427924ce116`
+
+### Statik doğrulama
+
+Geçti:
+- DERLE_CALISTIR 1.1 Final başlığı,
+- final version guard,
+- boş suffix kontrolü,
+- `-AllowUnsignedFinal`,
+- final Setup dosya adı,
+- SHA dosya adı,
+- `Get-FileHash` ile ikinci hash doğrulaması,
+- imzasız paketin dağıtım için olmadığı uyarısı.
+
+### Final checklist güncellemesi
+
+`QUALITY_CHECKLIST_1.1_FINAL.md` içine:
+- `FINAL_DOGRULAMA.bat` önerilen yerel final smoke giriş noktası
+olarak eklendi.
+
+### Son karar
+
+Uygulama kodu açısından kapsam dondurulmuştur.
+
+Yeni özellik/refaktör yapılmamalı.
+Bundan sonra yalnız:
+- gerçek final smoke sırasında bulunan hata,
+- veri kaybı riski,
+- Setup/dağıtım kusuru
+
+çıkarsa kod değişikliği yapılmalıdır.
+
+Sıradaki gerçek kapı:
+- `FINAL_DOGRULAMA.bat`
+- ardından temiz kurulum / güncelleme / kaldırma / yeniden kurulum manuel smoke.
