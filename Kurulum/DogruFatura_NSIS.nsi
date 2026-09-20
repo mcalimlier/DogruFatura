@@ -10,12 +10,13 @@
 
 !define APPNAME "DoğruFatura"
 !define APPVERSION "1.0.0"
+!define APPDISPLAYVERSION "1.0.0"
 !define APPEXENAME "DogruFatura.exe"
 !define APPDESC "Fatura Ödeme Listesi Hazırlama ve Kontrol Programı"
 !define APPKEY "Software\DoğruFatura"
 !define UNINSTKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\DogruFatura.Desktop.2D22EB36-5AA7-4AD9-9814-DB03D1DFBFD3"
 
-Name "${APPNAME} ${APPVERSION}"
+Name "${APPNAME} ${APPDISPLAYVERSION}"
 OutFile "..\_YAYIN\Setup\DogruFatura_Setup_1.0.0_x64.exe"
 InstallDir "$PROGRAMFILES64\DoğruFatura"
 InstallDirRegKey HKLM "${APPKEY}" "InstallDir"
@@ -25,7 +26,7 @@ SetCompressor /SOLID lzma
 SetCompressorDictSize 32
 ShowInstDetails show
 ShowUninstDetails show
-BrandingText "DoğruFatura ${APPVERSION}"
+BrandingText "DoğruFatura ${APPDISPLAYVERSION}"
 
 VIProductVersion "1.0.0.0"
 VIAddVersionKey /LANG=1055 "ProductName" "DoğruFatura"
@@ -38,7 +39,7 @@ VIAddVersionKey /LANG=1055 "LegalCopyright" "DoğruFatura"
 !define MUI_ICON "..\DogruFatura.Wpf\Assets\AppIcon.ico"
 !define MUI_UNICON "..\DogruFatura.Wpf\Assets\AppIcon.ico"
 !define MUI_ABORTWARNING
-!define MUI_WELCOMEPAGE_TITLE "DoğruFatura ${APPVERSION} Kurulumuna Hoş Geldiniz"
+!define MUI_WELCOMEPAGE_TITLE "DoğruFatura ${APPDISPLAYVERSION} Kurulumuna Hoş Geldiniz"
 !define MUI_WELCOMEPAGE_TEXT "ÖNEMLİ BİLGİ: Windows bazı bilgisayarlarda kurulum dosyasını ilk açarken SmartScreen / Bilinmeyen yayıncı uyarısı gösterebilir. Dosyayı kurumunuzdan veya güvenilir kaynaktan aldıysanız seçenek sunuluyorsa Daha fazla bilgi > Yine de çalıştır ile devam edebilirsiniz.$\r$\n$\r$\nDoğruFatura Windows 10/11 64-bit için self-contained hazırlanmıştır. Hedef bilgisayarda .NET SDK, .NET Runtime, Visual Studio veya Excel gerekmez.$\r$\n$\r$\nMevcut DoğruFatura kullanıcı verileri, yedekleri ve PDF arşivi korunur."
 !define MUI_FINISHPAGE_TITLE "DoğruFatura Kurulumu Tamamlandı"
 !define MUI_FINISHPAGE_TEXT "DoğruFatura başarıyla kuruldu.$\r$\n$\r$\nKullanıcı verileri, yedekler, loglar ve PDF belgeleri Masaüstü\DoğruFatura klasöründe birlikte tutulur. Program kaldırıldığında bu kayıtlar silinmez."
@@ -170,7 +171,7 @@ clean_install_done:
 
   WriteRegStr HKLM "${APPKEY}" "InstallDir" "$INSTDIR"
   WriteRegStr HKLM "${APPKEY}" "Version" "${APPVERSION}"
-  WriteRegStr HKLM "${UNINSTKEY}" "DisplayName" "DoğruFatura ${APPVERSION}"
+  WriteRegStr HKLM "${UNINSTKEY}" "DisplayName" "DoğruFatura ${APPDISPLAYVERSION}"
   WriteRegStr HKLM "${UNINSTKEY}" "DisplayVersion" "${APPVERSION}"
   WriteRegStr HKLM "${UNINSTKEY}" "Publisher" "DoğruFatura"
   WriteRegStr HKLM "${UNINSTKEY}" "DisplayIcon" "$INSTDIR\${APPEXENAME}"
