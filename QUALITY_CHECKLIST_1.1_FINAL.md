@@ -2,6 +2,11 @@
 
 ## Mevcut durum — 20.09.2026
 
+- İlk `FINAL_DOGRULAMA.bat` gerçek Windows koşusunda Release build başarılı oldu; testler **125/126** kaldı.
+- Tek hata: `DiagnosticPackageContainsSummaryAndLogsButNeverUserJsonOrPdf` içinde `RegexMatchTimeoutException`.
+- Setup doğru şekilde üretilmedi; kalite kapısı çalıştı.
+- Düzeltme: tanılama sanitize işlemi satır-bazlı hale getirildi ve regex timeout durumunda ilgili satır tamamen gizleniyor.
+- Mevcut hedef yeniden **126/126**; düzeltme sonrası `FINAL_DOGRULAMA.bat` tekrar çalıştırılmalı.
 - Kullanıcı final kodun çalıştığını bildirdi.
 - `release/1.1.0` dalı oluşturuldu.
 - Release dalı head: `7db72bdfcec1a8a3c581fd6d2a14c116c2298569`.
