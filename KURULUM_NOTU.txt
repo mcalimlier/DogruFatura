@@ -8,6 +8,12 @@ PAKET SÜRÜMÜ
 Kurulum dosyası DogruFatura_Setup_<sürüm>_x64.exe biçimindedir.
 RC/test paketlerinde sürüm adında -rc1 benzeri bir ek bulunabilir. Final dağıtımda bu ek kaldırılır.
 
+
+DOGRUFATURA 1.1.0 DAGITIM IMZASI
+Bu 1.1.0 dağıtım paketi kod imzalama sertifikası bulunmadığı için bilinçli olarak imzasız dağıtılabilir.
+Windows SmartScreen / "Bilinmeyen yayıncı" uyarısı bu durumda beklenebilir.
+Kurulum dosyasını yalnız güvenilir kaynaktan alın ve paketteki SHA-256 dosyasıyla doğrulayın.
+
 WINDOWS SMARTSCREEN GÖRÜRSENİZ
 Dağıtım paketinde geçerli Authenticode imzası bulunmuyorsa Windows bazı bilgisayarlarda ilk çalıştırmada
 SmartScreen / "Bilinmeyen yayıncı" uyarısı gösterebilir. Bu uyarı tek başına kurulum dosyasının bozuk
