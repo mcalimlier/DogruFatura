@@ -5593,3 +5593,47 @@ Hedef:
 - Setup üretimi tamamlanır
 - SHA-256 ikinci doğrulaması geçer
 - tek self-contained EXE oluşur.
+
+
+## 20.09.2026 — FINAL_DOGRULAMA TAM YEŞİL: Setup + SHA başarılı
+
+Kullanıcı son gerçek Windows koşusunda `FINAL_DOGRULAMA.bat` sonucunu bildirdi:
+
+`[OK] FINAL SMOKE PAKETI HAZIR VE SHA-256 DOGRULANDI`
+
+Üretilen Setup:
+- `C:\Users\MuratPC\Documents\GitHub\DogruFatura\DAGITIM\DogruFatura_Setup_1.1.0_x64.exe`
+
+### Kabul edilen otomatik final kapıları
+
+- Release build: **başarılı**
+- Test: **126/126**
+- win-x64 self-contained publish: **başarılı**
+- NSIS Setup üretimi: **başarılı**
+- Setup dosya adı: **doğru**
+- SHA-256 yeniden hesaplama / SHA dosyası eşleşmesi: **başarılı**
+- Fatura Türü Dağılımı WPF/ClearType görsel smoke: **kullanıcı tarafından kabul edildi**
+
+### Önemli dağıtım notu
+
+Bu `FINAL_DOGRULAMA.bat` çıktısı:
+- `-AllowUnsignedFinal` ile oluşturulan **imzasız smoke paketidir**.
+- Kurulum davranışını ve self-contained paketlemeyi doğrulamak içindir.
+- Mevcut release politikasına göre son kullanıcıya dağıtılacak final paket olarak kullanılmaz.
+
+### Kalan manuel smoke
+
+1. Temiz Windows / hiç kurulu olmayan sistem senaryosu
+2. Önceki sürüm üstüne güncelleme
+3. Kullanıcı verisinin korunduğunu doğrulama
+4. Kaldırma
+5. Yeniden kurulum
+6. Kaldırma sonrasında kullanıcı verisinin korunması
+7. Yeniden kurulum sonrası mevcut verinin tekrar açılması
+
+Bu manuel kapılar tamamlanana kadar:
+- `v1.1.0` tag oluşturulmaz,
+- GitHub Release oluşturulmaz,
+- dağıtım-ready kabul edilmez.
+
+Kod/UI kapsamı bu noktada **freeze** durumundadır.
