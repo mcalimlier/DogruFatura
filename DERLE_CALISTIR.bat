@@ -2,10 +2,10 @@
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
-title DogruFatura 1.0 - Asama 10 R2
+title DogruFatura 1.1 Final - Derle ve Calistir
 cls
 echo ============================================================
-echo DOGRU FATURA 1.0 - ASAMA 10 R2
+echo DOGRU FATURA 1.1 FINAL - DERLE VE CALISTIR
 echo ============================================================
 echo.
 
