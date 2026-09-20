@@ -19,9 +19,9 @@ RC1 kullanıcı doğrulaması tamamlandıktan sonra 1.1.0 sürüm numarası fina
 
 ## A. Final kod kapısı
 
-- [ ] `DERLE_CALISTIR.bat`: **0 warning / 0 error**
-- [ ] Uygulama sürüm göstergesi: **v1.1.0**
-- [ ] `TESTLERI_CALISTIR.bat`: **126/126**
+- [x] Final Release build: **başarılı**
+- [x] Final sürüm değerleri / Setup metadata: **1.1.0**
+- [x] Final otomatik test: **126/126**
 - [ ] NuGet güvenlik taramasında bilinen açık yok
 - [ ] GitHub build/test akışı yeşil
 
@@ -53,6 +53,9 @@ RC1 kullanıcı doğrulaması tamamlandıktan sonra 1.1.0 sürüm numarası fina
 - [ ] PNG
 
 ## D. Final Setup
+
+- Final `FINAL_DOGRULAMA.bat` koşusunda NSIS, `DogruFatura_Setup_1.1.0_x64.exe` çıktısını oluşturma aşamasına ulaştı.
+- Paylaşılan log `Compressed data:` satırında kesildiği için final SHA-256 ikinci doğrulama sonucu henüz bu kayıtta görünmüyor.
 
 Yerel smoke için önerilen tek tık doğrulama:
 
