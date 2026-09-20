@@ -87,6 +87,7 @@ Her ekranda kesik yazı, taşan buton, yatay kaydırma, anlamsız boşluk veya b
 
 - [ ] `SETUP_HAZIRLA.ps1 -AllowPrerelease -AllowUnsignedFinal` RC smoke paketi üretiyor
 - [ ] Dosya adı `DogruFatura_Setup_1.1.0-rc1_x64.exe`
+- [ ] Kurulum sihirbazı başlığı `DoğruFatura 1.1.0 RC1` gösteriyor
 - [ ] Temiz kurulum
 - [ ] Mevcut sürüm üstüne güncelleme
 - [ ] Program kaldırma
