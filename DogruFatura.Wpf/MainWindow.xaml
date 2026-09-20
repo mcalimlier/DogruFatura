@@ -1234,13 +1234,13 @@
                                             BorderBrush="#DCE5EE"
                                             BorderThickness="1"
                                             CornerRadius="20"
-                                            Padding="10"
+                                            Padding="14"
                                             ClipToBounds="True"
                                             Margin="0">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="380"/>
-                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="430"/>
+                                                <ColumnDefinition Width="14"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
 
@@ -1248,7 +1248,7 @@
                                                     BorderBrush="#DCE5EE"
                                                     BorderThickness="1"
                                                     CornerRadius="20"
-                                                    Padding="10"
+                                                    Padding="14"
                                                     ClipToBounds="True">
                                                 <Grid>
                                                     <Grid.RowDefinitions>
@@ -1258,36 +1258,36 @@
                                                     <StackPanel>
                                                         <TextBlock Text="FATURA TÜRÜ DAĞILIMI" Style="{StaticResource PremiumSectionTitle}"/>
                                                         <TextBlock Text="Seçili filtrelere göre ödeme tutarının fatura türlerine dağılımı."
-                                                                   Style="{StaticResource PremiumSectionSubtitle}" Margin="0,2,0,5"/>
+                                                                   Style="{StaticResource PremiumSectionSubtitle}" Margin="0,3,0,12"/>
                                                     </StackPanel>
 
-                                                    <Grid Grid.Row="1" Width="290" Height="290"
+                                                    <Grid Grid.Row="1" Width="340" Height="340"
                                                           HorizontalAlignment="Center" VerticalAlignment="Center">
                                                         <lvc:PieChart x:Name="StatisticsDonutChart"
-                                                                      Width="290" Height="290"
+                                                                      Width="340" Height="340"
                                                                       Background="Transparent"
                                                                       LegendPosition="Hidden"
                                                                       InitialRotation="-90"/>
-                                                        <Border Width="124" Height="124"
+                                                        <Border Width="144" Height="144"
                                                                 Background="#FFFFFF"
                                                                 BorderBrush="#DCE5EE"
                                                                 BorderThickness="1"
-                                                                CornerRadius="62"
+                                                                CornerRadius="72"
                                                                 HorizontalAlignment="Center"
                                                                 VerticalAlignment="Center"
                                                                 IsHitTestVisible="False">
                                                             <StackPanel HorizontalAlignment="Center"
                                                                         VerticalAlignment="Center"
-                                                                        Width="104">
+                                                                        Width="120">
                                                                 <TextBlock Text="TOPLAM ÖDEME"
                                                                            Foreground="#64778B"
-                                                                           FontSize="12"
+                                                                           FontSize="13"
                                                                            FontWeight="Bold"
                                                                            HorizontalAlignment="Center"/>
                                                                 <TextBlock x:Name="StatisticsDonutTotalText"
                                                                            Text="0,00 TL"
                                                                            Foreground="#031C38"
-                                                                           FontSize="20"
+                                                                           FontSize="23"
                                                                            FontWeight="Bold"
                                                                            TextAlignment="Center"
                                                                            TextWrapping="Wrap"
@@ -1303,7 +1303,7 @@
                                                     BorderBrush="#DCE5EE"
                                                     BorderThickness="1"
                                                     CornerRadius="20"
-                                                    Padding="12"
+                                                    Padding="16"
                                                     ClipToBounds="True">
                                                 <Grid>
                                                     <Grid.RowDefinitions>
@@ -1313,13 +1313,13 @@
                                                     <StackPanel>
                                                         <TextBlock Text="DAĞILIM DETAYI"
                                                                    Foreground="#031C38"
-                                                                   FontSize="15.5"
+                                                                   FontSize="17"
                                                                    FontWeight="Bold"/>
                                                         <TextBlock Text="Tür bazında fatura adedi, ödeme tutarı ve toplam içindeki pay."
                                                                    Foreground="#70839A"
-                                                                   FontSize="12.5"
+                                                                   FontSize="13.5"
                                                                    TextWrapping="Wrap"
-                                                                   Margin="0,3,0,8"/>
+                                                                   Margin="0,4,0,16"/>
                                                     </StackPanel>
 
                                                     <Grid Grid.Row="1">
