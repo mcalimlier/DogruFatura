@@ -18,6 +18,6 @@ public sealed class HistoricalPdfImportCancellationTests
                 "HYS-2026123456.pdf",
                 Array.Empty<SchoolRecord>(),
                 AuthorityProfileDefaults.Create(),
-                cancellation.Token));
+                cancellationToken: cancellation.Token));
     }
 }
