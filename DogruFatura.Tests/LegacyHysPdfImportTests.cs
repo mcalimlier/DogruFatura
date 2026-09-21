@@ -38,7 +38,7 @@ public sealed class LegacyHysPdfImportTests
         Assert.True(preview.IsValid, preview.Status);
         Assert.Equal("HYS-202518581984", preview.HysNumber);
         Assert.Equal("Elektrik", preview.InvoiceType);
-        Assert.Equal(1, preview.InvoiceCount);
+        Assert.Equal(3, preview.InvoiceCount);
         Assert.NotNull(preview.Archive);
 
         var invoice = Assert.Single(preview.Archive!.Invoices);
@@ -90,10 +90,13 @@ public sealed class LegacyHysPdfImportTests
             preview.Status,
             StringComparison.Ordinal);
 
-        var invoice = Assert.Single(preview.Archive!.Invoices);
+        Assert.Equal(2484.91m, decimal.Round(preview.PaymentTotal, 2, MidpointRounding.AwayFromZero));
+        Assert.Equal(3, preview.Archive!.Invoices.Count);
+
+        var invoice = preview.Archive.Invoices[0];
         Assert.Equal("Ağaçbeyli İlkokulu", invoice.InstitutionName);
         Assert.Equal("00004003970", invoice.ServiceNumber);
-        Assert.Equal("EAH202300012083", invoice.InvoiceNumber);
+        Assert.Equal("EAH2023000012083", invoice.InvoiceNumber);
         Assert.Equal(new DateTime(2023, 8, 11), invoice.InvoiceDate);
         Assert.Equal(invoice.InvoiceDate, invoice.DueDate);
         Assert.Equal(1617.30m, invoice.PayableAmount);
@@ -127,19 +130,36 @@ public sealed class LegacyHysPdfImportTests
         for (var i = 0; i < headers.Length; i++)
             graphics.DrawString(headers[i], bold, XBrushes.Black, x[i], 88);
 
-        var row = useOcrLikeMoney
+        var rows = useOcrLikeMoney
             ? new[]
             {
-                "1", "Sivaslı", "Ağaçbeyli İlkokulu", "00004003970", "EAH202300012083",
-                "11.08.2023", "161730", "26955", "1278", "160AS2"
+                new[] { "1", "Sivaslı", "Ağaçbeyli İlkokulu", "00004003970", "EAH2023000012083",
+                    "11.08.2023", "161730", "26955", "1278", "160AS2" },
+                new[] { "2", "Sivaslı", "Ağaçbeyli Anaokulu", "00004001720", "EAH2023000012082",
+                    "11.08.2023", "21490", "3582", "170", "21320" },
+                new[] { "3", "Sivaslı", "Ağaçbeyli Ortaokulu", "00004002490", "EAH2023000012078",
+                    "11.08.2023", "67250", "11207", "531", "66719" }
             }
             : new[]
             {
-                "1", "Sivaslı", "Ağaçbeyli İlkokulu", "00004003970", "EAH202300012083",
-                "11.08.2023", "1.617,30", "269,55", "12,78", "1.604,52"
+                new[] { "1", "Sivaslı", "Ağaçbeyli İlkokulu", "00004003970", "EAH2023000012083",
+                    "11.08.2023", "1.617,30", "269,55", "12,78", "1.604,52" },
+                new[] { "2", "Sivaslı", "Ağaçbeyli Anaokulu", "00004001720", "EAH2023000012082",
+                    "11.08.2023", "214,90", "35,82", "1,70", "213,20" },
+                new[] { "3", "Sivaslı", "Ağaçbeyli Ortaokulu", "00004002490", "EAH2023000012078",
+                    "11.08.2023", "672,50", "112,07", "5,31", "667,19" }
             };
-        for (var i = 0; i < row.Length; i++)
-            graphics.DrawString(row[i], body, XBrushes.Black, x[i], 110);
+
+        for (var rowIndex = 0; rowIndex < rows.Length; rowIndex++)
+        {
+            for (var columnIndex = 0; columnIndex < rows[rowIndex].Length; columnIndex++)
+                graphics.DrawString(
+                    rows[rowIndex][columnIndex],
+                    body,
+                    XBrushes.Black,
+                    x[columnIndex],
+                    110 + rowIndex * 20);
+        }
 
         graphics.DrawString("Gerçekleştirme Görevlisi", bold, XBrushes.Black, 110, 500);
         graphics.DrawString("Ömerali ŞİMŞEK", body, XBrushes.Black, 140, 518);
