@@ -158,9 +158,7 @@ public sealed class LegacyHysPdfImportTests
                 new[] { "2", "Sivaslı", "Ağaçbeyli Anaokulu", "00004001720", "EAH2023000012082",
                     "11.08.2023", "21490", "3582", "170", "21320" },
                 new[] { "3", "Sivaslı", "Ağaçbeyli Ortaokulu", "00004002490", "EAH2023000012078",
-                    "11.08.2023", "67250", "11207",
-                    damageLastResultCells ? "XX" : "531",
-                    damageLastResultCells ? "YY" : "66719" }
+                    "11.08.2023", "67250", "11207", "531", "66719" }
             }
             : new[]
             {
@@ -177,6 +175,11 @@ public sealed class LegacyHysPdfImportTests
         {
             for (var columnIndex = 0; columnIndex < rows[rowIndex].Length; columnIndex++)
             {
+                if (damageLastResultCells
+                    && rowIndex == rows.Length - 1
+                    && columnIndex >= 8)
+                    continue;
+
                 var yOffset = useOcrLikeMoney ? ocrLikeOffsets[columnIndex] : 0d;
                 graphics.DrawString(
                     rows[rowIndex][columnIndex],
