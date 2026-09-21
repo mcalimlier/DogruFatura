@@ -6684,3 +6684,46 @@ Sıradaki kapı:
 3. Temizse `DERLE_CALISTIR.bat`.
 4. Gerçek 2023 MYS tekrar smoke.
 5. 2023 yeşilse 2026 kısa regresyon smoke.
+
+
+### 21.09.2026 — Tek anomalik 2023 PDF için görüntü-tabanlı dönük tablo fallback
+
+Yeni kullanıcı bilgisi:
+- Diğer 2023 MYS faturaları çalışıyor.
+- Sorun yalnız `MYS-2023-4010364.pdf` dosyasında kalıyor.
+
+Gerçek dosya yeniden incelendi:
+- 1. sayfa metin katmanı normal ve Ödeme Emri bilgileri güvenilir okunuyor.
+- 2. sayfanın PDF metin katmanı anlamsız/bozuk karakterlerden oluşuyor.
+- Buna rağmen 2. sayfanın gerçek görüntüsünde 90° dönük, net bir 3 satırlı fatura tablosu bulunuyor.
+- Bu nedenle bu belge genel 2023 format problemi değil, **image-dominant / rotated attachment anomaly** olarak ele alındı.
+
+Gerçek sayfa üzerinde bağımsız OCR denemesinde:
+- tablo yalnız kendisi kırpıldığında `SingleBlock (PSM 6)` ilk satırı güçlü okuyor,
+- `SingleColumn (PSM 4)` ikinci/üçüncü satır para alanlarını daha iyi okuyor,
+- `Auto (PSM 3)` başlık ve sağdaki Damga/Ele Geçen Miktar alanlarını tamamlayabiliyor.
+- Tek bir OCR modu bütün hücreleri güvenilir okuyamıyor; tamamlayıcı modların birleştirilmesi gerekiyor.
+
+Uygulanan özel fallback:
+1. Normal metin katmanı anlamsız / çok zayıf olan legacy sayfa `image-dominant` olarak işaretlenir.
+2. Sayfa doğru yöne çevrildiğinde yalnız **üst %5-%36 tablo bandı** ayrıca OCR edilir.
+3. Bu dar bölgede üç segmentasyon modu sırayla çalışır:
+   - `SingleBlock`
+   - `SingleColumn`
+   - `Auto`
+4. Her Tesseract `Page` sonucu önce `PageData`'ya kopyalanır ve dispose edilir; tek-Page runtime kısıtı korunur.
+5. Üç OCR sonucunun kelimeleri koordinat bazında birleştirilir ve tekrarlar temizlenir.
+6. Aynı hedefli OCR hem çizgileri temizlenmiş görüntüde hem de ham gri görüntüde denenir.
+7. Normal çalışan 2023/2024/2025/2026 yolları değiştirilmez; ek maliyet yalnız image-dominant legacy sayfalarda devreye girer.
+
+Commit:
+- `029931383350edcae3b458965e9b677471ab9596`
+
+Sıradaki kalite kapısı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat`.
+3. Beklenen mevcut test toplamı: **133**.
+4. Hedef: **133/133, 0 hata, 0 uyarı**.
+5. Temizse `DERLE_CALISTIR.bat`.
+6. Önce yalnız gerçek `MYS-2023-4010364.pdf` smoke.
+7. 2023 yeşil olursa 2026 kısa regresyon smoke.
