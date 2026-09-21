@@ -53,7 +53,8 @@ public sealed class HistoricalPdfImportService
         string sourcePath,
         IReadOnlyList<SchoolRecord> schools,
         AuthorityProfile fallbackAuthorityProfile,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IProgress<string>? progress = null)
     {
         var fileName = Path.GetFileName(sourcePath);
         try
@@ -85,7 +86,8 @@ public sealed class HistoricalPdfImportService
                     sourcePath,
                     schools,
                     fallbackAuthorityProfile,
-                    cancellationToken);
+                    cancellationToken,
+                    progress);
             }
 
             if (!hasFileHys)
