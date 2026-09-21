@@ -695,18 +695,33 @@ internal sealed class LegacyHysPdfImportService
         if (dateCount >= 1)
             return true;
 
-        var numericTokenCount = line.Words.Count(word =>
+        var numericTokenCount = 0;
+        foreach (var word in line.Words)
         {
-            var token = word.Text
+            var compact = word.Text
                 .Replace(".", string.Empty, StringComparison.Ordinal)
                 .Replace(",", string.Empty, StringComparison.Ordinal)
                 .Replace("-", string.Empty, StringComparison.Ordinal)
                 .Replace("/", string.Empty, StringComparison.Ordinal)
+                .Replace(":", string.Empty, StringComparison.Ordinal)
                 .Trim();
-            return token.Length >= 3 && token.All(char.IsDigit);
-        });
 
-        return numericTokenCount >= 4;
+            if (compact.Length >= 3 && compact.All(char.IsDigit))
+                numericTokenCount++;
+
+            var hasLetter = compact.Any(char.IsLetter);
+            var hasDigit = compact.Any(char.IsDigit);
+            if (compact.Length >= 8 && hasLetter && hasDigit)
+                return true;
+
+            // Sparse OCR bir gerçek fatura satırını birkaç text-line parçasına
+            // bölebilir. Tek bir uzun hizmet/tutar değeri bile başlığın devamı
+            // olarak yutulmamalıdır.
+            if (compact.Length >= 5 && compact.All(char.IsDigit))
+                return true;
+        }
+
+        return numericTokenCount >= 2;
     }
 
     private static bool TryFindAliasCenter(
