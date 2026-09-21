@@ -45,3 +45,22 @@ Durum: düzeltme kodlandı, 128/128 tekrar testi bekleniyor.
 - Uzun fatura numarası dar başlık geometrisi nedeniyle merkez sınırını aşarsa sütun örtüşmesine göre ikinci okuma denenir.
 - Damga vergisi ve ödeme tutarı içeride tam hassasiyetle korunur; PDF doğrulaması 2 ondalık para gösterimi üzerinden yapılır.
 - Durum: kodlandı, 128/128 tekrar testi bekleniyor.
+
+
+## 21.09.2026 — Otomatik test kapısı geçti
+
+`TESTLERI_CALISTIR.bat` sonucu:
+
+- Toplam: **128**
+- Başarılı: **128**
+- Başarısız: **0**
+- Atlandı: **0**
+
+Semantik legacy PDF okuyucu otomatik test seviyesinde yeşildir.
+
+Sıradaki doğrulama sentetik PDF değil, gerçek arşiv belgeleridir:
+- gerçek 2025 HYS PDF,
+- gerçek 2026 dönük/bozuk metin katmanlı HYS PDF,
+- önizleme penceresi kapatma X simgesi.
+
+Bu gerçek smoke tamamlanmadan final kabul yapılmaz.
