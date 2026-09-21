@@ -6036,3 +6036,55 @@ Henüz final kabul yapılmadı. Sıradaki zorunlu kapı gerçek arşiv smoke tes
 3. Gerçek 2026, 90° dönük / bozuk metin katmanlı HYS PDF ile `ARŞİV EKLE` önizleme.
 4. Sağ üst kapatma X simgesinin görsel kontrolü.
 5. İki gerçek belge de doğru okunmadan release dalına merge ve yeni final Setup üretimi yapılmayacak.
+
+
+### 21.09.2026 — Gerçek 2023/2024/2025/2026 PDF incelemesi ve ikinci uyumluluk paketi
+
+Kullanıcı dört gerçek tarihsel ödeme emri PDF'sini sağladı.
+
+Gerçek belge sonucu:
+- 2024 HYS: önizleme başarılı.
+- 2025 HYS: önizleme başarılı.
+- 2026 HYS: OCR fallback gerekli; runtime hata mesajı Tesseract motorunun `tur.traineddata` dosyasını yanlış klasörde aradığını gösterdi.
+- 2023 MYS: belge numarası gerçekten `MYS-2023-4010364`. İkinci sayfadaki ödeme listesi 90° dönük ve yeni HYS listesinden farklı sütun başlıklarına sahip. Belgede son ödeme/vade tarihi sütunu yok.
+
+Kaynak dosya incelemesinden doğrulanan 2023 başlık ailesi:
+- `S.NO`
+- `İLÇE ADI`
+- `KURUM_ADI`
+- `Tüketici No`
+- `FATURA_NO`
+- `FATURA_TARİHİ`
+- `TOPLAM_TUTAR`
+- `KDV TUTARI`
+- `DAMGA VERGİSİ`
+- `ELE GEÇEN MİKTAR`
+
+Uygulanan düzeltmeler:
+- `HysPaymentOrderService` geçmiş `MYS` belge numaralarını da normalize edip koruyabiliyor; düz rakam girdisi mevcut davranış gereği HYS kabul edilmeye devam ediyor.
+- Dosya adı okuyucu `HYS` ve `MYS` öneklerini destekliyor.
+- PDF içi belge numarası eşleştirmesi `HYS|MYS` olarak genişletildi.
+- Önizleme sütun adı `HYS Belge No` yerine `Ödeme Emri No` yapıldı.
+- OCR motoruna yanlışlıkla uygulama kökü veriliyordu; artık doğrudan `<uygulama>\tessdata` klasörü veriliyor. `tur.traineddata` kontrolü ile motorun veri yolu aynı klasörü kullanıyor.
+- 2023 başlıkları için `Tüketici No`, `Toplam Tutar`, `Ele Geçen Miktar`, `S.NO` ve isteğe bağlı `İlçe Adı` semantik alias'ları eklendi.
+- Alt çizgili/bitişik eski başlıklar (`KURUM_ADI`, `FATURA_NO`, vb.) compact alias eşleşmesiyle destekleniyor.
+- Eski MYS tablolarında son ödeme tarihi sütunu hiç yoksa bu eksiklik gizlenmiyor: arşiv şemasının zorunlu alanını doldurmak için fatura tarihi kullanılıyor ve önizleme açıklamasına açık bir not ekleniyor. Sütun mevcut olup okunamıyorsa belge yine hata sayılıyor.
+- 2023 MYS sentetik regresyon testi ve MYS normalize testleri eklendi.
+
+İlgili commitler:
+- MYS numara desteği: `62fd99b5a3d8f834edee3964bb9ee10048b0ab87`
+- HYS/MYS dosya adı: `e9599033695e296613a577f83b9c788a6018fcd4`
+- MYS tablo + OCR tessdata yolu: `8bfe0401c4acbbb20d9c7ffde8936dd4a5cf2856`
+- İlçe sütunu / due-date akışı: `513baede8aba0318422e0aa008f5f10f6883f140`
+- Önizleme genel belge no etiketi: `21939f4fa8b9d2b7e6d9c1c06612ea3f4cd11a99`
+- MYS normalizasyon testleri: `5f50c04a0dcbea8c616b44e93b4b8d0fc04d4db6`
+- MYS tablo regresyon testi: `57d2a134acd051f740b10d758936f922a09905b4`
+- Alt çizgili/bitişik başlık eşleşmesi: `b30f8ff04915b7550072f9c4dbfb098acaee43e2`
+
+Sıradaki kalite kapısı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat`.
+3. Yeni beklenen toplam test: **131**.
+4. Hedef: **131/131**.
+5. Sonra `DERLE_CALISTIR.bat` ile gerçek 2023 ve 2026 PDF önizlemesi yeniden denenmeli.
+6. 2024/2025 regresyon smoke da tekrar kontrol edilmeli.
