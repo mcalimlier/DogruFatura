@@ -1,5 +1,6 @@
 using DogruFatura.Core.Models;
 using DogruFatura.Wpf;
+using PdfSharp;
 using PdfSharp.Drawing;
 using PdfSharp.Pdf;
 
