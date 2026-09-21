@@ -796,6 +796,13 @@ internal sealed class LegacyHysPdfImportService
     {
         var engine = OcrEngine.TryCreateFromUserProfileLanguages();
         if (engine is null)
+        {
+            var fallbackLanguage = OcrEngine.AvailableRecognizerLanguages.FirstOrDefault();
+            if (fallbackLanguage is not null)
+                engine = OcrEngine.TryCreateFromLanguage(fallbackLanguage);
+        }
+
+        if (engine is null)
             return new OcrPageResult(
                 Array.Empty<PageData>(),
                 "Windows OCR dili kullanılamıyor. Windows Dil ayarlarında OCR desteği olan bir dil kurulmalıdır.");
