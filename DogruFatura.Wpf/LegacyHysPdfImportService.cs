@@ -1011,9 +1011,7 @@ internal sealed class LegacyHysPdfImportService
                 ref bestScore,
                 cancellationToken);
 
-            using var gray = sourceImage.Depth == 32
-                ? sourceImage.ConvertRGBToGray()
-                : sourceImage.ConvertTo8(0);
+            using var gray = sourceImage.ConvertRGBToGray();
             using var cleaned = gray.RemoveLines(150, 150);
             bestPage = SelectBetterOcrPage(
                 engine,
