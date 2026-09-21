@@ -6269,3 +6269,56 @@ Sıradaki kapı:
 3. Hedef: **132/132, 0 warning**.
 4. Sonuç temizse `DERLE_CALISTIR.bat`.
 5. Gerçek 2023 MYS PDF smoke + mini progress penceresi kontrolü.
+
+
+### 21.09.2026 — Gerçek 2023/2026 smoke sonrası OCR satır rekonstrüksiyonu + İPTAL görünürlüğü
+
+Gerçek uygulama smoke ekranları:
+- Mini `ARŞİV PDF TARANIYOR` penceresi açılıyor.
+- İPTAL düğmesi pencerenin alt sınırına taşarak yazının alt kısmını kırpıyordu.
+- 2023 MYS hâlâ para sütunu doğrulamasında hata veriyordu.
+- 2026 HYS bu turda `Son ödeme/vade tarihi okunamadı` hatasına düştü.
+
+Gerçek kaynak PDF'ler tekrar incelendi:
+- 2023 MYS ödeme emri toplamı 2.484,91 TL; fatura listesi 90° dönük eski tablo ve üç satır içeriyor.
+- 2026 gerçek fatura listesinde hem `Fatura Tarihi` hem `Son Ödeme Tarihi` sütunu mevcut; 04.05.2026 / 14.05.2026 değerleri görsel kaynakta bulunuyor. Dolayısıyla 2026'da fatura tarihine fallback yerine gerçek vade tarihinin OCR'dan doğru okunması hedeflenmeli.
+
+Kök neden:
+- Sparse OCR'da aynı fatura satırındaki kelimeler farklı Tesseract text-line gruplarına düşebiliyor.
+- Örnek 2023 satırında fatura no, hizmet no, tarih ve para hücreleri aynı yatay satırda olsa bile OCR top koordinatları birkaç piksel farklı olduğu için mevcut `BuildLines` bunları 2-3 ayrı satıra bölebiliyordu.
+- 2026'da da tarih karakterlerinde O/0 ve I/1 türü OCR karışmaları vade tarihini bozabiliyor.
+
+Uygulanan parser düzeltmeleri:
+- Fatura satırları artık yalnız Tesseract'ın line gruplarına güvenmiyor.
+- `Fatura Tarihi` sütunundaki geçerli tarih kelimesi satır ankrajı olarak kullanılıyor.
+- Aynı Y bandındaki kurum, hizmet no, fatura no, vade ve para kelimeleri semantik olarak tekrar tek fatura satırında birleştiriliyor.
+- OCR tarih normalizasyonu genişletildi:
+  - O/o/Q/D -> 0
+  - I/İ/ı/l/|/! -> 1
+  - Z/z -> 2
+  - S/s -> 5
+  - B/b -> 8
+- OCR aday skoru artık reconstructed row üzerinden çalışıyor.
+- Geçerli vade tarihi adaya ek puan; mevcut vade sütununda okunamayan tarih eksi puan veriyor.
+- Tutar/KDV/Damga/Ödeme kombinasyonu mevcut 0.00948 hesap kuralıyla tutarlıysa OCR adayı güçlü biçimde tercih ediliyor.
+
+UI düzeltmesi:
+- Tarama penceresi yüksekliği 190 -> 220 yapıldı.
+- İPTAL düğmesi 110x38 yapıldı.
+- İçerik yatay/dikey merkezlendi.
+- Yerel ControlTemplate ile global Button stilinden kaynaklanabilecek metin kırpılması engellendi.
+
+Commitler:
+- İPTAL görünürlüğü: `98fff8fa1f10942720334ceb209f24b7b50522bf`
+- OCR satır rekonstrüksiyonu + tarih normalizasyonu: `016cdb06c2ac5b7c9c0b6dbf1648c50c2fd86b5f`
+- OCR aday veri/tutar tutarlılık skoru: `6f347f22d1bea3f85312d5e8e5091dc6de045f3a`
+- Staggered OCR satırı + tarih karakter karışması regresyonu: `e03091142eaff4f4fe7c213e826fc59950c8e0d7`
+
+Sıradaki kapı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat` — hedef **132/132, 0 warning**.
+3. `DERLE_CALISTIR.bat`.
+4. Önce 2023 MYS gerçek PDF.
+5. Ardından 2026 HYS gerçek PDF.
+6. Mini pencerede İPTAL yazısının tam göründüğünü kontrol et.
+7. 2023 ve 2026 ikisi de yeşil olmadan final Setup üretme.
