@@ -118,3 +118,22 @@ Gerçek 2023 smoke bekleniyor.
 ### 2023 regresyon kapsamı
 
 Regresyon fixture'ı artık gerçek 2023 MYS listesindeki üç satırın tutarlarını ve toplam 2.484,91 ödeme değerini kapsıyor. Normal para biçimi ile OCR-benzeri bozuk para biçimi ayrı theory vakaları olarak doğrulanacak.
+
+
+## 21.09.2026 — Ayıraçsız OCR para ölçeği düzeltmesi
+
+132 testlik kapıda OCR-benzeri 2023 MYS varyantı yanlışlıkla `2.484,91` yerine `182.439,19` toplam üretti.
+
+Neden:
+- `161730` gibi OCR metni önce `161.730,00` olarak deneniyordu.
+- Aynı ölçek hatası tüm para sütunlarında oluşunca oran doğrulaması yanlış büyük kombinasyonu geçirebiliyordu.
+
+Yeni kural:
+- Ayıraçsız, en az 3 haneli eski OCR para metninde önce son iki rakam kuruş kabul edilir.
+- Örnek: `161730 -> 1.617,30`.
+- Ham tam sayı yorumu yalnız fallback olarak kalır.
+- Açık nokta/virgül içeren normal metin etkilenmez.
+
+Aynı değişiklik iki analyzer uyarısını da temizler: `CA1870` ve `CA1861`.
+
+Durum: **132/132 + 0 warning tekrar testi bekleniyor.**
