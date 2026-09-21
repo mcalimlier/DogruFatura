@@ -5953,3 +5953,29 @@ Düzeltme:
 Sıradaki kapı:
 - Fetch/Pull sonrası `TESTLERI_CALISTIR.bat`.
 - Hedef: **128/128, 0 hata**.
+
+
+### 21.09.2026 — Üçüncü 128 test koşusu sonucu
+
+Yerel `TESTLERI_CALISTIR.bat` sonucu:
+- Derleme: başarılı.
+- Toplam: 128.
+- Geçen: 126.
+- Başarısız: 2.
+- İki hata da yeni legacy HYS parser testlerinde.
+- Önceki parasal sütun hatası çözülmüş durumda; parser artık satırı ve tutarları okuyabiliyor.
+- Yeni tek fark: beklenen okul adı `Tatar Ortaokulu`, okunan değer `1 Tatar Ortaokulu`.
+
+Kök neden:
+- Bazı eski PDF geometrilerinde `No / Sıra No` hücresindeki satır numarası okul/kurum sütunu sınırına taşabiliyor.
+- Bu durumda okul adı doğru okunuyor fakat başına sıra numarası ekleniyor.
+
+Düzeltme:
+- Kurum hücresinde yalnız baştaki saf sıra numarası (`1`, `2`, vb.) güvenli biçimde temizleniyor.
+- Kurum adının içindeki diğer rakamlar korunuyor.
+- Commit: `6b9ff3ba1562f2cb2244b4686fa4a0ae6d78bea6`.
+
+Sıradaki kapı:
+- Fetch/Pull.
+- `TESTLERI_CALISTIR.bat`.
+- Hedef: **128/128, 0 hata**.
