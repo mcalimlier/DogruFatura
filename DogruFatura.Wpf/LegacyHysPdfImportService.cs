@@ -1011,7 +1011,9 @@ internal sealed class LegacyHysPdfImportService
                 ref bestScore,
                 cancellationToken);
 
-            using var gray = sourceImage.ConvertRGBToGray();
+            using var gray = sourceImage.Depth == 32
+                ? sourceImage.ConvertRGBToGray()
+                : sourceImage.ConvertTo8(0);
             using var cleaned = gray.RemoveLines(150, 150);
             bestPage = SelectBetterOcrPage(
                 engine,
@@ -1022,31 +1024,30 @@ internal sealed class LegacyHysPdfImportService
                 ref bestScore,
                 cancellationToken);
 
-            if (bestScore < 1_000_000)
+            if (bestScore < 100_000_000)
             {
-                using (var clockwise = cleaned.Rotate90(RotationDirection.Clockwise))
-                {
-                    bestPage = SelectBetterOcrPage(
-                        engine,
-                        clockwise,
-                        PageSegMode.SingleBlock,
-                        (int)pageIndex + 1,
-                        bestPage,
-                        ref bestScore,
-                        cancellationToken);
-                }
+                using var clockwise = cleaned.Rotate90(RotationDirection.Clockwise);
+                bestPage = SelectBetterOcrPage(
+                    engine,
+                    clockwise,
+                    PageSegMode.SingleBlock,
+                    (int)pageIndex + 1,
+                    bestPage,
+                    ref bestScore,
+                    cancellationToken);
+            }
 
-                using (var counterClockwise = cleaned.Rotate90(RotationDirection.CounterClockwise))
-                {
-                    bestPage = SelectBetterOcrPage(
-                        engine,
-                        counterClockwise,
-                        PageSegMode.SingleBlock,
-                        (int)pageIndex + 1,
-                        bestPage,
-                        ref bestScore,
-                        cancellationToken);
-                }
+            if (bestScore < 100_000_000)
+            {
+                using var counterClockwise = cleaned.Rotate90(RotationDirection.CounterClockwise);
+                bestPage = SelectBetterOcrPage(
+                    engine,
+                    counterClockwise,
+                    PageSegMode.SingleBlock,
+                    (int)pageIndex + 1,
+                    bestPage,
+                    ref bestScore,
+                    cancellationToken);
             }
 
             if (bestPage is not null)
@@ -1068,7 +1069,8 @@ internal sealed class LegacyHysPdfImportService
         cancellationToken.ThrowIfCancellationRequested();
         using var page = engine.Process(image, pageSegMode);
         var candidate = CreateOcrPage(pageNumber, image, page);
-        var score = HeaderScore(candidate) * 10000
+        var score = HeaderScore(candidate) * 1_000_000
+                    + SemanticDocumentScore(candidate) * 10_000
                     + (int)Math.Round(page.MeanConfidence * 100d)
                     + Math.Min(candidate.Words.Count, 5000);
 
@@ -1175,6 +1177,33 @@ internal sealed class LegacyHysPdfImportService
         }
 
         return found.Count;
+    }
+
+    private static int SemanticDocumentScore(PageData page)
+    {
+        var text = NormalizeKey(string.Join(" ", page.Lines.Select(line => line.Text)));
+        if (string.IsNullOrWhiteSpace(text))
+            return 0;
+
+        var score = 0;
+        foreach (var phrase in new[]
+                 {
+                     "odeme emri belgesi",
+                     "belge numarasi",
+                     "duzenleme",
+                     "fatura",
+                     "elektrik",
+                     "telefon",
+                     "internet",
+                     "gerceklestirme gorevlisi",
+                     "harcama yetkilisi"
+                 })
+        {
+            if (text.Contains(phrase, StringComparison.Ordinal))
+                score++;
+        }
+
+        return score;
     }
 
     private static IReadOnlyList<LineData> BuildLines(IEnumerable<WordData> words)
