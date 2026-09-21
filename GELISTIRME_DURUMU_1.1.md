@@ -6003,3 +6003,36 @@ Sıradaki kapı:
 - Fetch/Pull.
 - `TESTLERI_CALISTIR.bat`.
 - Hedef: **128/128, 0 hata**.
+
+
+### 21.09.2026 — Legacy HYS/PDF otomatik test kapısı YEŞİL
+
+Kullanıcının yerel `TESTLERI_CALISTIR.bat` koşusu başarıyla tamamlandı.
+
+Sonuç:
+- SDK: .NET 10.0.400
+- Toplam test: **128**
+- Başarılı: **128**
+- Başarısız: **0**
+- Atlandı: **0**
+- `DogruFatura.Core`: başarılı
+- `DogruFatura.Wpf`: başarılı
+- `DogruFatura.Tests`: başarılı
+- BAT sonucu: **[OK] TUM TESTLER BASARILI**
+
+Bu kapıyla birlikte:
+- semantik legacy HYS başlık okuma,
+- alternatif sütun başlıkları,
+- çok satırlı başlık koruması,
+- sıra numarası taşması temizliği,
+- uzun fatura numarası geometrik fallback'i,
+- para alanlarının 2 ondalık PDF gösterim doğrulaması,
+- mevcut DoğruFatura regresyon paketi
+otomatik test seviyesinde yeşildir.
+
+Henüz final kabul yapılmadı. Sıradaki zorunlu kapı gerçek arşiv smoke testidir:
+1. `fix/archive-import-legacy-hys` dalında `DERLE_CALISTIR.bat`.
+2. Gerçek 2025 HYS PDF ile `ARŞİV EKLE` önizleme.
+3. Gerçek 2026, 90° dönük / bozuk metin katmanlı HYS PDF ile `ARŞİV EKLE` önizleme.
+4. Sağ üst kapatma X simgesinin görsel kontrolü.
+5. İki gerçek belge de doğru okunmadan release dalına merge ve yeni final Setup üretimi yapılmayacak.
