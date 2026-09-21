@@ -212,3 +212,21 @@ Ayrıca `Ele Miktar` OCR alias'ı eklendi.
 
 Beklenen test toplamı: **133**.
 Durum: **133/133 + gerçek 2023 smoke bekleniyor.**
+
+
+## 21.09.2026 — Ödeme Emri toplamıyla aggregate OCR doğrulaması
+
+Gerçek 2023 MYS OCR'da üçüncü satırın Damga Vergisi ve Ele Geçen Miktar hücreleri aynı anda kaybolabiliyor.
+
+Yeni kural:
+- Tutar + KDV güvenilir okunuyorsa hesap motoru eksik sonuç hücrelerini geçici olarak türetebilir.
+- Ancak böyle bir satır varsa belge ancak ana Ödeme Emri sayfasındaki toplamlarla tamamen uyuştuğunda kabul edilir.
+- Doğrulanan toplamlar:
+  - Brüt Tutar
+  - Kesinti/Damga toplamı
+  - Net/Ödenmesi gereken toplam
+- Herhangi bir aggregate uyuşmazlıkta belge reddedilir.
+
+OCR sayfası, okunabilir ana sayfa ile birleştirildiği için belge numarası, tarih, tür ve resmi toplamlar OCR fallback sırasında korunur.
+
+Durum: **133/133 otomatik test + gerçek 2023 smoke bekleniyor.**
