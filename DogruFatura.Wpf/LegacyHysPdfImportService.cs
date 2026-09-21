@@ -447,10 +447,7 @@ internal sealed class LegacyHysPdfImportService
         var vatCandidates = MoneyCandidates(vatText);
         var stampCandidates = MoneyCandidates(stampDutyText);
         var paymentCandidates = MoneyCandidates(paymentText);
-        if (payableCandidates.Count == 0
-            || vatCandidates.Count == 0
-            || stampCandidates.Count == 0
-            || paymentCandidates.Count == 0)
+        if (payableCandidates.Count == 0 || vatCandidates.Count == 0)
             return false;
 
         foreach (var payable in payableCandidates)
@@ -474,6 +471,48 @@ internal sealed class LegacyHysPdfImportService
             printedPaymentAmount = payment;
             calculation = candidateCalculation;
             compensationAmount = candidateCompensation;
+            return true;
+        }
+
+        // Eski OCR çıktılarında özellikle tablo çizgileri Damga Vergisi veya
+        // Ele Geçen Miktar hücresini bozabiliyor. Tutar + KDV güvenilir okunmuşsa
+        // ve basılı sonuç alanlarından en az biri hesap motoruyla eşleşiyorsa,
+        // eksik olan sonuç alanı güvenli biçimde hesaplamadan tamamlanabilir.
+        if (stampCandidates.Count == 0 && paymentCandidates.Count == 0)
+            return false;
+
+        foreach (var payable in payableCandidates)
+        foreach (var vat in vatCandidates)
+        {
+            var candidateCalculation = _taxCalculationService.Calculate(
+                payable,
+                vat,
+                invoiceType);
+            if (!candidateCalculation.IsValid)
+                continue;
+
+            var roundedStamp = decimal.Round(
+                candidateCalculation.StampDuty,
+                2,
+                MidpointRounding.AwayFromZero);
+            var roundedPayment = decimal.Round(
+                candidateCalculation.PaymentAmount,
+                2,
+                MidpointRounding.AwayFromZero);
+
+            var stampMatches = stampCandidates.Count == 0
+                               || stampCandidates.Contains(roundedStamp);
+            var paymentMatches = paymentCandidates.Count == 0
+                                 || paymentCandidates.Contains(roundedPayment);
+            if (!stampMatches || !paymentMatches)
+                continue;
+
+            payableAmount = payable;
+            vatAmount = vat;
+            printedStampDuty = stampCandidates.FirstOrDefault(roundedStamp);
+            printedPaymentAmount = paymentCandidates.FirstOrDefault(roundedPayment);
+            calculation = candidateCalculation;
+            compensationAmount = 0m;
             return true;
         }
 
