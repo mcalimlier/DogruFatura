@@ -2387,7 +2387,7 @@ internal sealed class LegacyHysPdfImportService
         int DetectedRequiredCount);
 
     private sealed record RowMoneyWord(
-        IReadOnlyList<decimal> Candidates);
+        List<decimal> Candidates);
 
     private sealed record DocumentTotals(
         decimal GrossAmount,
