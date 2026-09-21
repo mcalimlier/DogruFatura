@@ -30,10 +30,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Assets\Ocr\tur.traineddata"
-          CopyToOutputDirectory="PreserveNewest"
-          CopyToPublishDirectory="PreserveNewest"
-          TargetPath="tessdata\tur.traineddata" />
+    <Content Include="Assets\Ocr\tur.traineddata"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest"
+             TargetPath="tessdata\tur.traineddata" />
   </ItemGroup>
 
   <Target Name="EnsureTurkishOcrModel" BeforeTargets="PrepareForBuild"
