@@ -6161,3 +6161,58 @@ Sıradaki kapı:
 2. `TESTLERI_CALISTIR.bat` — hedef **131/131, 0 warning**.
 3. Sonuç temizse `DERLE_CALISTIR.bat`.
 4. Gerçek 2023 MYS ve 2026 HYS PDF smoke testi.
+
+
+### 21.09.2026 — 2023 MYS para OCR düzeltmesi + mini tarama penceresi
+
+Gerçek smoke durumu:
+- 2024: başarılı.
+- 2025: başarılı.
+- 2026: başarılı; OCR fallback çalışıyor.
+- 2023: belge/satır tanınıyor ancak 2. sayfadaki para alanları güvenilir doğrulanamıyordu.
+
+2023 gerçek sayfa incelemesinde eski MYS tablosunun OCR çıktısında para değerlerinde şu bozulma sınıfları görüldü:
+- ondalık ayıracın düşmesi: `161730 -> 1.617,30`, `26955 -> 269,55`, `1278 -> 12,78`
+- OCR karakter karışması: `160AS2 -> 1.604,52`
+- bazı satırlarda Damga Vergisi veya Ele Geçen Miktar hücresinin tablo çizgileri nedeniyle eksik okunması
+
+Uygulanan parser düzeltmeleri:
+- Para adayları için OCR karakter normalizasyonu eklendi: O/D/Q→0, I/l/|→1, Z→2, A→4, S→5, G→6, B→8.
+- Nokta/virgül tamamen düşmüş para metinlerinde son iki rakam kuruş adayı olarak ayrıca deneniyor.
+- Tesseract temizlenmiş tablo üzerinde `SingleBlock` yanında `SparseText` modu da deneniyor.
+- OCR aday seçim skoruna gerçek fatura satırı/veri kapsama skoru eklendi.
+- Tutar + KDV güvenilir okunmuş ve Damga/Ödeme sonuçlarından en az biri hesap motoruyla eşleşmişse, bozuk olan sonuç hücresi hesap motorundan güvenli biçimde tamamlanabiliyor.
+- Her iki sonuç hücresi de okunamıyorsa satır yine reddediliyor; kör kabul yapılmıyor.
+
+UI / UX:
+- Yeni `HistoricalPdfImportProgressWindow` eklendi.
+- Tarama sırasında küçük, uygulama üstünde duran pencere açılıyor.
+- Kullanıcıya yalnız sade mesaj gösteriliyor:
+  - `ARŞİV PDF TARANIYOR`
+  - `Arşiv PDF taranıyor, lütfen bekleyiniz...`
+  - `1/1 dosya işleniyor • <dosya>`
+- ProgressBar indeterminate çalışıyor.
+- İPTAL düğmesi mevcut cancellation akışına bağlı.
+- Teknik OCR adımları ana ekrandan kaldırıldı; kullanıcıya gösterilmiyor.
+- Ana ekran yalnız sade `arşiv PDF işleniyor` durumunu gösteriyor.
+
+Yeni regresyon:
+- 2023 MYS testi normal para biçiminin yanında OCR-benzeri bozuk para metniyle de çalışıyor.
+- Beklenen toplam test sayısı artık **132**.
+
+Commitler:
+- 2023 OCR para + SparseText: `1d8173b32685dc3ea8f79659301607f1531b3781`
+- Mini progress XAML: `2c64fa4534768c78883af9cea953373d04234947`
+- Mini progress code-behind: `e187eae4621b381dc011b83d1bd8852365610988`
+- Ana akış progress entegrasyonu: `fcf532bbd77cf36c96cb7d50fa154537c9541815`
+- OCR-benzeri para regresyon testi: `43fecc51d248dff3531998a81008d8eb94063688`
+- Kısmi sonuç hücresi güvenli kurtarma: `ece5398181cc1e751560822f3c94f100236f4f1e`
+- Deterministik recovered print değerleri: `ae781160c2b713553370e1ef45140bc24abae8f1`
+
+Sıradaki kapı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat` — hedef **132/132, 0 warning**.
+3. `DERLE_CALISTIR.bat`.
+4. Gerçek `MYS-2023-4010364.pdf` tek başına denenmeli.
+5. Mini tarama penceresi görünmeli ve teknik OCR metni kullanıcıya çıkmamalı.
+6. 2023 önizleme yeşil olmadan final Setup üretilmemeli.
