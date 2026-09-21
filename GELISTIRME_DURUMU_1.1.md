@@ -6233,3 +6233,39 @@ Ek commitler:
 - HYS/MYS beklenen adet düzeltmesi: `be3b6325b7a2904bc61eabe1df0379e40b75e365`
 
 Beklenen test toplamı değişmedi: **132**.
+
+
+### 21.09.2026 — 132 test kapısı: 1 failure / 2 warning düzeltmesi
+
+Son yerel test sonucu:
+- Toplam: **132**
+- Başarılı: **131**
+- Başarısız: **1**
+- Atlandı: **0**
+- Uyarı: **2**
+
+Başarısız test:
+- `LegacyMysTableWithoutDueDateIsImportedSafely(useOcrLikeMoney: True)`
+- Beklenen toplam ödeme: `2.484,91`
+- Okunan toplam ödeme: `182.439,19`
+
+Kök neden:
+- OCR-benzeri ayıraçsız para metinlerinde (`161730`, `26955`, `1278`, `160452`) aday üretimi önce ham tam sayıyı deniyordu.
+- Bu değerlerin tümü aynı ölçekle büyüdüğü için vergi oranları matematiksel olarak yine tutarlı kalabiliyor ve yanlış büyük ölçekli kombinasyon geçebiliyordu.
+- Eski HYS/MYS PDF para hücreleri 2 ondalık gösterimlidir; OCR ayıracı düşürdüğünde ilk yorumun kuruş ölçeği olması gerekir.
+
+Düzeltme:
+- Ayıraçsız ve en az 3 haneli OCR para metninde **son iki rakam kuruş** adayı artık önce deneniyor.
+- Açık nokta/virgül içeren normal para metninde mevcut davranış korunuyor.
+- Ham tam sayı adayı fallback olarak tutuluyor; kuruş yorumu hesap motoruyla uyuşmazsa geri dönülebiliyor.
+- `IndexOfAny(new[] { '.', ',' })` kaldırıldı; böylece aynı satırdaki `CA1870` ve `CA1861` analyzer uyarıları da ortadan kaldırıldı.
+
+Commit:
+- `a38f9366ec8db1b88401807069ab665524e512e3`
+
+Sıradaki kapı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat`.
+3. Hedef: **132/132, 0 warning**.
+4. Sonuç temizse `DERLE_CALISTIR.bat`.
+5. Gerçek 2023 MYS PDF smoke + mini progress penceresi kontrolü.
