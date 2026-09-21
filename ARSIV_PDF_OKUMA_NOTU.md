@@ -285,3 +285,24 @@ Düzeltme:
 - iki bağımsız `PageData` sonucu en son birleştirilir.
 
 Durum: gerçek 2023 smoke tekrarı bekleniyor.
+
+
+## 21.09.2026 — Image-dominant tek dosya fallback
+
+Diğer 2023 MYS belgeleri çalıştığı için `MYS-2023-4010364.pdf` artık genel 2023 parser davranışıyla değil, kendi anomalisine göre ele alınıyor.
+
+Belgenin 2. sayfasında:
+- metin katmanı bozuk,
+- gerçek görüntü net,
+- tablo 90° dönük,
+- tek OCR modu bütün para hücrelerini aynı anda yakalayamıyor.
+
+Yeni fallback yalnız bu tür zayıf metin katmanlı legacy sayfalarda çalışır:
+- doğru yön sonrası üst %5-%36 tablo bandı,
+- SingleBlock + SingleColumn + Auto,
+- ham gri + çizgi temizlenmiş görüntü,
+- koordinat bazlı OCR sonucu birleştirme.
+
+Normal çalışan arşiv formatlarının yolu değiştirilmez.
+
+Durum: **133/133 tekrar test + gerçek anomalik 2023 smoke bekleniyor.**
