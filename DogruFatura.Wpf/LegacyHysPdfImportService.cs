@@ -725,8 +725,6 @@ internal sealed class LegacyHysPdfImportService
             .Where(word => word.Right > payableRange.Left)
             .OrderBy(word => word.Left)
             .Select(word => new RowMoneyWord(
-                word.Left,
-                word.Right,
                 MoneyCandidates(word.Text)))
             .Where(item => item.Candidates.Count > 0)
             .ToArray();
@@ -777,7 +775,10 @@ internal sealed class LegacyHysPdfImportService
             foreach (var payable in moneyWords[payableIndex].Candidates)
             foreach (var vat in moneyWords[vatIndex].Candidates)
             {
-                if (payable <= 0m || vat < 0m || vat > payable)
+                if (payable <= 0m
+                    || vat < 0m
+                    || vat > payable
+                    || vat > payable * 0.5m)
                     continue;
 
                 var candidateCalculation = _taxCalculationService.Calculate(
@@ -1691,6 +1692,13 @@ internal sealed class LegacyHysPdfImportService
                     bestPage,
                     ref bestScore,
                     cancellationToken);
+                bestPage = SelectBetterTableRegionOcr(
+                    engine,
+                    clockwise,
+                    (int)pageIndex + 1,
+                    bestPage,
+                    ref bestScore,
+                    cancellationToken);
             }
 
             progress?.Report($"OCR {pageNumber}/{document.PageCount}: ters 90° yön deneniyor");
@@ -1708,6 +1716,13 @@ internal sealed class LegacyHysPdfImportService
                     engine,
                     counterClockwise,
                     PageSegMode.SparseText,
+                    (int)pageIndex + 1,
+                    bestPage,
+                    ref bestScore,
+                    cancellationToken);
+                bestPage = SelectBetterTableRegionOcr(
+                    engine,
+                    counterClockwise,
                     (int)pageIndex + 1,
                     bestPage,
                     ref bestScore,
@@ -1736,10 +1751,115 @@ internal sealed class LegacyHysPdfImportService
         cancellationToken.ThrowIfCancellationRequested();
         using var page = engine.Process(image, pageSegMode);
         var candidate = CreateOcrPage(pageNumber, image, page);
+        return SelectBetterOcrCandidate(
+            candidate,
+            page.MeanConfidence,
+            currentBest,
+            ref bestScore);
+    }
+
+    private static PageData? SelectBetterTableRegionOcr(
+        TesseractEngine engine,
+        TesseractPix image,
+        int pageNumber,
+        PageData? currentBest,
+        ref int bestScore,
+        CancellationToken cancellationToken)
+    {
+        if (image.Width <= image.Height || image.Height < 300)
+            return currentBest;
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // Dönük eski eklerde fatura listesi doğru yöne çevrildiğinde çoğunlukla
+        // sayfanın üst bölümündedir. Tam sayfa OCR; imza, kaşe ve geniş boşluklar
+        // nedeniyle bazı para hücrelerini atlayabiliyor. Üst tablo bandını ayrıca
+        // iki farklı segmentasyonla tara ve sonuçları aynı koordinat sisteminde birleştir.
+        var bottom = Math.Clamp(
+            (int)Math.Round(image.Height * 0.42d),
+            220,
+            image.Height - 1);
+        var region = TesseractOCR.Rect.FromCoords(
+            1,
+            1,
+            image.Width - 1,
+            bottom);
+
+        using var blockPage = engine.Process(
+            image,
+            region,
+            PageSegMode.SingleBlock);
+        var blockCandidate = CreateOcrPage(pageNumber, image, blockPage);
+        currentBest = SelectBetterOcrCandidate(
+            blockCandidate,
+            blockPage.MeanConfidence,
+            currentBest,
+            ref bestScore);
+
+        cancellationToken.ThrowIfCancellationRequested();
+        using var sparsePage = engine.Process(
+            image,
+            region,
+            PageSegMode.SparseText);
+        var sparseCandidate = CreateOcrPage(pageNumber, image, sparsePage);
+        currentBest = SelectBetterOcrCandidate(
+            sparseCandidate,
+            sparsePage.MeanConfidence,
+            currentBest,
+            ref bestScore);
+
+        var merged = MergeOcrCandidates(blockCandidate, sparseCandidate);
+        var mergedConfidence = (blockPage.MeanConfidence + sparsePage.MeanConfidence) / 2d;
+        return SelectBetterOcrCandidate(
+            merged,
+            mergedConfidence,
+            currentBest,
+            ref bestScore);
+    }
+
+    private static PageData MergeOcrCandidates(
+        PageData first,
+        PageData second)
+    {
+        var words = new List<WordData>(first.Words);
+
+        foreach (var candidate in second.Words)
+        {
+            var duplicate = words.Any(existing =>
+                string.Equals(
+                    NormalizeToken(existing.Text),
+                    NormalizeToken(candidate.Text),
+                    StringComparison.Ordinal)
+                && Math.Abs(existing.CenterX - candidate.CenterX) <= 18d
+                && Math.Abs(existing.CenterY - candidate.CenterY) <= 12d);
+
+            if (!duplicate)
+                words.Add(candidate);
+        }
+
+        var ordered = words
+            .OrderBy(word => word.Top)
+            .ThenBy(word => word.Left)
+            .ToArray();
+
+        return new PageData(
+            first.PageNumber,
+            first.Width,
+            first.Height,
+            ordered,
+            BuildLines(ordered));
+    }
+
+    private static PageData? SelectBetterOcrCandidate(
+        PageData candidate,
+        double meanConfidence,
+        PageData? currentBest,
+        ref int bestScore)
+    {
         var score = HeaderScore(candidate) * 1_000_000
                     + InvoiceDataScore(candidate) * 100_000
                     + SemanticDocumentScore(candidate) * 10_000
-                    + (int)Math.Round(page.MeanConfidence * 100d)
+                    + (int)Math.Round(meanConfidence * 100d)
                     + Math.Min(candidate.Words.Count, 5000);
 
         if (score <= bestScore)
@@ -2267,8 +2387,6 @@ internal sealed class LegacyHysPdfImportService
         int DetectedRequiredCount);
 
     private sealed record RowMoneyWord(
-        double Left,
-        double Right,
         IReadOnlyList<decimal> Candidates);
 
     private sealed record DocumentTotals(
