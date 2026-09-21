@@ -5933,3 +5933,23 @@ Düzeltme:
 Sıradaki kapı:
 - Fetch/Pull sonrası `TESTLERI_CALISTIR.bat` tekrar çalıştırılacak.
 - Hedef: **128/128, 0 hata**.
+
+
+### 21.09.2026 — İkinci 128 test koşusu sonucu
+
+Yerel test sonucu tekrar 128 toplam / 126 başarılı / 2 başarısız oldu. Önceki "satır bulunamadı" hatası çözüldü; parser artık ilk fatura satırına ulaşıyor. Yeni hata yalnız iki sentetik legacy fixture vakasında parasal sütun doğrulamasında oluştu.
+
+Kök neden sentetik test PDF'sinin sayfa kurulum sırasıydı:
+- testte önce `Orientation = Landscape`, sonra `Size = A4` uygulanıyordu;
+- üretim kodunda ve PDFsharp için güvenli sırada önce `Size = A4`, sonra `Orientation = Landscape` uygulanıyor;
+- test verileri 755 pt'ye kadar uzandığı için yanlış sayfa geometrisi son parasal sütunların sınırlarını bozabiliyordu.
+
+Düzeltme:
+- `LegacyHysPdfImportTests` fixture sayfa kurulumu üretim koduyla aynı sıraya getirildi.
+- Commit: `22f1269adeb8f91079ddb7ed36593de5ecbb3fb2`.
+- Ayrıca köke basit `ARSIV_PDF_OKUMA_NOTU.md` eklendi.
+- Doküman commit: `29e223f42d804dfda2a9175254d66a7461565b08`.
+
+Sıradaki kapı:
+- Fetch/Pull sonrası `TESTLERI_CALISTIR.bat`.
+- Hedef: **128/128, 0 hata**.
