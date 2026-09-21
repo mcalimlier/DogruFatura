@@ -317,7 +317,8 @@ internal sealed class LegacyHysPdfImportService
         if (!hasInvoiceDate || !hasDueDate)
             return false;
 
-        var institutionText = ReadColumn(line.Words, header, ColumnKind.Institution).Trim();
+        var institutionText = NormalizeInstitutionCell(
+            ReadColumn(line.Words, header, ColumnKind.Institution));
         var serviceNumber = DigitsOnly(ReadColumn(line.Words, header, ColumnKind.ServiceNumber));
         var invoiceNumber = ReadColumn(line.Words, header, ColumnKind.InvoiceNumber)
             .Replace(" ", string.Empty, StringComparison.Ordinal)
@@ -498,6 +499,22 @@ internal sealed class LegacyHysPdfImportService
         calculation.IsValid
         && decimal.Round(calculation.StampDuty, 2, MidpointRounding.AwayFromZero) == printedStampDuty
         && decimal.Round(calculation.PaymentAmount, 2, MidpointRounding.AwayFromZero) == printedPaymentAmount;
+
+    private static string NormalizeInstitutionCell(string text)
+    {
+        var value = (text ?? string.Empty).Trim();
+
+        // Bazı eski PDF'lerde sıra numarası ile okul/kurum sütunu geometrik olarak
+        // birleşebiliyor. Yalnız baştaki saf sıra numarasını temizle; kurum adındaki
+        // diğer rakamlara dokunma.
+        value = Regex.Replace(
+            value,
+            @"^\s*\d{1,4}\s+(?=\p{L})",
+            string.Empty,
+            RegexOptions.CultureInvariant);
+
+        return value.Trim();
+    }
 
     private static SchoolRecord? ResolveSchool(
         string institutionText,
