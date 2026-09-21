@@ -34,6 +34,7 @@ internal sealed class LegacyHysPdfImportService
         new Dictionary<ColumnKind, string[]>
         {
             [ColumnKind.Sequence] = new[] { "no", "sira no", "sıra no", "s no", "s.no", "sno" },
+            [ColumnKind.District] = new[] { "ilce adi", "ilçe adı", "ilce", "ilçe" },
             [ColumnKind.Institution] = new[]
             {
                 "okul adi", "okul adı", "kurum adi", "kurum adı",
@@ -323,10 +324,13 @@ internal sealed class LegacyHysPdfImportService
         var invoiceDateText = ReadColumn(line.Words, header, ColumnKind.InvoiceDate);
         var hasInvoiceDate = TryDate(invoiceDateText, out var invoiceDate);
         var headerHasDueDate = header.Ranges.ContainsKey(ColumnKind.DueDate);
-        var dueDateText = headerHasDueDate
-            ? ReadColumn(line.Words, header, ColumnKind.DueDate)
-            : string.Empty;
-        var hasDueDate = headerHasDueDate && TryDate(dueDateText, out var dueDate);
+        var dueDate = default(DateTime);
+        var hasDueDate = false;
+        if (headerHasDueDate)
+        {
+            var dueDateText = ReadColumn(line.Words, header, ColumnKind.DueDate);
+            hasDueDate = TryDate(dueDateText, out dueDate);
+        }
 
         lineLooksLikeInvoice = hasInvoiceDate || hasDueDate;
         if (!hasInvoiceDate)
@@ -1517,6 +1521,7 @@ internal sealed class LegacyHysPdfImportService
     private enum ColumnKind
     {
         Sequence,
+        District,
         Institution,
         ServiceNumber,
         InvoiceNumber,
