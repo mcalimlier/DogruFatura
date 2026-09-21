@@ -6654,3 +6654,33 @@ Sıradaki kapı:
 4. Temizse `DERLE_CALISTIR.bat`.
 5. Önce yalnız gerçek 2023 MYS smoke.
 6. 2023 yeşil olursa 2026 kısa regresyon smoke.
+
+
+### 21.09.2026 — Gerçek 2023 smoke: Tesseract tek-Page kısıtı düzeltmesi
+
+Kullanıcı ortamında:
+- `TESTLERI_CALISTIR.bat`: başarılı.
+- Gerçek 2023 MYS smoke sırasında OCR şu runtime hatasıyla durdu:
+  `Only one image can be processed at a time. Please make sure you dispose of the page once you're finished with it`
+
+Kök neden:
+- Yeni hedefli tablo-band OCR içinde aynı `TesseractEngine` ile önce `SingleBlock`, ardından `SparseText` bölge OCR'ı başlatılıyordu.
+- İlk `Page` nesnesi `using var` ile metodun sonuna kadar canlı kaldığı için ikinci `engine.Process` çağrısında TesseractOCR kütüphanesinin tek aktif Page kısıtı ihlal ediliyordu.
+- Bu nedenle parser tabloyu okuyamadan exception ile OCR fallback'i terk ediyordu.
+
+Düzeltme:
+- `SingleBlock` OCR sonucu ve confidence değeri önce bellekte `PageData` / `double` olarak kopyalanıyor.
+- Ardından ilgili Tesseract `Page` nesnesi scope sonunda **dispose ediliyor**.
+- Ancak ondan sonra `SparseText` OCR başlatılıyor.
+- İkinci `Page` da aynı şekilde dispose edildikten sonra iki `PageData` sonucu birleştiriliyor.
+- Aynı anda yalnız bir Tesseract `Page` nesnesi aktif kalıyor.
+
+Commit:
+- `af44849e24257f9d81ca09202d0ecd052782388a`
+
+Sıradaki kapı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat` — mevcut test toplamı korunur.
+3. Temizse `DERLE_CALISTIR.bat`.
+4. Gerçek 2023 MYS tekrar smoke.
+5. 2023 yeşilse 2026 kısa regresyon smoke.
