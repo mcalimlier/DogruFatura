@@ -78,3 +78,17 @@ Gerçek belgeler iki yeni tarihsel fark gösterdi:
 Okuyucu artık HYS ve tarihsel MYS belge numaralarını ayırt ederek korur. Son ödeme tarihi sütunu belgede hiç yoksa fatura tarihi teknik fallback olarak kullanılır ve bu durum önizleme açıklamasında açıkça belirtilir; mevcut bir sütunun okunamaması ise hata olarak kalır.
 
 Durum: kodlandı; **131/131** otomatik test ve gerçek 2023/2026 smoke bekleniyor.
+
+
+## 21.09.2026 — OCR sırasında görünür ilerleme
+
+131/131 otomatik test başarılı olduktan sonra gerçek 2023 ve 2026 belgelerinde OCR işlemi kullanıcıya uzun süre tek bir sabit mesaj gösterdiği için işlem iptal edildi.
+
+Düzeltme:
+- OCR artık iç adımlarını ekranda canlı olarak bildirir.
+- Normal metin katmanı okunabilir Ödeme Emri sayfaları OCR'da tekrar işlenmez.
+- Yalnız OCR gereken bozuk/dönük sayfalar taranır.
+- Arşive gerçek yazma başladığında ayrıca `PDF arşive kaydediliyor` durumu gösterilir.
+- Yeni testte oluşan tek CA1307 analyzer uyarısı da temizlendi.
+
+Durum: yeni kod için **131/131 + 0 warning** tekrar doğrulaması ve ardından gerçek 2023/2026 smoke bekleniyor.
