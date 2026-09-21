@@ -54,6 +54,92 @@ public sealed class LegacyHysPdfImportTests
         Assert.Equal(school.SchoolId, invoice.SchoolId);
     }
 
+    [Fact]
+    public void LegacyMysTableWithoutDueDateIsImportedSafely()
+    {
+        using var temp = new TempFile("1) MYS-2023-4010364.pdf");
+        CreateLegacyMysPdf(temp.Path);
+
+        var school = new SchoolRecord(
+            "İlkokul",
+            "Ağaçbeyli İlkokulu",
+            "1234567890",
+            "00004091370",
+            "22222",
+            "33333",
+            "44444",
+            Guid.Parse("22222222-2222-2222-2222-222222222222"));
+
+        var preview = new HistoricalPdfImportService().Read(
+            temp.Path,
+            new[] { school },
+            new AuthorityProfile(
+                "Ömerali ŞİMŞEK",
+                "Şube Müdürü",
+                "Mehmet SAKAL",
+                "İlçe Milli Eğitim Müdürü"));
+
+        Assert.True(preview.IsValid, preview.Status);
+        Assert.Equal("MYS-20234010364", preview.HysNumber);
+        Assert.Equal("Elektrik", preview.InvoiceType);
+        Assert.Equal(1, preview.InvoiceCount);
+        Assert.Contains("son ödeme tarihi belgede bulunmadığı", preview.Status);
+
+        var invoice = Assert.Single(preview.Archive!.Invoices);
+        Assert.Equal("Ağaçbeyli İlkokulu", invoice.InstitutionName);
+        Assert.Equal("00004091370", invoice.ServiceNumber);
+        Assert.Equal("EAH202300012083", invoice.InvoiceNumber);
+        Assert.Equal(new DateTime(2023, 8, 11), invoice.InvoiceDate);
+        Assert.Equal(invoice.InvoiceDate, invoice.DueDate);
+        Assert.Equal(1617.30m, invoice.PayableAmount);
+        Assert.Equal(269.55m, invoice.VatAmount);
+        Assert.Equal(12.78m, decimal.Round(invoice.StampDuty, 2, MidpointRounding.AwayFromZero));
+        Assert.Equal(1604.52m, decimal.Round(invoice.PaymentAmount, 2, MidpointRounding.AwayFromZero));
+    }
+
+    private static void CreateLegacyMysPdf(string path)
+    {
+        using var document = new PdfDocument();
+        var page = document.AddPage();
+        page.Size = PageSize.A4;
+        page.Orientation = PageOrientation.Landscape;
+
+        using var graphics = XGraphics.FromPdfPage(page);
+        var body = new XFont("Segoe UI", 7.5, XFontStyleEx.Regular);
+        var bold = new XFont("Segoe UI", 7.5, XFontStyleEx.Bold);
+
+        graphics.DrawString("ÖDEME EMRİ BELGESİ", bold, XBrushes.Black, 320, 28);
+        graphics.DrawString("Düzenleme Tarihi 15-08-2023", body, XBrushes.Black, 560, 28);
+        graphics.DrawString("Belge Numarası MYS-2023-4010364", body, XBrushes.Black, 560, 42);
+        graphics.DrawString("Ödeme Emri Alt Türü Elektrik Alımı", body, XBrushes.Black, 40, 42);
+
+        var x = new[] { 25d, 65d, 125d, 250d, 340d, 435d, 520d, 605d, 685d, 760d };
+        var headers = new[]
+        {
+            "S.NO", "İLÇE ADI", "KURUM_ADI", "Tüketici No:", "FATURA_NO",
+            "FATURA_TARİHİ", "TOPLAM_TUTAR", "KDV TUTARI", "DAMGA VERGİSİ", "ELE GEÇEN MİKTAR"
+        };
+        for (var i = 0; i < headers.Length; i++)
+            graphics.DrawString(headers[i], bold, XBrushes.Black, x[i], 88);
+
+        var row = new[]
+        {
+            "1", "Sivaslı", "Ağaçbeyli İlkokulu", "00004091370", "EAH202300012083",
+            "11.08.2023", "1.617,30", "269,55", "12,78", "1.604,52"
+        };
+        for (var i = 0; i < row.Length; i++)
+            graphics.DrawString(row[i], body, XBrushes.Black, x[i], 110);
+
+        graphics.DrawString("Gerçekleştirme Görevlisi", bold, XBrushes.Black, 110, 500);
+        graphics.DrawString("Ömerali ŞİMŞEK", body, XBrushes.Black, 140, 518);
+        graphics.DrawString("Şube Müdürü", body, XBrushes.Black, 140, 534);
+        graphics.DrawString("Harcama Yetkilisi", bold, XBrushes.Black, 590, 500);
+        graphics.DrawString("Mehmet SAKAL", body, XBrushes.Black, 610, 518);
+        graphics.DrawString("İlçe Milli Eğitim Müdürü", body, XBrushes.Black, 590, 534);
+
+        document.Save(path);
+    }
+
     private static void CreateLegacyHysPdf(string path, bool alternative)
     {
         using var document = new PdfDocument();
