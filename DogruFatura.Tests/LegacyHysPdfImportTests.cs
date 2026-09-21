@@ -54,17 +54,19 @@ public sealed class LegacyHysPdfImportTests
         Assert.Equal(school.SchoolId, invoice.SchoolId);
     }
 
-    [Fact]
-    public void LegacyMysTableWithoutDueDateIsImportedSafely()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LegacyMysTableWithoutDueDateIsImportedSafely(bool useOcrLikeMoney)
     {
         using var temp = new TempFile("1) MYS-2023-4010364.pdf");
-        CreateLegacyMysPdf(temp.Path);
+        CreateLegacyMysPdf(temp.Path, useOcrLikeMoney);
 
         var school = new SchoolRecord(
             "İlkokul",
             "Ağaçbeyli İlkokulu",
             "1234567890",
-            "00004091370",
+            "00004003970",
             "22222",
             "33333",
             "44444",
@@ -90,7 +92,7 @@ public sealed class LegacyHysPdfImportTests
 
         var invoice = Assert.Single(preview.Archive!.Invoices);
         Assert.Equal("Ağaçbeyli İlkokulu", invoice.InstitutionName);
-        Assert.Equal("00004091370", invoice.ServiceNumber);
+        Assert.Equal("00004003970", invoice.ServiceNumber);
         Assert.Equal("EAH202300012083", invoice.InvoiceNumber);
         Assert.Equal(new DateTime(2023, 8, 11), invoice.InvoiceDate);
         Assert.Equal(invoice.InvoiceDate, invoice.DueDate);
@@ -100,7 +102,7 @@ public sealed class LegacyHysPdfImportTests
         Assert.Equal(1604.52m, decimal.Round(invoice.PaymentAmount, 2, MidpointRounding.AwayFromZero));
     }
 
-    private static void CreateLegacyMysPdf(string path)
+    private static void CreateLegacyMysPdf(string path, bool useOcrLikeMoney)
     {
         using var document = new PdfDocument();
         var page = document.AddPage();
@@ -125,11 +127,17 @@ public sealed class LegacyHysPdfImportTests
         for (var i = 0; i < headers.Length; i++)
             graphics.DrawString(headers[i], bold, XBrushes.Black, x[i], 88);
 
-        var row = new[]
-        {
-            "1", "Sivaslı", "Ağaçbeyli İlkokulu", "00004091370", "EAH202300012083",
-            "11.08.2023", "1.617,30", "269,55", "12,78", "1.604,52"
-        };
+        var row = useOcrLikeMoney
+            ? new[]
+            {
+                "1", "Sivaslı", "Ağaçbeyli İlkokulu", "00004003970", "EAH202300012083",
+                "11.08.2023", "161730", "26955", "1278", "160AS2"
+            }
+            : new[]
+            {
+                "1", "Sivaslı", "Ağaçbeyli İlkokulu", "00004003970", "EAH202300012083",
+                "11.08.2023", "1.617,30", "269,55", "12,78", "1.604,52"
+            };
         for (var i = 0; i < row.Length; i++)
             graphics.DrawString(row[i], body, XBrushes.Black, x[i], 110);
 
