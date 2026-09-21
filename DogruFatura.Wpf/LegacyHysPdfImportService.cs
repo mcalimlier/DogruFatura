@@ -1173,11 +1173,18 @@ internal sealed class LegacyHysPdfImportService
                 bestPage,
                 ref bestScore,
                 cancellationToken);
+            bestPage = SelectBetterOcrPage(
+                engine,
+                cleaned,
+                PageSegMode.SparseText,
+                (int)pageIndex + 1,
+                bestPage,
+                ref bestScore,
+                cancellationToken);
 
-            if (bestScore < 100_000_000)
+            progress?.Report($"OCR {pageNumber}/{document.PageCount}: 90° yön deneniyor");
+            using (var clockwise = cleaned.Rotate90(RotationDirection.Clockwise))
             {
-                progress?.Report($"OCR {pageNumber}/{document.PageCount}: 90° yön deneniyor");
-                using var clockwise = cleaned.Rotate90(RotationDirection.Clockwise);
                 bestPage = SelectBetterOcrPage(
                     engine,
                     clockwise,
@@ -1186,16 +1193,31 @@ internal sealed class LegacyHysPdfImportService
                     bestPage,
                     ref bestScore,
                     cancellationToken);
+                bestPage = SelectBetterOcrPage(
+                    engine,
+                    clockwise,
+                    PageSegMode.SparseText,
+                    (int)pageIndex + 1,
+                    bestPage,
+                    ref bestScore,
+                    cancellationToken);
             }
 
-            if (bestScore < 100_000_000)
+            progress?.Report($"OCR {pageNumber}/{document.PageCount}: ters 90° yön deneniyor");
+            using (var counterClockwise = cleaned.Rotate90(RotationDirection.CounterClockwise))
             {
-                progress?.Report($"OCR {pageNumber}/{document.PageCount}: ters 90° yön deneniyor");
-                using var counterClockwise = cleaned.Rotate90(RotationDirection.CounterClockwise);
                 bestPage = SelectBetterOcrPage(
                     engine,
                     counterClockwise,
                     PageSegMode.SingleBlock,
+                    (int)pageIndex + 1,
+                    bestPage,
+                    ref bestScore,
+                    cancellationToken);
+                bestPage = SelectBetterOcrPage(
+                    engine,
+                    counterClockwise,
+                    PageSegMode.SparseText,
                     (int)pageIndex + 1,
                     bestPage,
                     ref bestScore,
@@ -1225,6 +1247,7 @@ internal sealed class LegacyHysPdfImportService
         using var page = engine.Process(image, pageSegMode);
         var candidate = CreateOcrPage(pageNumber, image, page);
         var score = HeaderScore(candidate) * 1_000_000
+                    + InvoiceDataScore(candidate) * 100_000
                     + SemanticDocumentScore(candidate) * 10_000
                     + (int)Math.Round(page.MeanConfidence * 100d)
                     + Math.Min(candidate.Words.Count, 5000);
@@ -1336,6 +1359,42 @@ internal sealed class LegacyHysPdfImportService
         return found.Count;
     }
 
+    private static int InvoiceDataScore(PageData page)
+    {
+        if (!TryFindHeaderLayout(page, out var header))
+            return 0;
+
+        var score = 0;
+        foreach (var line in page.Lines.Where(line => line.Top > header.Bottom + 1d))
+        {
+            var invoiceDateText = ReadColumn(line.Words, header, ColumnKind.InvoiceDate);
+            if (!TryDate(invoiceDateText, out _))
+                continue;
+
+            score += 8;
+            if (!string.IsNullOrWhiteSpace(ReadColumn(line.Words, header, ColumnKind.Institution)))
+                score += 1;
+            if (!string.IsNullOrWhiteSpace(DigitsOnly(ReadColumn(line.Words, header, ColumnKind.ServiceNumber))))
+                score += 1;
+            if (!string.IsNullOrWhiteSpace(ReadInvoiceNumber(line.Words, header)))
+                score += 1;
+
+            foreach (var column in new[]
+                     {
+                         ColumnKind.Payable,
+                         ColumnKind.Vat,
+                         ColumnKind.StampDuty,
+                         ColumnKind.Payment
+                     })
+            {
+                if (MoneyCandidates(ReadColumn(line.Words, header, column)).Count > 0)
+                    score += 2;
+            }
+        }
+
+        return score;
+    }
+
     private static int SemanticDocumentScore(PageData page)
     {
         var text = NormalizeKey(string.Join(" ", page.Lines.Select(line => line.Text)));
@@ -1396,15 +1455,14 @@ internal sealed class LegacyHysPdfImportService
 
     private static List<decimal> MoneyCandidates(string text)
     {
-        var normalized = (text ?? string.Empty)
-            .Replace('O', '0')
-            .Replace('o', '0');
+        var normalized = NormalizeOcrMoneyText(text);
         var chunks = Regex.Matches(normalized, @"[0-9][0-9.,]*")
             .Select(match => match.Value.Trim('.', ','))
             .Where(value => value.Length > 0)
             .ToArray();
 
         var candidates = new List<decimal>();
+
         void Add(string value)
         {
             if (NumberParser.TryNonNegativeDecimal(value, out var parsed)
@@ -1412,20 +1470,58 @@ internal sealed class LegacyHysPdfImportService
                 candidates.Add(parsed);
         }
 
+        void AddWithImplicitCents(string value)
+        {
+            Add(value);
+
+            if (value.IndexOfAny(new[] { '.', ',' }) >= 0)
+                return;
+
+            var digits = string.Concat(value.Where(char.IsDigit));
+            if (digits.Length < 3)
+                return;
+
+            Add(digits[..^2] + "," + digits[^2..]);
+        }
+
         foreach (var chunk in chunks)
         {
-            Add(chunk);
+            AddWithImplicitCents(chunk);
 
             var decimalSeparator = Math.Max(chunk.LastIndexOf(','), chunk.LastIndexOf('.'));
             var integerLength = decimalSeparator >= 0 ? decimalSeparator : chunk.Length;
             if (integerLength >= 2 && char.IsDigit(chunk[0]))
-                Add(chunk[1..]);
+                AddWithImplicitCents(chunk[1..]);
         }
 
         if (chunks.Length >= 2 && chunks[0].Length == 1)
-            Add(chunks[0] + chunks[1]);
+            AddWithImplicitCents(chunks[0] + chunks[1]);
 
         return candidates;
+    }
+
+    private static string NormalizeOcrMoneyText(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return string.Empty;
+
+        var builder = new StringBuilder(text.Length);
+        foreach (var ch in text)
+        {
+            builder.Append(ch switch
+            {
+                'O' or 'o' or 'D' or 'Q' => '0',
+                'I' or 'İ' or 'ı' or 'l' or '|' or '!' => '1',
+                'Z' or 'z' => '2',
+                'A' or 'a' => '4',
+                'S' or 's' => '5',
+                'G' or 'g' => '6',
+                'B' or 'b' => '8',
+                _ => ch
+            });
+        }
+
+        return builder.ToString();
     }
 
     private static bool TryFindDate(string text, out DateTime date) =>
