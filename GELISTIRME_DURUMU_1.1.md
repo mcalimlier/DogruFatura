@@ -5979,3 +5979,27 @@ Sıradaki kapı:
 - Fetch/Pull.
 - `TESTLERI_CALISTIR.bat`.
 - Hedef: **128/128, 0 hata**.
+
+
+### 21.09.2026 — Dördüncü 128 test koşusu sonrası düzeltme
+
+Yerel test sonucu:
+- Derleme: başarılı.
+- Toplam: 128.
+- Geçen: 126.
+- Başarısız: 2.
+
+Kalan iki sorun:
+1. Normal başlık varyantında uzun fatura numarası sütun sınırının merkez hesabı dışında kaldığı için boş okunuyordu.
+2. Alternatif başlık varyantında damga vergisi test assertion'ı hesap motorunun tam hassasiyetli iç değerini doğrudan 2 ondalık PDF değeriyle karşılaştırıyordu.
+
+Düzeltmeler:
+- Fatura numarası için normal merkez tabanlı okuma boş kalırsa, kendi sütunuyla anlamlı geometrik örtüşmesi olan kelimeleri kullanan güvenli fallback eklendi.
+- Commit: `9e97c81e63c431611e641254d0397042b782cef6`.
+- Testte damga vergisi ve ödeme tutarı DoğruFatura hesap motorunun tam hassasiyetini bozmadan, PDF gösterim hassasiyeti olan 2 ondalık üzerinden doğrulanıyor.
+- Commit: `582f1391b65d37a8ea120e61f421f07e118e93ea`.
+
+Sıradaki kapı:
+- Fetch/Pull.
+- `TESTLERI_CALISTIR.bat`.
+- Hedef: **128/128, 0 hata**.
