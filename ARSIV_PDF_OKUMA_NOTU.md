@@ -251,3 +251,19 @@ Beklenen: **133/133**.
 Test artık status metni yerine nihai fatura tutarlarını ve 2.484,91 toplamı doğrular.
 
 Beklenen sonraki sonuç: **133/133**.
+
+
+## 21.09.2026 — Hedefli tablo-band OCR
+
+Gerçek 2023 MYS sayfasında sorun tek bir alan alias'ı değil, tam sayfa OCR'ın para hücrelerini farklı segmentasyonlarda parça parça okumasıdır.
+
+Yeni fallback:
+- doğru yöne çevrilmiş landscape sayfanın üst tablo bandı ayrıca OCR edilir;
+- `SingleBlock` ve `SparseText` sonuçları birleştirilir;
+- aynı kelimenin yakın koordinattaki tekrarları temizlenir;
+- sütun sınırı kaymış para tokenları row-wide soldan-sağa geometriyle tekrar değerlendirilir;
+- eksik sonuç hücreleri yalnız resmi Ödeme Emri toplamı aggregate kontrolü varsa türetilebilir.
+
+Gerçek-benzeri testte para hücrelerine yatay kolon drift'i de eklendi.
+
+Durum: **133/133 tekrar test + gerçek 2023 smoke bekleniyor.**
