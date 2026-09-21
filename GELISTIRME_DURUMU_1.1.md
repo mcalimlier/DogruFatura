@@ -6088,3 +6088,50 @@ Sıradaki kalite kapısı:
 4. Hedef: **131/131**.
 5. Sonra `DERLE_CALISTIR.bat` ile gerçek 2023 ve 2026 PDF önizlemesi yeniden denenmeli.
 6. 2024/2025 regresyon smoke da tekrar kontrol edilmeli.
+
+
+### 21.09.2026 — 131/131 yeşil, gerçek OCR denemesinde görünür ilerleme sorunu
+
+Kullanıcı yerel `TESTLERI_CALISTIR.bat` koşusu:
+- Toplam: **131**
+- Başarılı: **131**
+- Başarısız: **0**
+- Atlandı: **0**
+- Tek analyzer uyarısı: `CA1307` — yeni MYS testindeki `Assert.Contains` çağrısında açık `StringComparison` isteniyor.
+
+Gerçek 2023 ve 2026 PDF denemesinde kullanıcı `ARŞİV EKLE` işlemini başlattığında uzun süre görünür ilerleme olmadığı için işlemi iptal etti. Bu iki belge bozuk/dönük fatura sayfası nedeniyle OCR fallback kullanıyor.
+
+Kök neden / UX:
+- Dış akış yalnız `PDF okunuyor ve doğrulanıyor` mesajını gösteriyordu.
+- OCR içinde sayfa hazırlama, normal yön, temizleme ve 90° yön denemeleri kullanıcıya raporlanmıyordu.
+- Ayrıca OCR, metin katmanı zaten okunabilir olan Ödeme Emri ana sayfasını da gereksiz yere tarıyordu.
+
+Uygulanan düzeltmeler:
+- `HistoricalPdfImportService.Read` isteğe bağlı ilerleme bildirimi kabul ediyor.
+- Legacy OCR servisi adım adım durum bildiriyor:
+  - metin katmanı,
+  - OCR hazırlığı,
+  - sayfa hazırlama,
+  - normal yön,
+  - tablo temizleme,
+  - 90° yönler,
+  - sayfa tamamlandı.
+- Normal PDF metninden ödeme emri metadata'sı güvenilir biçimde okunabilen sayfalar OCR'da atlanıyor. 2023/2026 örneklerinde yalnız bozuk/dönük fatura listesi sayfasının OCR'a kalması hedefleniyor.
+- Önizleme onayından sonra `geçerli PDF arşive kaydediliyor` durumu gösteriliyor.
+- Başarı metni HYS'e özel olmaktan çıkarılıp `Ödeme Emri No` olarak genelleştirildi.
+- `CA1307` uyarısı açık `StringComparison.Ordinal` ile temizlendi.
+
+Commitler:
+- Progress API: `6c438a1508d259236d92d268ad1eb53bafb19344`
+- OCR okunabilir sayfa atlama + progress: `7bd81c99b6ac340e4ca66c5fe6fe98ab1fbcd0a2`
+- Ana ekran canlı import progress: `83ee747cb76d3be0b7e7db74176c990ce476ced4`
+- CA1307 test warning temizliği: `0721ccad434f5484f327d08670feea38d299138c`
+
+Sıradaki kapı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat` — hedef **131/131, 0 warning**.
+3. `DERLE_CALISTIR.bat`.
+4. Önce yalnız 2023 MYS PDF seçilerek OCR ilerleme mesajlarının aktığı kontrol edilmeli.
+5. Ardından yalnız 2026 HYS PDF denenmeli.
+6. İşlem birkaç saniye sürebilir; ilerleme mesajları değişmeye devam ettiği sürece iptal edilmemeli.
+7. Önizleme başarılı olursa gerçek arşive ekleme ayrı smoke olarak denenmeli.
