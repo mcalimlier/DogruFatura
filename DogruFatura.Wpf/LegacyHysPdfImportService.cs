@@ -176,6 +176,10 @@ internal sealed class LegacyHysPdfImportService
             return true;
         }
 
+        var hasRecognizedTable = pages.Any(page => TryFindHeaderLayout(page, out _));
+        if (!hasRecognizedTable)
+            return false;
+
         var invoiceType = FindInvoiceType(allText);
         if (invoiceType is null)
         {
@@ -528,40 +532,87 @@ internal sealed class LegacyHysPdfImportService
         out double center)
     {
         center = 0d;
-        var ordered = words.OrderBy(word => word.Left).ToArray();
+        var available = words
+            .Where(word => !string.IsNullOrWhiteSpace(word.Text))
+            .ToArray();
+
+        var bestScore = double.MaxValue;
+        var found = false;
 
         foreach (var alias in aliases.OrderByDescending(alias => NormalizeKey(alias).Length))
         {
-            var aliasTokens = Tokenize(alias);
-            if (aliasTokens.Length == 0)
+            var tokens = Tokenize(alias);
+            if (tokens.Length == 0)
                 continue;
 
-            for (var start = 0; start < ordered.Length; start++)
-            {
-                var matched = new List<WordData>();
-                var aliasIndex = 0;
-                for (var wordIndex = start; wordIndex < ordered.Length && aliasIndex < aliasTokens.Length; wordIndex++)
-                {
-                    var token = NormalizeToken(ordered[wordIndex].Text);
-                    if (string.IsNullOrEmpty(token))
-                        continue;
+            var candidateSets = tokens
+                .Select(token => available
+                    .Where(word => string.Equals(
+                        NormalizeToken(word.Text),
+                        token,
+                        StringComparison.Ordinal))
+                    .ToArray())
+                .ToArray();
 
-                    if (!string.Equals(token, aliasTokens[aliasIndex], StringComparison.Ordinal))
-                        break;
+            if (candidateSets.Any(set => set.Length == 0))
+                continue;
 
-                    matched.Add(ordered[wordIndex]);
-                    aliasIndex++;
-                }
-
-                if (aliasIndex != aliasTokens.Length || matched.Count == 0)
-                    continue;
-
-                center = (matched.Min(word => word.Left) + matched.Max(word => word.Right)) / 2d;
-                return true;
-            }
+            var selected = new WordData[tokens.Length];
+            SearchAliasCombination(
+                candidateSets,
+                selected,
+                0,
+                ref bestScore,
+                ref center,
+                ref found);
         }
 
-        return false;
+        return found;
+    }
+
+    private static void SearchAliasCombination(
+        IReadOnlyList<WordData[]> candidateSets,
+        WordData[] selected,
+        int index,
+        ref double bestScore,
+        ref double bestCenter,
+        ref bool found)
+    {
+        if (index == candidateSets.Count)
+        {
+            if (selected.Distinct().Count() != selected.Length)
+                return;
+
+            var minLeft = selected.Min(word => word.Left);
+            var maxRight = selected.Max(word => word.Right);
+            var minTop = selected.Min(word => word.Top);
+            var maxBottom = selected.Max(word => word.Bottom);
+            var horizontalSpan = maxRight - minLeft;
+            var verticalSpan = maxBottom - minTop;
+
+            // Aynı hücredeki çok satırlı başlıkları destekler; uzak sütunlardan
+            // yanlış kelimelerin eşleşmesini ise en küçük geometrik kapsama ile eler.
+            var score = horizontalSpan + verticalSpan * 0.65d;
+            if (score >= bestScore)
+                return;
+
+            bestScore = score;
+            bestCenter = (minLeft + maxRight) / 2d;
+            found = true;
+            return;
+        }
+
+        foreach (var candidate in candidateSets[index])
+        {
+            selected[index] = candidate;
+            SearchAliasCombination(
+                candidateSets,
+                selected,
+                index + 1,
+                ref bestScore,
+                ref bestCenter,
+                ref found);
+        }
     }
 
     private static string ReadColumn(
@@ -905,7 +956,7 @@ internal sealed class LegacyHysPdfImportService
         var length = checked((uint)stream.Size);
         using var reader = new DataReader(stream.GetInputStreamAt(0));
         await reader.LoadAsync(length);
-        var bytes = new byte[length];
+        var bytes = new byte[checked((int)length)];
         reader.ReadBytes(bytes);
         return bytes;
     }
