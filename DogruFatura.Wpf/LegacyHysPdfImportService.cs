@@ -609,7 +609,9 @@ internal sealed class LegacyHysPdfImportService
         // Ele Geçen Miktar hücresini bozabiliyor. Tutar + KDV güvenilir okunmuşsa
         // ve basılı sonuç alanlarından en az biri hesap motoruyla eşleşiyorsa,
         // eksik olan sonuç alanı güvenli biçimde hesaplamadan tamamlanabilir.
-        if (stampCandidates.Count == 0 && paymentCandidates.Count == 0)
+        if (stampCandidates.Count == 0
+            && paymentCandidates.Count == 0
+            && !allowDerivedResultCells)
             return false;
 
         foreach (var payable in payableCandidates)
