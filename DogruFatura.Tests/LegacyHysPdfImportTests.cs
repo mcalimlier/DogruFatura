@@ -150,15 +150,19 @@ public sealed class LegacyHysPdfImportTests
                     "11.08.2023", "672,50", "112,07", "5,31", "667,19" }
             };
 
+        var ocrLikeOffsets = new[] { 0d, 7d, -5d, 5d, -4d, 0d, -8d, 4d, -3d, 2d };
         for (var rowIndex = 0; rowIndex < rows.Length; rowIndex++)
         {
             for (var columnIndex = 0; columnIndex < rows[rowIndex].Length; columnIndex++)
+            {
+                var yOffset = useOcrLikeMoney ? ocrLikeOffsets[columnIndex] : 0d;
                 graphics.DrawString(
                     rows[rowIndex][columnIndex],
                     body,
                     XBrushes.Black,
                     x[columnIndex],
-                    110 + rowIndex * 20);
+                    110 + rowIndex * 20 + yOffset);
+            }
         }
 
         graphics.DrawString("Gerçekleştirme Görevlisi", bold, XBrushes.Black, 110, 500);
@@ -204,11 +208,17 @@ public sealed class LegacyHysPdfImportTests
         for (var i = 0; i < headers.Length; i++)
             graphics.DrawString(headers[i], bold, XBrushes.Black, x[i], 88);
 
-        var row = new[]
-        {
-            "1", "Tatar Ortaokulu", "12330", "AAA2025000417018", "13.01.2025",
-            "23.01.2025", "9.806,90", "1.634,48", "77,47", "9.729,43"
-        };
+        var row = useAlternativeHeaders
+            ? new[]
+            {
+                "1", "Tatar Ortaokulu", "12330", "AAA2025000417018", "13.O1.2O25",
+                "23.O1.2O25", "9.806,90", "1.634,48", "77,47", "9.729,43"
+            }
+            : new[]
+            {
+                "1", "Tatar Ortaokulu", "12330", "AAA2025000417018", "13.01.2025",
+                "23.01.2025", "9.806,90", "1.634,48", "77,47", "9.729,43"
+            };
 
         for (var i = 0; i < row.Length; i++)
             graphics.DrawString(row[i], body, XBrushes.Black, x[i], 110);
