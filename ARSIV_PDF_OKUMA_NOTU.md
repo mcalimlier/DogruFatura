@@ -178,3 +178,21 @@ Yeni kural:
 - Komşu fatura satırlarının hücreleri birbirine karıştırılmaz.
 
 Durum: **132/132 + 0 warning tekrar testi bekleniyor.**
+
+
+## 21.09.2026 — Sparse OCR veri parçası / başlık ayrımı
+
+132 testlik kapıda OCR-benzeri 2023 MYS varyantında 3 beklenen faturadan 2'si okunuyordu.
+
+Neden:
+- İlk fatura satırının tarih içermeyen OCR parçası, başlığa çok yakın olduğu için başlığın ikinci satırı sanılabiliyordu.
+- Böylece header sınırı ilk fatura verisinin içine kadar kayıyordu.
+
+Yeni kural:
+- uzun yalnız-rakam token,
+- uzun harf+rakam token,
+- veya en az iki sayısal token
+
+içeren yakın satırlar başlık devamı değil veri parçası kabul edilir.
+
+Durum: **132/132 + 0 warning tekrar testi bekleniyor.**
