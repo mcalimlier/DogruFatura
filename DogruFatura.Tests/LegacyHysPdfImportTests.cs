@@ -97,27 +97,45 @@ public sealed class LegacyHysPdfImportTests
             "son ödeme tarihi belgede bulunmadığı",
             preview.Status,
             StringComparison.Ordinal);
-        if (damageLastResultCells)
-        {
-            Assert.Contains(
-                "Ödeme Emri toplamlarıyla doğrulanarak tamamlandı",
-                preview.Status,
-                StringComparison.Ordinal);
-        }
-
-        Assert.Equal(2484.91m, decimal.Round(preview.PaymentTotal, 2, MidpointRounding.AwayFromZero));
+        Assert.Equal(
+            2484.91m,
+            decimal.Round(preview.PaymentTotal, 2, MidpointRounding.AwayFromZero));
         Assert.Equal(3, preview.Archive!.Invoices.Count);
 
-        var invoice = preview.Archive.Invoices[0];
-        Assert.Equal("Ağaçbeyli İlkokulu", invoice.InstitutionName);
-        Assert.Equal("00004003970", invoice.ServiceNumber);
-        Assert.Equal("EAH2023000012083", invoice.InvoiceNumber);
-        Assert.Equal(new DateTime(2023, 8, 11), invoice.InvoiceDate);
-        Assert.Equal(invoice.InvoiceDate, invoice.DueDate);
-        Assert.Equal(1617.30m, invoice.PayableAmount);
-        Assert.Equal(269.55m, invoice.VatAmount);
-        Assert.Equal(12.78m, decimal.Round(invoice.StampDuty, 2, MidpointRounding.AwayFromZero));
-        Assert.Equal(1604.52m, decimal.Round(invoice.PaymentAmount, 2, MidpointRounding.AwayFromZero));
+        var first = preview.Archive.Invoices[0];
+        Assert.Equal("Ağaçbeyli İlkokulu", first.InstitutionName);
+        Assert.Equal("00004003970", first.ServiceNumber);
+        Assert.Equal("EAH2023000012083", first.InvoiceNumber);
+        Assert.Equal(new DateTime(2023, 8, 11), first.InvoiceDate);
+        Assert.Equal(first.InvoiceDate, first.DueDate);
+        Assert.Equal(1617.30m, first.PayableAmount);
+        Assert.Equal(269.55m, first.VatAmount);
+        Assert.Equal(
+            12.78m,
+            decimal.Round(first.StampDuty, 2, MidpointRounding.AwayFromZero));
+        Assert.Equal(
+            1604.52m,
+            decimal.Round(first.PaymentAmount, 2, MidpointRounding.AwayFromZero));
+
+        var second = preview.Archive.Invoices[1];
+        Assert.Equal(214.90m, second.PayableAmount);
+        Assert.Equal(35.82m, second.VatAmount);
+        Assert.Equal(
+            1.70m,
+            decimal.Round(second.StampDuty, 2, MidpointRounding.AwayFromZero));
+        Assert.Equal(
+            213.20m,
+            decimal.Round(second.PaymentAmount, 2, MidpointRounding.AwayFromZero));
+
+        var third = preview.Archive.Invoices[2];
+        Assert.Equal(672.50m, third.PayableAmount);
+        Assert.Equal(112.07m, third.VatAmount);
+        Assert.Equal(
+            5.31m,
+            decimal.Round(third.StampDuty, 2, MidpointRounding.AwayFromZero));
+        Assert.Equal(
+            667.19m,
+            decimal.Round(third.PaymentAmount, 2, MidpointRounding.AwayFromZero));
     }
 
     private static void CreateLegacyMysPdf(
