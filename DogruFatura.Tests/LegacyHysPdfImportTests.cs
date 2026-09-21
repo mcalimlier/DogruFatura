@@ -112,8 +112,8 @@ public sealed class LegacyHysPdfImportTests
 
         public TempFile(string fileName)
         {
-            _folder = Path.Combine(
-                Path.GetTempPath(),
+            _folder = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(),
                 "DogruFatura_LegacyPdfTests_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_folder);
             Path = System.IO.Path.Combine(_folder, fileName);
