@@ -5908,3 +5908,28 @@ Sıradaki kapı:
 5. Uygulamayı çalıştırıp kullanıcıdan alınan iki gerçek PDF'yi ayrı ayrı `ARŞİV EKLE` ile dene.
 6. Önizleme penceresindeki sağ üst X simgesini görsel olarak kontrol et.
 7. Gerçek PDF smoke yeşil olmadan `release/1.1.0` dalına merge/final Setup yenilemesi yapılmayacak.
+
+
+### 21.09.2026 — İlk 128 test koşusu sonucu
+
+Yerel `TESTLERI_CALISTIR.bat` sonucu:
+- Derleme: başarılı.
+- Toplam: 128.
+- Geçen: 126.
+- Başarısız: 2.
+- Başarısız olanların ikisi de yeni `LegacyHysPdfImportTests.GovernmentPaymentAttachmentIsReadBySemanticHeaders` theory vakalarıydı.
+- Hata: `Fatura sütun başlıkları bulundu ancak okunabilir fatura satırı bulunamadı.`
+
+Kök neden:
+- Çok satırlı başlık desteği, başlık satırından sonraki ilk veri satırı 28 px/pt yakınlıktaysa onu da yanlışlıkla başlığın ikinci satırı kabul ediyordu.
+- Böylece `header.Bottom` ilk fatura satırının altına taşınıyor ve gerçek ilk fatura satırı veri taramasından eleniyordu.
+
+Düzeltme:
+- Başlığa ikinci satır eklenmeden önce satırın fatura verisi olup olmadığı kontrol ediliyor.
+- Tarih içeren veya belirgin sayıda sayısal veri taşıyan satırlar başlık devamı olarak kabul edilmiyor.
+- Aynı koruma OCR başlık skorlamasına da uygulandı.
+- Commit: `ba3ecc78caaae6c0e1ff568cc103feb446139db4`.
+
+Sıradaki kapı:
+- Fetch/Pull sonrası `TESTLERI_CALISTIR.bat` tekrar çalıştırılacak.
+- Hedef: **128/128, 0 hata**.
