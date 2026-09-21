@@ -53,8 +53,8 @@ public sealed class HistoricalPdfImportService
         string sourcePath,
         IReadOnlyList<SchoolRecord> schools,
         AuthorityProfile fallbackAuthorityProfile,
-        CancellationToken cancellationToken = default,
-        IProgress<string>? progress = null)
+        IProgress<string>? progress = null,
+        CancellationToken cancellationToken = default)
     {
         var fileName = Path.GetFileName(sourcePath);
         try
