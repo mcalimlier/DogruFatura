@@ -1459,7 +1459,7 @@ internal sealed class LegacyHysPdfImportService
             return 0;
 
         var score = 0;
-        foreach (var line in page.Lines.Where(line => line.Top > header.Bottom + 1d))
+        foreach (var line in BuildInvoiceRows(page, header))
         {
             var invoiceDateText = ReadColumn(line.Words, header, ColumnKind.InvoiceDate);
             if (!TryDate(invoiceDateText, out _))
@@ -1473,6 +1473,12 @@ internal sealed class LegacyHysPdfImportService
             if (!string.IsNullOrWhiteSpace(ReadInvoiceNumber(line.Words, header)))
                 score += 1;
 
+            if (header.Ranges.ContainsKey(ColumnKind.DueDate))
+            {
+                var dueDateText = ReadColumn(line.Words, header, ColumnKind.DueDate);
+                score += TryDate(dueDateText, out _) ? 4 : -6;
+            }
+
             foreach (var column in new[]
                      {
                          ColumnKind.Payable,
@@ -1484,9 +1490,50 @@ internal sealed class LegacyHysPdfImportService
                 if (MoneyCandidates(ReadColumn(line.Words, header, column)).Count > 0)
                     score += 2;
             }
+
+            if (HasConsistentMoneyTuple(line, header))
+                score += 20;
         }
 
         return score;
+    }
+
+    private static bool HasConsistentMoneyTuple(
+        LineData line,
+        HeaderLayout header)
+    {
+        var payableCandidates = MoneyCandidates(
+            ReadColumn(line.Words, header, ColumnKind.Payable));
+        var vatCandidates = MoneyCandidates(
+            ReadColumn(line.Words, header, ColumnKind.Vat));
+        var stampCandidates = MoneyCandidates(
+            ReadColumn(line.Words, header, ColumnKind.StampDuty));
+        var paymentCandidates = MoneyCandidates(
+            ReadColumn(line.Words, header, ColumnKind.Payment));
+
+        foreach (var payable in payableCandidates)
+        foreach (var vat in vatCandidates)
+        foreach (var stamp in stampCandidates)
+        foreach (var payment in paymentCandidates)
+        {
+            if (payable <= 0m || vat < 0m || vat > payable)
+                continue;
+
+            var vatBase = payable - vat;
+            var expectedStamp = decimal.Round(
+                vatBase * TaxCalculationService.StampDutyRate,
+                2,
+                MidpointRounding.AwayFromZero);
+            var expectedPayment = decimal.Round(
+                payable - vatBase * TaxCalculationService.StampDutyRate,
+                2,
+                MidpointRounding.AwayFromZero);
+
+            if (expectedStamp == stamp && expectedPayment == payment)
+                return true;
+        }
+
+        return false;
     }
 
     private static int SemanticDocumentScore(PageData page)
