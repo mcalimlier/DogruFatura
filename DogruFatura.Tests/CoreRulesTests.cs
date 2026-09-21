@@ -49,6 +49,8 @@ public sealed class CoreRulesTests
     [InlineData("hys202614586", "HYS-202614586")]
     [InlineData(" HYS-202614586 ", "HYS-202614586")]
     [InlineData("202614586", "HYS-202614586")]
+    [InlineData("MYS-2023-4010364", "MYS-20234010364")]
+    [InlineData("mys20234010364", "MYS-20234010364")]
     public void HysNumberIsNormalized(string input, string expected)
     {
         var success = HysPaymentOrderService.TryNormalize(input, out var normalized, out _);
