@@ -6216,3 +6216,20 @@ Sıradaki kapı:
 4. Gerçek `MYS-2023-4010364.pdf` tek başına denenmeli.
 5. Mini tarama penceresi görünmeli ve teknik OCR metni kullanıcıya çıkmamalı.
 6. 2023 önizleme yeşil olmadan final Setup üretilmemeli.
+
+
+### 21.09.2026 — 2023 gerçek tabloya yakın 3 satırlı regresyon genişletmesi
+
+2023 MYS gerçek ek sayfasındaki üç fatura satırı sentetik regresyon fixture'ına taşındı:
+- Ağaçbeyli İlkokulu — 1.617,30 / 269,55 / 12,78 / 1.604,52
+- Ağaçbeyli Anaokulu — 214,90 / 35,82 / 1,70 / 213,20
+- Ağaçbeyli Ortaokulu — 672,50 / 112,07 / 5,31 / 667,19
+- Beklenen toplam ödeme: 2.484,91
+
+Aynı fixture'ın OCR-benzeri varyantında ondalık işaretleri düşürülmüş ve bir ödeme hücresinde `160AS2` karakter bozulması kullanılıyor. Böylece yeni para normalizasyonu tek satır değil üç satır ve gerçek 2023 toplamı üzerinden korunuyor.
+
+Ek commitler:
+- 3 satırlı gerçek MYS fixture: `8ac9743f5d531a1a7375a1b7a60f1fa8ac65286a`
+- HYS/MYS beklenen adet düzeltmesi: `be3b6325b7a2904bc61eabe1df0379e40b75e365`
+
+Beklenen test toplamı değişmedi: **132**.
