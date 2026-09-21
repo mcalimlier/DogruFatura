@@ -6606,3 +6606,51 @@ Sıradaki kapı:
 3. Hedef: **133/133, 0 hata, 0 uyarı**.
 4. Temizse `DERLE_CALISTIR.bat`.
 5. Gerçek 2023 MYS tekrar smoke.
+
+
+### 21.09.2026 — Gerçek 2023 MYS kök neden: tam sayfa OCR para hücrelerini atlıyor
+
+Son durum:
+- Otomatik testler kullanıcı ortamında başarılı.
+- 2026 gerçek HYS smoke başarılı.
+- 2023 gerçek MYS hâlâ `Tutar/KDV/Damga Vergisi/Ödeme sütunları güvenilir biçimde doğrulanamadı` hatasında.
+
+Bu kez gerçek 2023 sayfa görüntüsü üzerinde OCR davranışı ayrıca incelendi. Sonuç:
+- tablo görselde net ve 3 fatura satırı mevcut;
+- sorun vergi hesap motoru veya MYS belge kimliği değil;
+- **tam sayfa OCR**, geniş boş alan + imza/kaşe + tablo çizgileri nedeniyle bazı para hücrelerini satırdan atlıyor;
+- farklı OCR segmentasyon modları farklı hücreleri okuyabiliyor:
+  - bir mod Tutar/KDV'yi iyi okurken Damga/Ödeme'yi kaçırabiliyor,
+  - başka mod ikinci/üçüncü satır para hücrelerini daha iyi okuyabiliyor.
+- Önceki parser tek bir "en iyi OCR sayfası" seçtiği için bu tamamlayıcı sonuçlardan birlikte yararlanamıyordu.
+
+Uygulanan yeni yaklaşım:
+1. Doğru yöne çevrilmiş **landscape** eski ödeme listelerinde sayfanın üstteki tablo bandı ayrıca OCR edilir.
+2. Tablo bandı için `SingleBlock` ve `SparseText` segmentasyonları ayrı ayrı çalıştırılır.
+3. İki OCR sonucunun kelimeleri aynı koordinat sisteminde birleştirilir; yakın konumda aynı token tekrarları deduplikasyonla temizlenir.
+4. Bu birleşik aday mevcut semantik başlık + fatura veri + para tutarlılık skoruyla diğer adaylarla yarışır.
+5. Sütun dilimlemesi hâlâ para hücresini kaçırırsa yeni **row-wide geometry fallback** devreye girer:
+   - para bölgesindeki tokenlar soldan sağa ele alınır,
+   - Tutar -> KDV -> Damga -> Ödeme sırası korunur,
+   - dört sonuç okunabiliyorsa doğrudan hesap motoruyla doğrulanır,
+   - resmi Ödeme Emri toplamları mevcutsa Tutar + KDV üzerinden eksik sonuçlar türetilebilir ve belge seviyesinde aggregate toplam kontrolüne girer.
+6. Derived fallback'te `KDV > Tutarın %50'si` olan kombinasyonlar yanlış kolon kayması / ödeme değerinin KDV sanılması riski nedeniyle elenir.
+
+Regresyon fixture iyileştirmesi:
+- gerçek-benzeri 2023 varyantında para hücreleri yatay olarak komşu sütuna kaydırıldı;
+- böylece normal `ReadColumn` dilimlerinin başarısız olduğu, row-wide fallback'in gerçekten gerektiği durum test kapsamına alındı;
+- test toplamı değişmedi: **133**.
+
+Commitler:
+- row-wide para geometrisi fallback: `574082cb89b64c6b1d7d75aeca1e74873d2becf8`
+- hedefli üst tablo OCR + segmentasyon birleştirme: `c6af8fba54b5850158eeeb8274b7864f526c78ef`
+- gerçek-benzeri yatay para hücresi drift regresyonu: `5bd7c5ffbc82b28763732c582c63fd607ea19d9f`
+- concrete money-candidate collection: `6d5bd7c7b4e1fbb98e59094405f82ad8e9527bea`
+
+Sıradaki kapı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat`.
+3. Hedef: **133/133, 0 hata, 0 uyarı**.
+4. Temizse `DERLE_CALISTIR.bat`.
+5. Önce yalnız gerçek 2023 MYS smoke.
+6. 2023 yeşil olursa 2026 kısa regresyon smoke.
