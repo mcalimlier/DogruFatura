@@ -112,9 +112,18 @@ public partial class MainWindow
         using var cancellation = new CancellationTokenSource();
         _historicalPdfImportCancellation = cancellation;
         ArchiveImportButton.IsEnabled = false;
-        ArchiveImportCancelButton.IsEnabled = true;
-        ArchiveImportCancelButton.Visibility = Visibility.Visible;
+        ArchiveImportCancelButton.IsEnabled = false;
+        ArchiveImportCancelButton.Visibility = Visibility.Collapsed;
         ArchivePdfSyncButton.IsEnabled = false;
+
+        var progressWindow = new HistoricalPdfImportProgressWindow { Owner = this };
+        progressWindow.CancelRequested += (_, _) =>
+        {
+            if (!cancellation.IsCancellationRequested)
+                cancellation.Cancel();
+            progressWindow.SetCancelling();
+        };
+        progressWindow.Show();
 
         try
         {
@@ -132,12 +141,14 @@ public partial class MainWindow
                 cancellation.Token.ThrowIfCancellationRequested();
 
                 var fileName = dialog.FileNames[index];
+                progressWindow.SetFileProgress(
+                    index + 1,
+                    dialog.FileNames.Length,
+                    Path.GetFileName(fileName));
                 SetArchiveStatus(
-                    $"{index + 1}/{dialog.FileNames.Length} PDF okunuyor ve doğrulanıyor: {Path.GetFileName(fileName)}");
+                    $"{index + 1}/{dialog.FileNames.Length} arşiv PDF işleniyor...");
 
-                var progress = new Progress<string>(step =>
-                    SetArchiveStatus(
-                        $"{index + 1}/{dialog.FileNames.Length} {Path.GetFileName(fileName)} • {step}"));
+                var progress = new Progress<string>(_ => progressWindow.SetWorking());
 
                 var preview = await Task.Run(
                     () => _historicalPdfImportService.Read(
@@ -171,7 +182,7 @@ public partial class MainWindow
 
                 buffer.Add(preview);
                 SetArchiveStatus(
-                    $"{index + 1}/{dialog.FileNames.Length} PDF doğrulandı.");
+                    $"{index + 1}/{dialog.FileNames.Length} arşiv PDF doğrulandı.");
             }
 
             previews = buffer;
@@ -191,6 +202,7 @@ public partial class MainWindow
         }
         finally
         {
+            progressWindow.CompleteAndClose();
             _historicalPdfImportCancellation = null;
             ArchiveImportButton.IsEnabled = true;
             ArchiveImportCancelButton.IsEnabled = false;
