@@ -131,11 +131,12 @@ internal sealed class LegacyHysPdfImportService
                 extractedPages,
                 cancellationToken,
                 progress);
-            if (ocrResult.Pages.Count > 0
+            var combinedPages = MergePages(extractedPages, ocrResult.Pages);
+            if (combinedPages.Count > 0
                 && TryParsePages(
                     sourcePath,
                     fileName,
-                    ocrResult.Pages,
+                    combinedPages,
                     schools,
                     fallbackAuthorityProfile,
                     usedOcr: true,
@@ -160,6 +161,104 @@ internal sealed class LegacyHysPdfImportService
         {
             return Invalid(sourcePath, fileName, "Eski ödeme emri PDF'si okunamadı: " + ex.Message);
         }
+    }
+
+    private static List<PageData> MergePages(
+        IReadOnlyList<PageData> extractedPages,
+        IReadOnlyList<PageData> ocrPages)
+    {
+        var byPageNumber = extractedPages.ToDictionary(page => page.PageNumber);
+        foreach (var ocrPage in ocrPages)
+            byPageNumber[ocrPage.PageNumber] = ocrPage;
+
+        return byPageNumber.Values
+            .OrderBy(page => page.PageNumber)
+            .ToList();
+    }
+
+    private static bool TryFindDocumentTotals(
+        IReadOnlyList<PageData> pages,
+        out DocumentTotals totals)
+    {
+        totals = default!;
+
+        foreach (var page in pages)
+        {
+            for (var index = 0; index < page.Lines.Count; index++)
+            {
+                var headingWindow = string.Join(
+                    " ",
+                    page.Lines
+                        .Skip(index)
+                        .Take(3)
+                        .Select(line => line.Text));
+                var normalizedHeading = NormalizeKey(headingWindow);
+                if (!normalizedHeading.Contains(
+                        "odeme emri toplam tutari",
+                        StringComparison.Ordinal))
+                    continue;
+
+                var valueWindow = string.Join(
+                    " ",
+                    page.Lines
+                        .Skip(index)
+                        .Take(14)
+                        .Select(line => line.Text));
+
+                var values = Regex.Matches(
+                        valueWindow,
+                        @"(?<!\d)\d{1,3}(?:\.\d{3})*,\d{2}(?!\d)|(?<!\d)\d+,\d{2}(?!\d)",
+                        RegexOptions.CultureInvariant)
+                    .Select(match => match.Value)
+                    .SelectMany(MoneyCandidates)
+                    .Distinct()
+                    .ToArray();
+
+                if (values.Length < 4)
+                    continue;
+
+                var gross = values.FirstOrDefault(value => value > 0m);
+                if (gross <= 0m)
+                    continue;
+
+                var stamp = values
+                    .Skip(1)
+                    .FirstOrDefault(value => value > 0m && value < gross * 0.1m);
+                var payment = values
+                    .Where(value => value > gross * 0.5m && value <= gross)
+                    .LastOrDefault();
+
+                if (stamp <= 0m || payment <= 0m)
+                    continue;
+
+                totals = new DocumentTotals(gross, stamp, payment);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool MatchesDocumentTotals(
+        IReadOnlyList<InvoiceRecord> invoices,
+        DocumentTotals totals)
+    {
+        var payableTotal = decimal.Round(
+            invoices.Sum(invoice => invoice.PayableAmount),
+            2,
+            MidpointRounding.AwayFromZero);
+        var stampTotal = decimal.Round(
+            invoices.Sum(invoice => invoice.StampDuty),
+            2,
+            MidpointRounding.AwayFromZero);
+        var paymentTotal = decimal.Round(
+            invoices.Sum(invoice => invoice.PaymentAmount),
+            2,
+            MidpointRounding.AwayFromZero);
+
+        return payableTotal == totals.GrossAmount
+               && stampTotal == totals.StampDutyAmount
+               && paymentTotal == totals.PaymentAmount;
     }
 
     private bool TryParsePages(
@@ -213,8 +312,10 @@ internal sealed class LegacyHysPdfImportService
             return true;
         }
 
+        var hasDocumentTotals = TryFindDocumentTotals(pages, out var documentTotals);
         var invoices = new List<InvoiceRecord>();
         var missingDueDateCount = 0;
+        var derivedResultCellCount = 0;
         HeaderLayout? usedHeader = null;
         foreach (var page in pages)
         {
@@ -230,9 +331,11 @@ internal sealed class LegacyHysPdfImportService
                         invoiceType,
                         schools,
                         reportDate.Value,
+                        allowDerivedResultCells: hasDocumentTotals,
                         out var invoice,
                         out var lineLooksLikeInvoice,
                         out var dueDateWasMissing,
+                        out var resultCellsDerived,
                         out var errorMessage))
                 {
                     if (lineLooksLikeInvoice)
@@ -252,6 +355,8 @@ internal sealed class LegacyHysPdfImportService
                 invoices.Add(invoice!);
                 if (dueDateWasMissing)
                     missingDueDateCount++;
+                if (resultCellsDerived)
+                    derivedResultCellCount++;
             }
         }
 
@@ -267,6 +372,20 @@ internal sealed class LegacyHysPdfImportService
                 hysNumber,
                 invoiceType);
             return true;
+        }
+
+        if (derivedResultCellCount > 0)
+        {
+            if (!hasDocumentTotals || !MatchesDocumentTotals(invoices, documentTotals))
+            {
+                preview = Invalid(
+                    sourcePath,
+                    fileName,
+                    "OCR ile eksik para hücreleri hesaplandı ancak Ödeme Emri toplamlarıyla doğrulanamadı.",
+                    hysNumber,
+                    invoiceType);
+                return true;
+            }
         }
 
         var authorityProfile = ExtractAuthorityProfile(pages, fallbackAuthorityProfile);
@@ -297,6 +416,9 @@ internal sealed class LegacyHysPdfImportService
         var dueDateNote = missingDueDateCount > 0
             ? $" • {missingDueDateCount} kayıtta son ödeme tarihi belgede bulunmadığı için fatura tarihi kullanıldı."
             : string.Empty;
+        var derivedAmountNote = derivedResultCellCount > 0
+            ? $" • {derivedResultCellCount} kayıtta OCR'ın okuyamadığı sonuç tutarları Ödeme Emri toplamlarıyla doğrulanarak tamamlandı."
+            : string.Empty;
 
         preview = new HistoricalPdfImportPreview(
             sourcePath,
@@ -304,7 +426,8 @@ internal sealed class LegacyHysPdfImportService
             true,
             $"{pages.Count} sayfa ve {invoices.Count} fatura semantik sütun başlıklarıyla doğrulandı"
             + (usedOcr ? " • bozuk/eski PDF metin katmanı için OCR kullanıldı." : ".")
-            + dueDateNote,
+            + dueDateNote
+            + derivedAmountNote,
             hysNumber,
             invoiceType,
             invoices.Count,
@@ -319,13 +442,16 @@ internal sealed class LegacyHysPdfImportService
         string invoiceType,
         IReadOnlyList<SchoolRecord> schools,
         DateTime reportDate,
+        bool allowDerivedResultCells,
         out InvoiceRecord? invoice,
         out bool lineLooksLikeInvoice,
         out bool dueDateWasMissing,
+        out bool resultCellsDerived,
         out string errorMessage)
     {
         invoice = null;
         dueDateWasMissing = false;
+        resultCellsDerived = false;
         errorMessage = string.Empty;
 
         var invoiceDateText = ReadColumn(line.Words, header, ColumnKind.InvoiceDate);
@@ -378,12 +504,14 @@ internal sealed class LegacyHysPdfImportService
                 ReadColumn(line.Words, header, ColumnKind.Vat),
                 ReadColumn(line.Words, header, ColumnKind.StampDuty),
                 ReadColumn(line.Words, header, ColumnKind.Payment),
+                allowDerivedResultCells,
                 out var payableAmount,
                 out var vatAmount,
                 out var printedStampDuty,
                 out var printedPaymentAmount,
                 out var calculation,
-                out var compensationAmount))
+                out var compensationAmount,
+                out resultCellsDerived))
         {
             errorMessage = "Tutar/KDV/Damga Vergisi/Ödeme sütunları güvenilir biçimde doğrulanamadı.";
             return false;
@@ -429,12 +557,14 @@ internal sealed class LegacyHysPdfImportService
         string vatText,
         string stampDutyText,
         string paymentText,
+        bool allowDerivedResultCells,
         out decimal payableAmount,
         out decimal vatAmount,
         out decimal printedStampDuty,
         out decimal printedPaymentAmount,
         out TaxCalculationResult calculation,
-        out decimal compensationAmount)
+        out decimal compensationAmount,
+        out bool resultCellsDerived)
     {
         payableAmount = 0m;
         vatAmount = 0m;
@@ -442,6 +572,7 @@ internal sealed class LegacyHysPdfImportService
         printedPaymentAmount = 0m;
         calculation = default!;
         compensationAmount = 0m;
+        resultCellsDerived = false;
 
         var payableCandidates = MoneyCandidates(payableText);
         var vatCandidates = MoneyCandidates(vatText);
@@ -514,6 +645,35 @@ internal sealed class LegacyHysPdfImportService
             calculation = candidateCalculation;
             compensationAmount = 0m;
             return true;
+        }
+
+        if (allowDerivedResultCells)
+        {
+            foreach (var payable in payableCandidates)
+            foreach (var vat in vatCandidates)
+            {
+                var candidateCalculation = _taxCalculationService.Calculate(
+                    payable,
+                    vat,
+                    invoiceType);
+                if (!candidateCalculation.IsValid)
+                    continue;
+
+                payableAmount = payable;
+                vatAmount = vat;
+                printedStampDuty = decimal.Round(
+                    candidateCalculation.StampDuty,
+                    2,
+                    MidpointRounding.AwayFromZero);
+                printedPaymentAmount = decimal.Round(
+                    candidateCalculation.PaymentAmount,
+                    2,
+                    MidpointRounding.AwayFromZero);
+                calculation = candidateCalculation;
+                compensationAmount = 0m;
+                resultCellsDerived = true;
+                return true;
+            }
         }
 
         return false;
@@ -1977,6 +2137,11 @@ internal sealed class LegacyHysPdfImportService
         IReadOnlyDictionary<ColumnKind, ColumnRange> Ranges,
         double Bottom,
         int DetectedRequiredCount);
+
+    private sealed record DocumentTotals(
+        decimal GrossAmount,
+        decimal StampDutyAmount,
+        decimal PaymentAmount);
 
     private sealed record OcrPageResult(
         IReadOnlyList<PageData> Pages,
