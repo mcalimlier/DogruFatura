@@ -83,7 +83,10 @@ public sealed class LegacyHysPdfImportTests
         Assert.Equal("MYS-20234010364", preview.HysNumber);
         Assert.Equal("Elektrik", preview.InvoiceType);
         Assert.Equal(1, preview.InvoiceCount);
-        Assert.Contains("son ödeme tarihi belgede bulunmadığı", preview.Status);
+        Assert.Contains(
+            "son ödeme tarihi belgede bulunmadığı",
+            preview.Status,
+            StringComparison.Ordinal);
 
         var invoice = Assert.Single(preview.Archive!.Invoices);
         Assert.Equal("Ağaçbeyli İlkokulu", invoice.InstitutionName);
