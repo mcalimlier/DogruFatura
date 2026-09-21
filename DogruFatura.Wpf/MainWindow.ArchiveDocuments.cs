@@ -135,12 +135,17 @@ public partial class MainWindow
                 SetArchiveStatus(
                     $"{index + 1}/{dialog.FileNames.Length} PDF okunuyor ve doğrulanıyor: {Path.GetFileName(fileName)}");
 
+                var progress = new Progress<string>(step =>
+                    SetArchiveStatus(
+                        $"{index + 1}/{dialog.FileNames.Length} {Path.GetFileName(fileName)} • {step}"));
+
                 var preview = await Task.Run(
                     () => _historicalPdfImportService.Read(
                         fileName,
                         schools,
                         authorityProfile,
-                        cancellation.Token),
+                        cancellation.Token,
+                        progress),
                     cancellation.Token);
 
                 cancellation.Token.ThrowIfCancellationRequested();
@@ -206,6 +211,7 @@ public partial class MainWindow
 
         var addedArchives = new List<ArchivedInvoiceList>();
         var createdFiles = new List<string>();
+        SetArchiveStatus($"{validItems.Count} geçerli PDF arşive kaydediliyor...");
         try
         {
             foreach (var item in validItems)
@@ -273,7 +279,7 @@ public partial class MainWindow
         RefreshArchiveView(firstArchive.Id);
         RefreshDashboard();
         SetArchiveStatus(
-            $"{addedArchives.Count} PDF, HYS ile kapalı arşiv kaydı olarak eklendi.",
+            $"{addedArchives.Count} PDF, Ödeme Emri No ile kapalı arşiv kaydı olarak eklendi.",
             false,
             true);
     }
