@@ -529,14 +529,16 @@ internal sealed class LegacyHysPdfImportService
             // Bazı eski PDF'lerde başlık aynı hücre içinde iki satıra bölünür.
             if (lineIndex + 1 < page.Lines.Count)
             {
+                var nextLine = page.Lines[lineIndex + 1];
                 var averageHeight = candidateWords.Count == 0
                     ? 12d
                     : candidateWords.Average(word => word.Height);
                 var maxHeaderLineGap = Math.Max(28d, averageHeight * 2.25d);
-                if (page.Lines[lineIndex + 1].Top - page.Lines[lineIndex].Top < maxHeaderLineGap)
+                if (nextLine.Top - page.Lines[lineIndex].Top < maxHeaderLineGap
+                    && !LooksLikeInvoiceDataLine(nextLine))
                 {
-                    candidateWords.AddRange(page.Lines[lineIndex + 1].Words);
-                    bottom = Math.Max(bottom, page.Lines[lineIndex + 1].Bottom);
+                    candidateWords.AddRange(nextLine.Words);
+                    bottom = Math.Max(bottom, nextLine.Bottom);
                 }
             }
 
@@ -590,6 +592,29 @@ internal sealed class LegacyHysPdfImportService
         }
 
         return new HeaderLayout(ranges, bottom, 0);
+    }
+
+    private static bool LooksLikeInvoiceDataLine(LineData line)
+    {
+        if (line.Words.Count == 0)
+            return false;
+
+        var dateCount = ExtractDates(line.Text).Take(2).Count();
+        if (dateCount >= 1)
+            return true;
+
+        var numericTokenCount = line.Words.Count(word =>
+        {
+            var token = word.Text
+                .Replace(".", string.Empty, StringComparison.Ordinal)
+                .Replace(",", string.Empty, StringComparison.Ordinal)
+                .Replace("-", string.Empty, StringComparison.Ordinal)
+                .Replace("/", string.Empty, StringComparison.Ordinal)
+                .Trim();
+            return token.Length >= 3 && token.All(char.IsDigit);
+        });
+
+        return numericTokenCount >= 4;
     }
 
     private static bool TryFindAliasCenter(
@@ -1158,12 +1183,14 @@ internal sealed class LegacyHysPdfImportService
             var candidateWords = new List<WordData>(page.Lines[lineIndex].Words);
             if (lineIndex + 1 < page.Lines.Count)
             {
+                var nextLine = page.Lines[lineIndex + 1];
                 var averageHeight = candidateWords.Count == 0
                     ? 12d
                     : candidateWords.Average(word => word.Height);
-                if (page.Lines[lineIndex + 1].Top - page.Lines[lineIndex].Top
-                    < Math.Max(36d, averageHeight * 2.5d))
-                    candidateWords.AddRange(page.Lines[lineIndex + 1].Words);
+                if (nextLine.Top - page.Lines[lineIndex].Top
+                    < Math.Max(36d, averageHeight * 2.5d)
+                    && !LooksLikeInvoiceDataLine(nextLine))
+                    candidateWords.AddRange(nextLine.Words);
             }
 
             foreach (var pair in HeaderAliases)
