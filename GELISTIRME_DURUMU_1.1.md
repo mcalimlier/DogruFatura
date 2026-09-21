@@ -6386,3 +6386,41 @@ Sıradaki kapı:
 3. Hedef: **132/132, 0 hata, 0 uyarı**.
 4. Temizse `DERLE_CALISTIR.bat`.
 5. Gerçek 2023 MYS ve 2026 HYS smoke tekrarları.
+
+
+### 21.09.2026 — 132 test kapısı: sparse OCR veri parçasının başlığa karışması düzeltmesi
+
+Son yerel test sonucu:
+- Toplam: **132**
+- Başarılı: **131**
+- Başarısız: **1**
+- Uyarı: **0**
+- Derleme: başarılı.
+
+Tek başarısız test:
+- `LegacyMysTableWithoutDueDateIsImportedSafely(useOcrLikeMoney: True)`
+- Beklenen fatura adedi: **3**
+- Okunan fatura adedi: **2**
+
+Yeni kök neden:
+- OCR-benzeri fixture'da ilk fatura satırı bilinçli olarak birkaç farklı Y seviyesine dağıtılmıştı.
+- Başlıktan hemen sonraki ilk OCR parçasında tarih bulunmayabiliyor; mevcut `LooksLikeInvoiceDataLine` yalnız tarih veya çok sayıda sayısal token aradığı için bu parçayı bazen başlığın ikinci satırı sanabiliyordu.
+- Böyle olunca `header.Bottom` ilk faturanın içine kadar uzuyor ve ilk fatura tarih ankrajı veri alanının dışında kalabiliyordu.
+- Sonuç: 3 gerçek satırdan yalnız 2'si oluşturuluyordu.
+
+Düzeltme:
+- Başlık devamı kontrolü sparse OCR veri parçalarını daha erken tanıyor.
+- Uzun hizmet/tutar sayısı tek başına veri işareti kabul ediliyor.
+- Harf+rakam içeren uzun fatura numarası veri işareti kabul ediliyor.
+- İki veya daha fazla sayısal token içeren fragment veri satırı sayılıyor.
+- Böylece ilk fatura parçası artık çok satırlı başlık olarak yutulmuyor.
+
+Commit:
+- `e11d5e6c2728a0af1a137b639212c7118a46d644`
+
+Sıradaki kapı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat`.
+3. Hedef: **132/132, 0 hata, 0 uyarı**.
+4. Temizse `DERLE_CALISTIR.bat`.
+5. Gerçek 2023 MYS ve 2026 HYS smoke tekrarları.
