@@ -144,8 +144,8 @@ public partial class MainWindow
                         fileName,
                         schools,
                         authorityProfile,
-                        cancellation.Token,
-                        progress),
+                        progress,
+                        cancellation.Token),
                     cancellation.Token);
 
                 cancellation.Token.ThrowIfCancellationRequested();
