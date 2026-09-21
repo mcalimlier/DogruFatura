@@ -1635,6 +1635,8 @@ internal sealed class LegacyHysPdfImportService
                 continue;
             }
 
+            var useFocusedTableOcr = IsImageDominantLegacyPage(extractedPage);
+
             progress?.Report($"OCR {pageNumber}/{document.PageCount}: sayfa hazırlanıyor");
             using var pdfPage = document.GetPage(pageIndex);
             var pngBytes = await RenderPdfPageAsync(pdfPage);
@@ -1701,6 +1703,18 @@ internal sealed class LegacyHysPdfImportService
                     cancellationToken);
             }
 
+            if (useFocusedTableOcr)
+            {
+                using var clockwiseGray = gray.Rotate90(RotationDirection.Clockwise);
+                bestPage = SelectBetterTableRegionOcr(
+                    engine,
+                    clockwiseGray,
+                    (int)pageIndex + 1,
+                    bestPage,
+                    ref bestScore,
+                    cancellationToken);
+            }
+
             progress?.Report($"OCR {pageNumber}/{document.PageCount}: ters 90° yön deneniyor");
             using (var counterClockwise = cleaned.Rotate90(RotationDirection.CounterClockwise))
             {
@@ -1723,6 +1737,18 @@ internal sealed class LegacyHysPdfImportService
                 bestPage = SelectBetterTableRegionOcr(
                     engine,
                     counterClockwise,
+                    (int)pageIndex + 1,
+                    bestPage,
+                    ref bestScore,
+                    cancellationToken);
+            }
+
+            if (useFocusedTableOcr)
+            {
+                using var counterClockwiseGray = gray.Rotate90(RotationDirection.CounterClockwise);
+                bestPage = SelectBetterTableRegionOcr(
+                    engine,
+                    counterClockwiseGray,
                     (int)pageIndex + 1,
                     bestPage,
                     ref bestScore,
@@ -1771,63 +1797,78 @@ internal sealed class LegacyHysPdfImportService
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        // Dönük eski eklerde fatura listesi doğru yöne çevrildiğinde çoğunlukla
-        // sayfanın üst bölümündedir. Tam sayfa OCR; imza, kaşe ve geniş boşluklar
-        // nedeniyle bazı para hücrelerini atlayabiliyor. Üst tablo bandını ayrıca
-        // iki farklı segmentasyonla tara ve sonuçları aynı koordinat sisteminde birleştir.
+        // Bu fallback yalnız dönük/görüntü tabanlı eski ekler içindir.
+        // Gerçek MYS-2023-4010364 örneğinde tablo, doğru yöne çevrilmiş
+        // landscape sayfanın yaklaşık üst %5-%36 bandında yer alıyor.
+        // İmza/kaşe ve büyük boş alanları OCR dışında bırakarak tabloyu
+        // ayrı segmentasyonlarla okutuyoruz.
+        var top = Math.Clamp(
+            (int)Math.Round(image.Height * 0.05d),
+            1,
+            image.Height - 2);
         var bottom = Math.Clamp(
-            (int)Math.Round(image.Height * 0.42d),
-            220,
+            (int)Math.Round(image.Height * 0.36d),
+            top + 120,
             image.Height - 1);
         var region = TesseractOCR.Rect.FromCoords(
             1,
-            1,
+            top,
             image.Width - 1,
             bottom);
 
-        PageData blockCandidate;
-        double blockConfidence;
-        using (var blockPage = engine.Process(
-                   image,
-                   region,
-                   PageSegMode.SingleBlock))
+        var candidates = new List<(PageData Page, double Confidence)>();
+
+        foreach (var mode in new[]
+                 {
+                     PageSegMode.SingleBlock,
+                     PageSegMode.SingleColumn,
+                     PageSegMode.Auto
+                 })
         {
-            blockCandidate = CreateOcrPage(pageNumber, image, blockPage);
-            blockConfidence = blockPage.MeanConfidence;
+            cancellationToken.ThrowIfCancellationRequested();
+
+            PageData candidate;
+            double confidence;
+            using (var page = engine.Process(image, region, mode))
+            {
+                candidate = CreateOcrPage(pageNumber, image, page);
+                confidence = page.MeanConfidence;
+            }
+
+            candidates.Add((candidate, confidence));
+            currentBest = SelectBetterOcrCandidate(
+                candidate,
+                confidence,
+                currentBest,
+                ref bestScore);
         }
 
-        currentBest = SelectBetterOcrCandidate(
-            blockCandidate,
-            blockConfidence,
-            currentBest,
-            ref bestScore);
+        var merged = candidates[0].Page;
+        for (var index = 1; index < candidates.Count; index++)
+            merged = MergeOcrCandidates(merged, candidates[index].Page);
 
-        cancellationToken.ThrowIfCancellationRequested();
-
-        PageData sparseCandidate;
-        double sparseConfidence;
-        using (var sparsePage = engine.Process(
-                   image,
-                   region,
-                   PageSegMode.SparseText))
-        {
-            sparseCandidate = CreateOcrPage(pageNumber, image, sparsePage);
-            sparseConfidence = sparsePage.MeanConfidence;
-        }
-
-        currentBest = SelectBetterOcrCandidate(
-            sparseCandidate,
-            sparseConfidence,
-            currentBest,
-            ref bestScore);
-
-        var merged = MergeOcrCandidates(blockCandidate, sparseCandidate);
-        var mergedConfidence = (blockConfidence + sparseConfidence) / 2d;
+        var mergedConfidence = candidates.Average(item => item.Confidence);
         return SelectBetterOcrCandidate(
             merged,
             mergedConfidence,
             currentBest,
             ref bestScore);
+    }
+
+    private static bool IsImageDominantLegacyPage(PageData? extractedPage)
+    {
+        if (extractedPage is null)
+            return true;
+
+        if (SemanticDocumentScore(extractedPage) > 0)
+            return false;
+
+        var meaningfulCharacters = extractedPage.Lines
+            .SelectMany(line => line.Text)
+            .Count(ch => char.IsLetterOrDigit(ch));
+
+        return extractedPage.Words.Count < 80
+               || meaningfulCharacters < 180;
     }
 
     private static PageData MergeOcrCandidates(
