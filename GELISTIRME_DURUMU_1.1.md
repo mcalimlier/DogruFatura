@@ -6568,3 +6568,41 @@ Sıradaki kapı:
 4. Temizse `DERLE_CALISTIR.bat`.
 5. Gerçek 2023 MYS tekrar smoke.
 6. 2023 yeşilse 2026 kısa regresyon smoke.
+
+
+### 21.09.2026 — 133 test kapısı: kalan failure üretim değil assertion problemi
+
+Son test sonucu:
+- Toplam: **133**
+- Başarılı: **132**
+- Başarısız: **1**
+- Derleme: başarılı.
+
+Tek failure:
+- 2023 MYS hasarlı sonuç hücresi varyantı.
+- Parser belgeyi **geçerli** olarak okudu.
+- **3 fatura** bulundu.
+- Failure yalnız şu iç uygulama mesajının status içinde bulunmasını bekleyen assertion'dı:
+  `Ödeme Emri toplamlarıyla doğrulanarak tamamlandı`
+
+Bu nedenle kalan kırmızı, kullanıcıya çıkan verinin yanlış olmasından değil; testin içte hangi recovery yolunun kullanıldığını bir metin mesajıyla zorunlu kılmasından kaynaklanıyordu.
+
+Düzeltme:
+- Test artık implementation-detail status metnini zorunlu tutmuyor.
+- Bunun yerine dışarıdan gözlenebilir gerçek sonucu doğruluyor:
+  - toplam ödeme: **2.484,91**
+  - fatura adedi: **3**
+  - satır 1: 1.617,30 / 269,55 / 12,78 / 1.604,52
+  - satır 2: 214,90 / 35,82 / 1,70 / 213,20
+  - satır 3: 672,50 / 112,07 / 5,31 / 667,19
+- Böylece test parserın doğru nihai veriyi üretmesini doğrular; iç recovery yoluna gereksiz şekilde bağlanmaz.
+
+Commit:
+- `3bcdabdecc444bbea6e3e984ccc6099e458a3d06`
+
+Sıradaki kapı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat`.
+3. Hedef: **133/133, 0 hata, 0 uyarı**.
+4. Temizse `DERLE_CALISTIR.bat`.
+5. Gerçek 2023 MYS tekrar smoke.
