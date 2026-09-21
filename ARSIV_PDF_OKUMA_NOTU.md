@@ -153,3 +153,13 @@ Yeni yaklaşım:
 Tarama penceresindeki İPTAL yazısı için pencere/düğme yüksekliği artırıldı ve düğme yerel template ile merkezlendi.
 
 Durum: **132/132 + 0 warning ve gerçek 2023/2026 tekrar smoke bekleniyor.**
+
+
+## 21.09.2026 — Test derleme düzeltmesi
+
+Son test koşusunda `CS0103` ile yanlış fixture değişken adı ve `CA1859` analyzer uyarısı yakalandı.
+
+- `useAlternativeHeaders` -> mevcut `alternative` parametresi
+- `BuildInvoiceRows` -> `LineData[]` dönüş tipi
+
+Durum: **132/132 + 0 warning tekrar testi bekleniyor.**
