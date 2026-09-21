@@ -6424,3 +6424,56 @@ Sıradaki kapı:
 3. Hedef: **132/132, 0 hata, 0 uyarı**.
 4. Temizse `DERLE_CALISTIR.bat`.
 5. Gerçek 2023 MYS ve 2026 HYS smoke tekrarları.
+
+
+### 21.09.2026 — Gerçek 2023 MYS: başlık OCR eksikliği için geometrik tek-sütun fallback
+
+Son gerçek smoke:
+- `TESTLERI_CALISTIR.bat`: başarılı.
+- 2026 HYS: gerçek smoke başarılı.
+- 2023 MYS: başarısız; hata artık `Belgede tanınan fatura tablosu bulunamadı`.
+
+Gerçek 2023 sayfa görseli tekrar incelendi. 90° döndürülmüş fatura listesinde temel sütunlar fiziksel olarak mevcut:
+- S.NO
+- İLÇE ADI
+- KURUM ADI
+- Tüketici No
+- FATURA NO
+- FATURA TARİHİ
+- TOPLAM TUTAR
+- KDV TUTARI
+- DAMGA VERGİSİ
+- ELE GEÇEN MİKTAR
+
+Tesseract denemelerinde eski tarama kalitesi nedeniyle bazı modlarda:
+- `DAMGA VERGİSİ` okunurken `ELE GEÇEN MİKTAR` eksik,
+- başka modlarda `ELE ... MİKTAR` okunurken `DAMGA VERGİSİ` eksik
+kalabiliyor.
+
+Bu nedenle parserın "tüm zorunlu başlıklar eksiksiz OCR edilecek" şartı gerçek arşiv için fazla katıydı.
+
+Uygulanan düzeltme:
+- Zorunlu 8 semantik sütunun **7'si güvenilir bulunursa** yalnız tek eksik sütun geometrik olarak türetilebilir.
+- Eksik sütun iki bilinen komşu arasındaysa merkez noktası kullanılır.
+- Eksik son sütun `Payment / Ele Geçen Miktar` ise son bilinen sütun ile sayfa sağ sınırı arasının merkezi kullanılır.
+- Birden fazla zorunlu sütun eksikse fallback uygulanmaz; belge reddedilmeye devam eder.
+- `Ele Miktar` ifadesi, `Ele Geçen Miktar` başlığında orta kelimenin OCR tarafından kaybedildiği durum için ek alias oldu.
+
+Yeni regresyon:
+- 2023 MYS theory testine üçüncü varyant eklendi.
+- Bu varyantta ödeme başlığı bilinçli olarak `E.G.M.` yapılarak doğrudan semantik eşleşme bozuluyor.
+- Parser tek eksik sağ sütunu geometriden kurup 3 faturayı ve 2.484,91 toplamı yine doğrulamalı.
+
+Yeni beklenen test toplamı: **133**.
+
+Commitler:
+- Tek eksik OCR başlığı geometrik fallback: `662c88a76518120a227ed2ea367035e3af52f069`
+- Eksik ödeme başlığı regresyon testi: `40a904818c49543ef6d11b0f92d3d6f209a14c37`
+
+Sıradaki kapı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat`.
+3. Hedef: **133/133, 0 hata, 0 uyarı**.
+4. Temizse `DERLE_CALISTIR.bat`.
+5. Gerçek 2023 MYS tekrar smoke.
+6. 2026 kısa regresyon smoke.
