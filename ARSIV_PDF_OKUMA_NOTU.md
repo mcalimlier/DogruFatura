@@ -113,3 +113,8 @@ Kullanıcı deneyimi:
 
 Beklenen otomatik test toplamı: **132**.
 Gerçek 2023 smoke bekleniyor.
+
+
+### 2023 regresyon kapsamı
+
+Regresyon fixture'ı artık gerçek 2023 MYS listesindeki üç satırın tutarlarını ve toplam 2.484,91 ödeme değerini kapsıyor. Normal para biçimi ile OCR-benzeri bozuk para biçimi ayrı theory vakaları olarak doğrulanacak.
