@@ -1511,16 +1511,18 @@ internal sealed class LegacyHysPdfImportService
 
         void AddWithImplicitCents(string value)
         {
-            Add(value);
-
-            if (value.IndexOfAny(new[] { '.', ',' }) >= 0)
-                return;
-
+            var hasExplicitDecimalSeparator = value.Contains('.', StringComparison.Ordinal)
+                                              || value.Contains(',', StringComparison.Ordinal);
             var digits = string.Concat(value.Where(char.IsDigit));
-            if (digits.Length < 3)
-                return;
 
-            Add(digits[..^2] + "," + digits[^2..]);
+            // Eski tarama/OCR çıktılarında PDF'de her zaman 2 ondalık gösterilen
+            // para değeri "161730" gibi ayıraçsız gelebilir. Bu durumda kuruş
+            // yorumu önce denenir; hesap motoru tutarsızsa ham tam sayı adayına
+            // geri dönülür. Açık ayıraç varsa normal para biçimi önceliklidir.
+            if (!hasExplicitDecimalSeparator && digits.Length >= 3)
+                Add(digits[..^2] + "," + digits[^2..]);
+
+            Add(value);
         }
 
         foreach (var chunk in chunks)
