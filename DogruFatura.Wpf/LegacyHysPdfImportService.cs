@@ -222,7 +222,7 @@ internal sealed class LegacyHysPdfImportService
                 continue;
 
             usedHeader ??= header;
-            foreach (var line in page.Lines.Where(line => line.Top > header.Bottom + 1d))
+            foreach (var line in BuildInvoiceRows(page, header))
             {
                 if (!TryParseInvoiceLine(
                         line,
@@ -852,6 +852,61 @@ internal sealed class LegacyHysPdfImportService
         }
 
         return previous[right.Length];
+    }
+
+    private static IReadOnlyList<LineData> BuildInvoiceRows(
+        PageData page,
+        HeaderLayout header)
+    {
+        if (!header.Ranges.TryGetValue(ColumnKind.InvoiceDate, out var dateRange))
+            return page.Lines
+                .Where(line => line.Top > header.Bottom + 1d)
+                .ToArray();
+
+        var dataWords = page.Words
+            .Where(word => word.Top > header.Bottom + 1d)
+            .ToArray();
+
+        var anchors = dataWords
+            .Where(word => word.CenterX >= dateRange.Left && word.CenterX < dateRange.Right)
+            .Where(word => TryDate(word.Text, out _))
+            .OrderBy(word => word.CenterY)
+            .ToArray();
+
+        if (anchors.Length == 0)
+        {
+            return page.Lines
+                .Where(line => line.Top > header.Bottom + 1d)
+                .ToArray();
+        }
+
+        var rows = new List<LineData>();
+        var usedAnchorCenters = new List<double>();
+        foreach (var anchor in anchors)
+        {
+            if (usedAnchorCenters.Any(center => Math.Abs(center - anchor.CenterY) < 8d))
+                continue;
+
+            usedAnchorCenters.Add(anchor.CenterY);
+            var tolerance = Math.Clamp(anchor.Height * 0.8d, 12d, 19d);
+            var rowWords = dataWords
+                .Where(word => Math.Abs(word.CenterY - anchor.CenterY) <= tolerance)
+                .OrderBy(word => word.Left)
+                .ToArray();
+
+            if (rowWords.Length == 0)
+                continue;
+
+            rows.Add(new LineData(
+                rowWords.Average(word => word.Top),
+                rowWords.Max(word => word.Bottom),
+                string.Join(" ", rowWords.Select(word => word.Text)),
+                rowWords));
+        }
+
+        return rows.Count > 0
+            ? rows.OrderBy(row => row.Top).ToArray()
+            : page.Lines.Where(line => line.Top > header.Bottom + 1d).ToArray();
     }
 
     private static string ReadInvoiceNumber(
@@ -1602,10 +1657,7 @@ internal sealed class LegacyHysPdfImportService
 
     private static bool TryDate(string text, out DateTime date)
     {
-        var normalized = (text ?? string.Empty)
-            .Replace('O', '0')
-            .Replace('o', '0')
-            .Trim();
+        var normalized = NormalizeOcrDateText(text);
 
         if (TryParseDateExact(normalized, out date))
             return true;
@@ -1618,6 +1670,28 @@ internal sealed class LegacyHysPdfImportService
 
         date = default;
         return false;
+    }
+
+    private static string NormalizeOcrDateText(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return string.Empty;
+
+        var builder = new StringBuilder(text.Length);
+        foreach (var ch in text.Trim())
+        {
+            builder.Append(ch switch
+            {
+                'O' or 'o' or 'Q' or 'D' => '0',
+                'I' or 'İ' or 'ı' or 'l' or '|' or '!' => '1',
+                'Z' or 'z' => '2',
+                'S' or 's' => '5',
+                'B' or 'b' => '8',
+                _ => ch
+            });
+        }
+
+        return builder.ToString();
     }
 
     private static bool TryParseDateExact(string text, out DateTime date) =>
@@ -1725,6 +1799,7 @@ internal sealed class LegacyHysPdfImportService
         double Bottom)
     {
         public double CenterX => (Left + Right) / 2d;
+        public double CenterY => (Top + Bottom) / 2d;
         public double Height => Math.Max(1d, Bottom - Top);
     }
 
