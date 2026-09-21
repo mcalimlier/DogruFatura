@@ -511,6 +511,18 @@ internal sealed class LegacyHysPdfImportService
                 out var printedPaymentAmount,
                 out var calculation,
                 out var compensationAmount,
+                out resultCellsDerived)
+            && !TryResolveAmountsFromRowGeometry(
+                line.Words,
+                header,
+                invoiceType,
+                allowDerivedResultCells,
+                out payableAmount,
+                out vatAmount,
+                out printedStampDuty,
+                out printedPaymentAmount,
+                out calculation,
+                out compensationAmount,
                 out resultCellsDerived))
         {
             errorMessage = "Tutar/KDV/Damga Vergisi/Ödeme sütunları güvenilir biçimde doğrulanamadı.";
@@ -654,6 +666,120 @@ internal sealed class LegacyHysPdfImportService
             foreach (var payable in payableCandidates)
             foreach (var vat in vatCandidates)
             {
+                var candidateCalculation = _taxCalculationService.Calculate(
+                    payable,
+                    vat,
+                    invoiceType);
+                if (!candidateCalculation.IsValid)
+                    continue;
+
+                payableAmount = payable;
+                vatAmount = vat;
+                printedStampDuty = decimal.Round(
+                    candidateCalculation.StampDuty,
+                    2,
+                    MidpointRounding.AwayFromZero);
+                printedPaymentAmount = decimal.Round(
+                    candidateCalculation.PaymentAmount,
+                    2,
+                    MidpointRounding.AwayFromZero);
+                calculation = candidateCalculation;
+                compensationAmount = 0m;
+                resultCellsDerived = true;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryResolveAmountsFromRowGeometry(
+        IReadOnlyList<WordData> words,
+        HeaderLayout header,
+        string invoiceType,
+        bool allowDerivedResultCells,
+        out decimal payableAmount,
+        out decimal vatAmount,
+        out decimal printedStampDuty,
+        out decimal printedPaymentAmount,
+        out TaxCalculationResult calculation,
+        out decimal compensationAmount,
+        out bool resultCellsDerived)
+    {
+        payableAmount = 0m;
+        vatAmount = 0m;
+        printedStampDuty = 0m;
+        printedPaymentAmount = 0m;
+        calculation = default!;
+        compensationAmount = 0m;
+        resultCellsDerived = false;
+
+        if (!header.Ranges.TryGetValue(ColumnKind.Payable, out var payableRange))
+            return false;
+
+        // Gerçek eski taramalarda OCR kelime merkezini komşu sütuna birkaç
+        // piksel taşıyabiliyor. Sütun-slice başarısız olduğunda, para bölgesindeki
+        // tokenları soldan sağa tekrar değerlendir. Böylece başlık geometrisine
+        // tamamen bağımlı olmadan Tutar -> KDV -> Damga -> Ödeme sırası korunur.
+        var moneyWords = words
+            .Where(word => word.Right > payableRange.Left)
+            .OrderBy(word => word.Left)
+            .Select(word => new RowMoneyWord(
+                word.Left,
+                word.Right,
+                MoneyCandidates(word.Text)))
+            .Where(item => item.Candidates.Count > 0)
+            .ToArray();
+
+        if (moneyWords.Length < 2)
+            return false;
+
+        // Önce satırdaki 4 para hücresini doğrudan doğrulamayı dene.
+        for (var payableIndex = 0; payableIndex < moneyWords.Length; payableIndex++)
+        for (var vatIndex = payableIndex + 1; vatIndex < moneyWords.Length; vatIndex++)
+        for (var stampIndex = vatIndex + 1; stampIndex < moneyWords.Length; stampIndex++)
+        for (var paymentIndex = stampIndex + 1; paymentIndex < moneyWords.Length; paymentIndex++)
+        {
+            foreach (var payable in moneyWords[payableIndex].Candidates)
+            foreach (var vat in moneyWords[vatIndex].Candidates)
+            foreach (var stamp in moneyWords[stampIndex].Candidates)
+            foreach (var payment in moneyWords[paymentIndex].Candidates)
+            {
+                if (!TryResolveCalculation(
+                        invoiceType,
+                        payable,
+                        vat,
+                        stamp,
+                        payment,
+                        out var candidateCalculation,
+                        out var candidateCompensation))
+                    continue;
+
+                payableAmount = payable;
+                vatAmount = vat;
+                printedStampDuty = stamp;
+                printedPaymentAmount = payment;
+                calculation = candidateCalculation;
+                compensationAmount = candidateCompensation;
+                return true;
+            }
+        }
+
+        if (!allowDerivedResultCells)
+            return false;
+
+        // Ana Ödeme Emri toplamları mevcutsa Tutar + KDV'nin soldan sağa ilk
+        // güvenilir ikilisinden sonuç hücreleri hesap motoruyla üretilebilir.
+        // Belge seviyesindeki aggregate kontrol bu sonucu ayrıca doğrular.
+        for (var payableIndex = 0; payableIndex < moneyWords.Length; payableIndex++)
+        for (var vatIndex = payableIndex + 1; vatIndex < moneyWords.Length; vatIndex++)
+        {
+            foreach (var payable in moneyWords[payableIndex].Candidates)
+            foreach (var vat in moneyWords[vatIndex].Candidates)
+            {
+                if (payable <= 0m || vat < 0m || vat > payable)
+                    continue;
+
                 var candidateCalculation = _taxCalculationService.Calculate(
                     payable,
                     vat,
@@ -2139,6 +2265,11 @@ internal sealed class LegacyHysPdfImportService
         IReadOnlyDictionary<ColumnKind, ColumnRange> Ranges,
         double Bottom,
         int DetectedRequiredCount);
+
+    private sealed record RowMoneyWord(
+        double Left,
+        double Right,
+        IReadOnlyList<decimal> Candidates);
 
     private sealed record DocumentTotals(
         decimal GrossAmount,
