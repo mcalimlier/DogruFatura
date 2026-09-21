@@ -58,8 +58,8 @@ public sealed class LegacyHysPdfImportTests
     {
         using var document = new PdfDocument();
         var page = document.AddPage();
-        page.Orientation = PageOrientation.Landscape;
         page.Size = PageSize.A4;
+        page.Orientation = PageOrientation.Landscape;
 
         using var graphics = XGraphics.FromPdfPage(page);
         var body = new XFont("Segoe UI", 8, XFontStyleEx.Regular);
