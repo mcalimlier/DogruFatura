@@ -267,3 +267,21 @@ Yeni fallback:
 Gerçek-benzeri testte para hücrelerine yatay kolon drift'i de eklendi.
 
 Durum: **133/133 tekrar test + gerçek 2023 smoke bekleniyor.**
+
+
+## 21.09.2026 — Tesseract tek aktif Page kısıtı
+
+Hedefli tablo-band OCR'da `SingleBlock` ve `SparseText` işlemleri arka arkaya çalıştırılırken ilk Tesseract `Page` nesnesi dispose edilmeden ikinci `Process` çağrısı yapılıyordu.
+
+Bu gerçek 2023 smoke'ta:
+`Only one image can be processed at a time`
+hatasına yol açtı.
+
+Düzeltme:
+- her OCR `Page` sonucu önce `PageData`'ya kopyalanır,
+- confidence saklanır,
+- Tesseract `Page` dispose edilir,
+- sonra sonraki OCR modu çalıştırılır,
+- iki bağımsız `PageData` sonucu en son birleştirilir.
+
+Durum: gerçek 2023 smoke tekrarı bekleniyor.
