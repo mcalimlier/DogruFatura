@@ -37,7 +37,7 @@
                               SelectionChanged="PreviewGrid_SelectionChanged">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Dosya" Binding="{Binding FileName}" Width="190"/>
-                            <DataGridTextColumn Header="HYS Belge No" Binding="{Binding HysNumber}" Width="145"/>
+                            <DataGridTextColumn Header="Ödeme Emri No" Binding="{Binding HysNumber}" Width="155"/>
                             <DataGridTextColumn Header="Tür" Binding="{Binding InvoiceType}" Width="80"/>
                             <DataGridTextColumn Header="Adet" Binding="{Binding InvoiceCountText}" Width="82"/>
                             <DataGridTextColumn Header="Ödeme" Binding="{Binding PaymentTotalText}" Width="115"/>
