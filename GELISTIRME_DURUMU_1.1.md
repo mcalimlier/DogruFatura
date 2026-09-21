@@ -6530,3 +6530,41 @@ Sıradaki kapı:
 4. Temizse `DERLE_CALISTIR.bat`.
 5. Gerçek 2023 MYS tekrar smoke.
 6. 2023 yeşilse 2026 kısa regresyon smoke.
+
+
+### 21.09.2026 — 133 test kapısı: aggregate recovery test fixture düzeltmesi
+
+Son yerel test sonucu:
+- Toplam: **133**
+- Başarılı: **132**
+- Başarısız: **1**
+- Atlandı: **0**
+- Derleme: başarılı.
+
+Tek başarısız test:
+- `LegacyMysTableWithoutDueDateIsImportedSafely(useOcrLikeMoney: True, damagePaymentHeader: True, damageLastResultCells: True)`
+- Testin kendisi belgeyi **geçerli ve 3 faturalı** olarak başarıyla parse etti.
+- Başarısız olan yalnızca, önizleme açıklamasında aggregate-recovery notunun görünmesini bekleyen `Assert.Contains` kontrolüydü.
+
+Kök neden:
+- Fixture'da "okunamaz sonuç hücresi" simülasyonu için `XX` / `YY` metni çiziliyordu.
+- Satır/kolon geometrisi ve OCR-benzeri aday üretimi nedeniyle bu hücreler gerçek anlamda tamamen kayıp bir hücreyi garanti etmiyordu.
+- Böylece parser satırı normal yoldan tamamlayabildi ve aggregate fallback kullanılmadı; test ise fallback notunu zorunlu bekledi.
+- Bu bir üretim kodu regresyonu değil, aggregate fallback'i yeterince kesin tetiklemeyen test-fixture problemiydi.
+
+Düzeltme:
+- Gerçek OCR kaybını daha doğru simüle etmek için son MYS satırının `Damga Vergisi` ve `Ele Geçen Miktar` hücreleri artık fixture'a **hiç çizilmiyor**.
+- Böylece iki sonuç hücresi gerçekten eksik kalıyor.
+- Parserın bu satırı yalnız Ödeme Emri ana sayfasındaki resmi toplamlarla doğrulayarak tamamlaması bekleniyor.
+- Test toplamı değişmedi: **133**.
+
+Commit:
+- `2c839a4125761a8ce5be2cec323b07b33cb11b54`
+
+Sıradaki kapı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat`.
+3. Hedef: **133/133, 0 hata, 0 uyarı**.
+4. Temizse `DERLE_CALISTIR.bat`.
+5. Gerçek 2023 MYS tekrar smoke.
+6. 2023 yeşilse 2026 kısa regresyon smoke.
