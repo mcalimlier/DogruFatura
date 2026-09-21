@@ -854,7 +854,7 @@ internal sealed class LegacyHysPdfImportService
         return previous[right.Length];
     }
 
-    private static IReadOnlyList<LineData> BuildInvoiceRows(
+    private static LineData[] BuildInvoiceRows(
         PageData page,
         HeaderLayout header)
     {
