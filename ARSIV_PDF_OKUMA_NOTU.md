@@ -38,3 +38,10 @@ Yeni bir eski PDF çeşidi çıktığında mevcut okuyucuyu tek belgeye özel sa
 Sentetik legacy PDF testinde bazı sayfa geometrilerinde sıra numarası okul adına taşarak `1 Tatar Ortaokulu` şeklinde okunabildi. Okuyucu artık kurum hücresinin başındaki saf sıra numarasını temizliyor. Bu düzeltme gerçek kurum adındaki diğer rakamlara dokunmuyor.
 
 Durum: düzeltme kodlandı, 128/128 tekrar testi bekleniyor.
+
+
+## 21.09.2026 — Son düzeltme
+
+- Uzun fatura numarası dar başlık geometrisi nedeniyle merkez sınırını aşarsa sütun örtüşmesine göre ikinci okuma denenir.
+- Damga vergisi ve ödeme tutarı içeride tam hassasiyetle korunur; PDF doğrulaması 2 ondalık para gösterimi üzerinden yapılır.
+- Durum: kodlandı, 128/128 tekrar testi bekleniyor.
