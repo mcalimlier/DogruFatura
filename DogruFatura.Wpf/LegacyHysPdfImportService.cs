@@ -104,12 +104,14 @@ internal sealed class LegacyHysPdfImportService
         string sourcePath,
         IReadOnlyList<SchoolRecord> schools,
         AuthorityProfile fallbackAuthorityProfile,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IProgress<string>? progress = null)
     {
         var fileName = Path.GetFileName(sourcePath);
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            progress?.Report("PDF metin katmanı okunuyor");
 
             var extractedPages = ExtractPdfTextPages(sourcePath, cancellationToken);
             if (TryParsePages(
@@ -123,7 +125,12 @@ internal sealed class LegacyHysPdfImportService
                 return extractedPreview;
 
             cancellationToken.ThrowIfCancellationRequested();
-            var ocrResult = TryExtractOcrPages(sourcePath, cancellationToken);
+            progress?.Report("Eski/bozuk PDF için OCR hazırlanıyor");
+            var ocrResult = TryExtractOcrPages(
+                sourcePath,
+                extractedPages,
+                cancellationToken,
+                progress);
             if (ocrResult.Pages.Count > 0
                 && TryParsePages(
                     sourcePath,
@@ -1072,11 +1079,17 @@ internal sealed class LegacyHysPdfImportService
 
     private static OcrPageResult TryExtractOcrPages(
         string sourcePath,
-        CancellationToken cancellationToken)
+        IReadOnlyList<PageData> extractedPages,
+        CancellationToken cancellationToken,
+        IProgress<string>? progress)
     {
         try
         {
-            return ExtractOcrPagesAsync(sourcePath, cancellationToken)
+            return ExtractOcrPagesAsync(
+                    sourcePath,
+                    extractedPages,
+                    cancellationToken,
+                    progress)
                 .GetAwaiter()
                 .GetResult();
         }
@@ -1098,7 +1111,9 @@ internal sealed class LegacyHysPdfImportService
 
     private static async Task<OcrPageResult> ExtractOcrPagesAsync(
         string sourcePath,
-        CancellationToken cancellationToken)
+        IReadOnlyList<PageData> extractedPages,
+        CancellationToken cancellationToken,
+        IProgress<string>? progress)
     {
         var tessdataDirectory = Path.Combine(AppContext.BaseDirectory, "tessdata");
         var tessdataFile = Path.Combine(tessdataDirectory, "tur.traineddata");
@@ -1121,6 +1136,15 @@ internal sealed class LegacyHysPdfImportService
         for (uint pageIndex = 0; pageIndex < document.PageCount; pageIndex++)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var pageNumber = checked((int)pageIndex + 1);
+            var extractedPage = extractedPages.FirstOrDefault(page => page.PageNumber == pageNumber);
+            if (extractedPage is not null && SemanticDocumentScore(extractedPage) >= 2)
+            {
+                progress?.Report($"OCR {pageNumber}/{document.PageCount}: okunabilir belge sayfası atlandı");
+                continue;
+            }
+
+            progress?.Report($"OCR {pageNumber}/{document.PageCount}: sayfa hazırlanıyor");
             using var pdfPage = document.GetPage(pageIndex);
             var pngBytes = await RenderPdfPageAsync(pdfPage);
             using var sourceImage = TesseractPix.LoadFromMemory(pngBytes);
@@ -1128,6 +1152,7 @@ internal sealed class LegacyHysPdfImportService
             PageData? bestPage = null;
             var bestScore = int.MinValue;
 
+            progress?.Report($"OCR {pageNumber}/{document.PageCount}: normal yön taranıyor");
             bestPage = SelectBetterOcrPage(
                 engine,
                 sourceImage,
@@ -1139,6 +1164,7 @@ internal sealed class LegacyHysPdfImportService
 
             using var gray = sourceImage.ConvertRGBToGray();
             using var cleaned = gray.RemoveLines(150, 150);
+            progress?.Report($"OCR {pageNumber}/{document.PageCount}: tablo temizleniyor");
             bestPage = SelectBetterOcrPage(
                 engine,
                 cleaned,
@@ -1150,6 +1176,7 @@ internal sealed class LegacyHysPdfImportService
 
             if (bestScore < 100_000_000)
             {
+                progress?.Report($"OCR {pageNumber}/{document.PageCount}: 90° yön deneniyor");
                 using var clockwise = cleaned.Rotate90(RotationDirection.Clockwise);
                 bestPage = SelectBetterOcrPage(
                     engine,
@@ -1163,6 +1190,7 @@ internal sealed class LegacyHysPdfImportService
 
             if (bestScore < 100_000_000)
             {
+                progress?.Report($"OCR {pageNumber}/{document.PageCount}: ters 90° yön deneniyor");
                 using var counterClockwise = cleaned.Rotate90(RotationDirection.CounterClockwise);
                 bestPage = SelectBetterOcrPage(
                     engine,
@@ -1175,7 +1203,10 @@ internal sealed class LegacyHysPdfImportService
             }
 
             if (bestPage is not null)
+            {
                 pages.Add(bestPage);
+                progress?.Report($"OCR {pageNumber}/{document.PageCount}: sayfa tamamlandı");
+            }
         }
 
         return new OcrPageResult(pages, string.Empty);
