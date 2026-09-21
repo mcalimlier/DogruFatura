@@ -64,3 +64,17 @@ Sıradaki doğrulama sentetik PDF değil, gerçek arşiv belgeleridir:
 - önizleme penceresi kapatma X simgesi.
 
 Bu gerçek smoke tamamlanmadan final kabul yapılmaz.
+
+
+## 21.09.2026 — Gerçek 2023 MYS ve 2026 OCR düzeltmesi
+
+Gerçek belgeler iki yeni tarihsel fark gösterdi:
+
+- 2023 döneminde belge numarası `HYS` değil `MYS` olabiliyor.
+- 2023 ödeme listesinde `Tüketici No`, `Toplam Tutar`, `Ele Geçen Miktar` gibi eski başlıklar bulunuyor ve son ödeme tarihi sütunu hiç bulunmayabiliyor.
+- 2026 örneğinde PDF metin katmanı bozuk; OCR gerekiyor.
+- OCR model dosyası Setup/Debug çıktısında `tessdata\tur.traineddata` altında olmasına rağmen motor uygulama köküne bakıyordu. Motor veri yolu `tessdata` klasörüne düzeltildi.
+
+Okuyucu artık HYS ve tarihsel MYS belge numaralarını ayırt ederek korur. Son ödeme tarihi sütunu belgede hiç yoksa fatura tarihi teknik fallback olarak kullanılır ve bu durum önizleme açıklamasında açıkça belirtilir; mevcut bir sütunun okunamaması ise hata olarak kalır.
+
+Durum: kodlandı; **131/131** otomatik test ve gerçek 2023/2026 smoke bekleniyor.
