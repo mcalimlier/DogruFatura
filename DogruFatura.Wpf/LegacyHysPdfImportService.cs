@@ -18,7 +18,7 @@ namespace DogruFatura.Wpf;
 /// <summary>
 /// Eski HYS / Ödeme Emri PDF'lerindeki fatura eklerini semantik sütun başlıklarıyla okur.
 /// Sabit koordinat veya tek bir başlık yazımına bağımlı değildir. PDF metin katmanı bozuksa
-/// Windows OCR son çare olarak kullanılır.
+/// Yerleşik OCR modeli son çare olarak kullanılır.
 /// </summary>
 internal sealed class LegacyHysPdfImportService
 {
@@ -335,25 +335,20 @@ internal sealed class LegacyHysPdfImportService
             return false;
         }
 
-        if (!TryMoney(ReadColumn(line.Words, header, ColumnKind.Payable), out var payableAmount)
-            || !TryMoney(ReadColumn(line.Words, header, ColumnKind.Vat), out var vatAmount)
-            || !TryMoney(ReadColumn(line.Words, header, ColumnKind.StampDuty), out var printedStampDuty)
-            || !TryMoney(ReadColumn(line.Words, header, ColumnKind.Payment), out var printedPaymentAmount))
-        {
-            errorMessage = "Tutar/KDV/Damga Vergisi/Ödeme sütunlarından biri okunamadı.";
-            return false;
-        }
-
-        if (!TryResolveCalculation(
+        if (!TryResolveAmounts(
                 invoiceType,
-                payableAmount,
-                vatAmount,
-                printedStampDuty,
-                printedPaymentAmount,
+                ReadColumn(line.Words, header, ColumnKind.Payable),
+                ReadColumn(line.Words, header, ColumnKind.Vat),
+                ReadColumn(line.Words, header, ColumnKind.StampDuty),
+                ReadColumn(line.Words, header, ColumnKind.Payment),
+                out var payableAmount,
+                out var vatAmount,
+                out var printedStampDuty,
+                out var printedPaymentAmount,
                 out var calculation,
                 out var compensationAmount))
         {
-            errorMessage = "PDF tutarları vergi hesabıyla doğrulanamadı.";
+            errorMessage = "Tutar/KDV/Damga Vergisi/Ödeme sütunları güvenilir biçimde doğrulanamadı.";
             return false;
         }
 
@@ -389,6 +384,63 @@ internal sealed class LegacyHysPdfImportService
 
         invoice = candidate;
         return true;
+    }
+
+    private bool TryResolveAmounts(
+        string invoiceType,
+        string payableText,
+        string vatText,
+        string stampDutyText,
+        string paymentText,
+        out decimal payableAmount,
+        out decimal vatAmount,
+        out decimal printedStampDuty,
+        out decimal printedPaymentAmount,
+        out TaxCalculationResult calculation,
+        out decimal compensationAmount)
+    {
+        payableAmount = 0m;
+        vatAmount = 0m;
+        printedStampDuty = 0m;
+        printedPaymentAmount = 0m;
+        calculation = default!;
+        compensationAmount = 0m;
+
+        var payableCandidates = MoneyCandidates(payableText);
+        var vatCandidates = MoneyCandidates(vatText);
+        var stampCandidates = MoneyCandidates(stampDutyText);
+        var paymentCandidates = MoneyCandidates(paymentText);
+        if (payableCandidates.Count == 0
+            || vatCandidates.Count == 0
+            || stampCandidates.Count == 0
+            || paymentCandidates.Count == 0)
+            return false;
+
+        foreach (var payable in payableCandidates)
+        foreach (var vat in vatCandidates)
+        foreach (var stamp in stampCandidates)
+        foreach (var payment in paymentCandidates)
+        {
+            if (!TryResolveCalculation(
+                    invoiceType,
+                    payable,
+                    vat,
+                    stamp,
+                    payment,
+                    out var candidateCalculation,
+                    out var candidateCompensation))
+                continue;
+
+            payableAmount = payable;
+            vatAmount = vat;
+            printedStampDuty = stamp;
+            printedPaymentAmount = payment;
+            calculation = candidateCalculation;
+            compensationAmount = candidateCompensation;
+            return true;
+        }
+
+        return false;
     }
 
     private bool TryResolveCalculation(
@@ -452,8 +504,16 @@ internal sealed class LegacyHysPdfImportService
         IReadOnlyList<SchoolRecord> schools)
     {
         var key = NormalizeKey(institutionText);
+        var compactKey = key.Replace(" ", string.Empty, StringComparison.Ordinal);
         return schools.FirstOrDefault(school =>
-            string.Equals(NormalizeKey(school.Name), key, StringComparison.Ordinal));
+        {
+            var schoolKey = NormalizeKey(school.Name);
+            return string.Equals(schoolKey, key, StringComparison.Ordinal)
+                   || string.Equals(
+                       schoolKey.Replace(" ", string.Empty, StringComparison.Ordinal),
+                       compactKey,
+                       StringComparison.Ordinal);
+        });
     }
 
     private static bool TryFindHeaderLayout(PageData page, out HeaderLayout layout)
@@ -467,11 +527,17 @@ internal sealed class LegacyHysPdfImportService
             var bottom = page.Lines[lineIndex].Bottom;
 
             // Bazı eski PDF'lerde başlık aynı hücre içinde iki satıra bölünür.
-            if (lineIndex + 1 < page.Lines.Count
-                && page.Lines[lineIndex + 1].Top - page.Lines[lineIndex].Top < 28d)
+            if (lineIndex + 1 < page.Lines.Count)
             {
-                candidateWords.AddRange(page.Lines[lineIndex + 1].Words);
-                bottom = Math.Max(bottom, page.Lines[lineIndex + 1].Bottom);
+                var averageHeight = candidateWords.Count == 0
+                    ? 12d
+                    : candidateWords.Average(word => word.Height);
+                var maxHeaderLineGap = Math.Max(28d, averageHeight * 2.25d);
+                if (page.Lines[lineIndex + 1].Top - page.Lines[lineIndex].Top < maxHeaderLineGap)
+                {
+                    candidateWords.AddRange(page.Lines[lineIndex + 1].Words);
+                    bottom = Math.Max(bottom, page.Lines[lineIndex + 1].Bottom);
+                }
             }
 
             var centers = new Dictionary<ColumnKind, double>();
@@ -547,10 +613,9 @@ internal sealed class LegacyHysPdfImportService
 
             var candidateSets = tokens
                 .Select(token => available
-                    .Where(word => string.Equals(
+                    .Where(word => TokenMatches(
                         NormalizeToken(word.Text),
-                        token,
-                        StringComparison.Ordinal))
+                        token))
                     .ToArray())
                 .ToArray();
 
@@ -615,6 +680,47 @@ internal sealed class LegacyHysPdfImportService
         }
     }
 
+    private static bool TokenMatches(string actual, string expected)
+    {
+        if (string.Equals(actual, expected, StringComparison.Ordinal))
+            return true;
+        if (actual.Length < 4 || expected.Length < 4)
+            return false;
+
+        var maxDistance = Math.Max(actual.Length, expected.Length) >= 8 ? 2 : 1;
+        return LevenshteinDistance(actual, expected, maxDistance) <= maxDistance;
+    }
+
+    private static int LevenshteinDistance(string left, string right, int stopAfter)
+    {
+        if (Math.Abs(left.Length - right.Length) > stopAfter)
+            return stopAfter + 1;
+
+        var previous = Enumerable.Range(0, right.Length + 1).ToArray();
+        var current = new int[right.Length + 1];
+
+        for (var i = 1; i <= left.Length; i++)
+        {
+            current[0] = i;
+            var rowMinimum = current[0];
+            for (var j = 1; j <= right.Length; j++)
+            {
+                var cost = left[i - 1] == right[j - 1] ? 0 : 1;
+                current[j] = Math.Min(
+                    Math.Min(current[j - 1] + 1, previous[j] + 1),
+                    previous[j - 1] + cost);
+                rowMinimum = Math.Min(rowMinimum, current[j]);
+            }
+
+            if (rowMinimum > stopAfter)
+                return stopAfter + 1;
+
+            (previous, current) = (current, previous);
+        }
+
+        return previous[right.Length];
+    }
+
     private static string ReadColumn(
         IReadOnlyList<WordData> words,
         HeaderLayout header,
@@ -649,19 +755,36 @@ internal sealed class LegacyHysPdfImportService
     {
         foreach (var page in pages)
         {
-            foreach (var line in page.Lines)
+            for (var index = 0; index < page.Lines.Count; index++)
             {
-                var normalized = NormalizeKey(line.Text);
-                if (!normalized.Contains("duzenleme tarihi", StringComparison.Ordinal)
+                var normalized = NormalizeKey(page.Lines[index].Text);
+                if (!normalized.Contains("duzenleme", StringComparison.Ordinal)
                     && !normalized.Contains("belge tarihi", StringComparison.Ordinal))
                     continue;
 
-                if (TryFindDate(line.Text, out var date))
+                var neighborhood = string.Join(
+                    " ",
+                    page.Lines
+                        .Skip(index)
+                        .Take(3)
+                        .Select(line => line.Text));
+                if (TryFindDate(neighborhood, out var date))
                     return date;
             }
         }
 
-        // Etiket ile değer ayrı OCR satırlarına düştüyse ilk sayfanın üst bölümündeki tarihi kullan.
+        // Başlık etiketi OCR'da parçalanmışsa imza/belge tarihi genellikle aynı
+        // tarihin birden fazla kez yazılmasıyla ayırt edilebilir.
+        var repeatedDate = pages
+            .SelectMany(page => page.Lines)
+            .SelectMany(line => ExtractDates(line.Text))
+            .GroupBy(date => date.Date)
+            .OrderByDescending(group => group.Count())
+            .ThenByDescending(group => group.Key)
+            .FirstOrDefault();
+        if (repeatedDate is not null && repeatedDate.Count() >= 2)
+            return repeatedDate.Key;
+
         foreach (var page in pages.Take(2))
         {
             foreach (var line in page.Lines.Where(line => line.Top <= page.Height * 0.28d))
@@ -882,31 +1005,48 @@ internal sealed class LegacyHysPdfImportService
             bestPage = SelectBetterOcrPage(
                 engine,
                 sourceImage,
+                PageSegMode.Auto,
                 (int)pageIndex + 1,
                 bestPage,
                 ref bestScore,
                 cancellationToken);
 
-            using (var clockwise = sourceImage.Rotate90(RotationDirection.Clockwise))
-            {
-                bestPage = SelectBetterOcrPage(
-                    engine,
-                    clockwise,
-                    (int)pageIndex + 1,
-                    bestPage,
-                    ref bestScore,
-                    cancellationToken);
-            }
+            using var gray = sourceImage.ConvertRGBToGray();
+            using var cleaned = gray.RemoveLines(150, 150);
+            bestPage = SelectBetterOcrPage(
+                engine,
+                cleaned,
+                PageSegMode.SingleBlock,
+                (int)pageIndex + 1,
+                bestPage,
+                ref bestScore,
+                cancellationToken);
 
-            using (var counterClockwise = sourceImage.Rotate90(RotationDirection.CounterClockwise))
+            if (bestScore < 1_000_000)
             {
-                bestPage = SelectBetterOcrPage(
-                    engine,
-                    counterClockwise,
-                    (int)pageIndex + 1,
-                    bestPage,
-                    ref bestScore,
-                    cancellationToken);
+                using (var clockwise = cleaned.Rotate90(RotationDirection.Clockwise))
+                {
+                    bestPage = SelectBetterOcrPage(
+                        engine,
+                        clockwise,
+                        PageSegMode.SingleBlock,
+                        (int)pageIndex + 1,
+                        bestPage,
+                        ref bestScore,
+                        cancellationToken);
+                }
+
+                using (var counterClockwise = cleaned.Rotate90(RotationDirection.CounterClockwise))
+                {
+                    bestPage = SelectBetterOcrPage(
+                        engine,
+                        counterClockwise,
+                        PageSegMode.SingleBlock,
+                        (int)pageIndex + 1,
+                        bestPage,
+                        ref bestScore,
+                        cancellationToken);
+                }
             }
 
             if (bestPage is not null)
@@ -919,13 +1059,14 @@ internal sealed class LegacyHysPdfImportService
     private static PageData? SelectBetterOcrPage(
         TesseractEngine engine,
         TesseractPix image,
+        PageSegMode pageSegMode,
         int pageNumber,
         PageData? currentBest,
         ref int bestScore,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        using var page = engine.Process(image, PageSegMode.Auto);
+        using var page = engine.Process(image, pageSegMode);
         var candidate = CreateOcrPage(pageNumber, image, page);
         var score = HeaderScore(candidate) * 10000
                     + (int)Math.Round(page.MeanConfidence * 100d)
@@ -1015,9 +1156,15 @@ internal sealed class LegacyHysPdfImportService
         for (var lineIndex = 0; lineIndex < page.Lines.Count; lineIndex++)
         {
             var candidateWords = new List<WordData>(page.Lines[lineIndex].Words);
-            if (lineIndex + 1 < page.Lines.Count
-                && page.Lines[lineIndex + 1].Top - page.Lines[lineIndex].Top < 36d)
-                candidateWords.AddRange(page.Lines[lineIndex + 1].Words);
+            if (lineIndex + 1 < page.Lines.Count)
+            {
+                var averageHeight = candidateWords.Count == 0
+                    ? 12d
+                    : candidateWords.Average(word => word.Height);
+                if (page.Lines[lineIndex + 1].Top - page.Lines[lineIndex].Top
+                    < Math.Max(36d, averageHeight * 2.5d))
+                    candidateWords.AddRange(page.Lines[lineIndex + 1].Words);
+            }
 
             foreach (var pair in HeaderAliases)
             {
@@ -1061,38 +1208,107 @@ internal sealed class LegacyHysPdfImportService
             .ToArray();
     }
 
-    private static bool TryMoney(string text, out decimal value)
+    private static IReadOnlyList<decimal> MoneyCandidates(string text)
     {
-        var cleaned = (text ?? string.Empty)
-            .Replace("₺", string.Empty, StringComparison.Ordinal)
-            .Replace("TL", string.Empty, StringComparison.OrdinalIgnoreCase)
-            .Replace("TRY", string.Empty, StringComparison.OrdinalIgnoreCase)
-            .Trim();
+        var normalized = (text ?? string.Empty)
+            .Replace('O', '0')
+            .Replace('o', '0');
+        var chunks = Regex.Matches(normalized, @"[0-9][0-9.,]*")
+            .Select(match => match.Value.Trim('.', ','))
+            .Where(value => value.Length > 0)
+            .ToArray();
 
-        return NumberParser.TryNonNegativeDecimal(cleaned, out value);
+        var candidates = new List<decimal>();
+        void Add(string value)
+        {
+            if (NumberParser.TryNonNegativeDecimal(value, out var parsed)
+                && !candidates.Contains(parsed))
+                candidates.Add(parsed);
+        }
+
+        foreach (var chunk in chunks)
+        {
+            Add(chunk);
+
+            var decimalSeparator = Math.Max(chunk.LastIndexOf(','), chunk.LastIndexOf('.'));
+            var integerLength = decimalSeparator >= 0 ? decimalSeparator : chunk.Length;
+            if (integerLength >= 2 && char.IsDigit(chunk[0]))
+                Add(chunk[1..]);
+        }
+
+        if (chunks.Length >= 2 && chunks[0].Length == 1)
+            Add(chunks[0] + chunks[1]);
+
+        return candidates;
     }
 
-    private static bool TryFindDate(string text, out DateTime date)
+    private static bool TryFindDate(string text, out DateTime date) =>
+        TryDate(text, out date);
+
+    private static IEnumerable<DateTime> ExtractDates(string text)
     {
+        var seen = new HashSet<DateTime>();
+        var normalized = (text ?? string.Empty)
+            .Replace('O', '0')
+            .Replace('o', '0');
+
         foreach (Match match in Regex.Matches(
-                     text ?? string.Empty,
+                     normalized,
                      @"\b[0-3]?[0-9][.\-/][01]?[0-9][.\-/](?:19|20)[0-9]{2}\b",
                      RegexOptions.CultureInvariant))
         {
-            if (TryDate(match.Value, out date))
-                return true;
+            if (TryParseDateExact(match.Value, out var date) && seen.Add(date.Date))
+                yield return date.Date;
+        }
+
+        foreach (Match match in Regex.Matches(
+                     normalized,
+                     @"\b[0-3][0-9][01][0-9](?:19|20)[0-9]{2}\b",
+                     RegexOptions.CultureInvariant))
+        {
+            if (DateTime.TryParseExact(
+                    match.Value,
+                    "ddMMyyyy",
+                    Tr,
+                    DateTimeStyles.None,
+                    out var date)
+                && seen.Add(date.Date))
+                yield return date.Date;
+        }
+    }
+
+    private static bool TryDate(string text, out DateTime date)
+    {
+        var normalized = (text ?? string.Empty)
+            .Replace('O', '0')
+            .Replace('o', '0')
+            .Trim();
+
+        if (TryParseDateExact(normalized, out date))
+            return true;
+
+        foreach (var candidate in ExtractDates(normalized))
+        {
+            date = candidate;
+            return true;
         }
 
         date = default;
         return false;
     }
 
-    private static bool TryDate(string text, out DateTime date) =>
+    private static bool TryParseDateExact(string text, out DateTime date) =>
         DateTime.TryParseExact(
-            (text ?? string.Empty).Trim(),
+            text.Trim(),
             DateFormats,
             Tr,
             DateTimeStyles.AllowWhiteSpaces,
+            out date)
+        || DateTime.TryParseExact(
+            DigitsOnly(text),
+            "ddMMyyyy",
+            Tr,
+            DateTimeStyles.None,
             out date);
 
     private static string DigitsOnly(string text) =>
