@@ -199,11 +199,16 @@ public sealed class LegacyHysPdfImportTests
                     continue;
 
                 var yOffset = useOcrLikeMoney ? ocrLikeOffsets[columnIndex] : 0d;
+                var xOffset = damagePaymentHeader
+                              && damageLastResultCells
+                              && columnIndex >= 6
+                    ? 48d
+                    : 0d;
                 graphics.DrawString(
                     rows[rowIndex][columnIndex],
                     body,
                     XBrushes.Black,
-                    x[columnIndex],
+                    x[columnIndex] + xOffset,
                     110 + rowIndex * 20 + yOffset);
             }
         }
