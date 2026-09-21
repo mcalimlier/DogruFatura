@@ -509,8 +509,8 @@ internal sealed class LegacyHysPdfImportService
 
             payableAmount = payable;
             vatAmount = vat;
-            printedStampDuty = stampCandidates.FirstOrDefault(roundedStamp);
-            printedPaymentAmount = paymentCandidates.FirstOrDefault(roundedPayment);
+            printedStampDuty = roundedStamp;
+            printedPaymentAmount = roundedPayment;
             calculation = candidateCalculation;
             compensationAmount = 0m;
             return true;
