@@ -55,15 +55,20 @@ public sealed class LegacyHysPdfImportTests
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
     public void LegacyMysTableWithoutDueDateIsImportedSafely(
         bool useOcrLikeMoney,
-        bool damagePaymentHeader)
+        bool damagePaymentHeader,
+        bool damageLastResultCells)
     {
         using var temp = new TempFile("1) MYS-2023-4010364.pdf");
-        CreateLegacyMysPdf(temp.Path, useOcrLikeMoney, damagePaymentHeader);
+        CreateLegacyMysPdf(
+            temp.Path,
+            useOcrLikeMoney,
+            damagePaymentHeader,
+            damageLastResultCells);
 
         var school = new SchoolRecord(
             "İlkokul",
@@ -92,6 +97,13 @@ public sealed class LegacyHysPdfImportTests
             "son ödeme tarihi belgede bulunmadığı",
             preview.Status,
             StringComparison.Ordinal);
+        if (damageLastResultCells)
+        {
+            Assert.Contains(
+                "Ödeme Emri toplamlarıyla doğrulanarak tamamlandı",
+                preview.Status,
+                StringComparison.Ordinal);
+        }
 
         Assert.Equal(2484.91m, decimal.Round(preview.PaymentTotal, 2, MidpointRounding.AwayFromZero));
         Assert.Equal(3, preview.Archive!.Invoices.Count);
@@ -111,7 +123,8 @@ public sealed class LegacyHysPdfImportTests
     private static void CreateLegacyMysPdf(
         string path,
         bool useOcrLikeMoney,
-        bool damagePaymentHeader)
+        bool damagePaymentHeader,
+        bool damageLastResultCells)
     {
         using var document = new PdfDocument();
         var page = document.AddPage();
@@ -145,7 +158,9 @@ public sealed class LegacyHysPdfImportTests
                 new[] { "2", "Sivaslı", "Ağaçbeyli Anaokulu", "00004001720", "EAH2023000012082",
                     "11.08.2023", "21490", "3582", "170", "21320" },
                 new[] { "3", "Sivaslı", "Ağaçbeyli Ortaokulu", "00004002490", "EAH2023000012078",
-                    "11.08.2023", "67250", "11207", "531", "66719" }
+                    "11.08.2023", "67250", "11207",
+                    damageLastResultCells ? "XX" : "531",
+                    damageLastResultCells ? "YY" : "66719" }
             }
             : new[]
             {
@@ -171,6 +186,13 @@ public sealed class LegacyHysPdfImportTests
                     110 + rowIndex * 20 + yOffset);
             }
         }
+
+        graphics.DrawString(
+            "ÖDEME EMRİ TOPLAM TUTARI 2.504,70 19,79 0,00 2.484,91 0,00 2.484,91",
+            body,
+            XBrushes.Black,
+            250,
+            455);
 
         graphics.DrawString("Gerçekleştirme Görevlisi", bold, XBrushes.Black, 110, 500);
         graphics.DrawString("Ömerali ŞİMŞEK", body, XBrushes.Black, 140, 518);
