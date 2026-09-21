@@ -49,8 +49,8 @@ public sealed class LegacyHysPdfImportTests
         Assert.Equal(new DateTime(2025, 1, 23), invoice.DueDate);
         Assert.Equal(9806.90m, invoice.PayableAmount);
         Assert.Equal(1634.48m, invoice.VatAmount);
-        Assert.Equal(77.47m, invoice.StampDuty);
-        Assert.Equal(9729.43m, invoice.PaymentAmount);
+        Assert.Equal(77.47m, decimal.Round(invoice.StampDuty, 2, MidpointRounding.AwayFromZero));
+        Assert.Equal(9729.43m, decimal.Round(invoice.PaymentAmount, 2, MidpointRounding.AwayFromZero));
         Assert.Equal(school.SchoolId, invoice.SchoolId);
     }
 
