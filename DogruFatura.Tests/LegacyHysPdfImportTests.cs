@@ -55,12 +55,15 @@ public sealed class LegacyHysPdfImportTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void LegacyMysTableWithoutDueDateIsImportedSafely(bool useOcrLikeMoney)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void LegacyMysTableWithoutDueDateIsImportedSafely(
+        bool useOcrLikeMoney,
+        bool damagePaymentHeader)
     {
         using var temp = new TempFile("1) MYS-2023-4010364.pdf");
-        CreateLegacyMysPdf(temp.Path, useOcrLikeMoney);
+        CreateLegacyMysPdf(temp.Path, useOcrLikeMoney, damagePaymentHeader);
 
         var school = new SchoolRecord(
             "İlkokul",
@@ -105,7 +108,10 @@ public sealed class LegacyHysPdfImportTests
         Assert.Equal(1604.52m, decimal.Round(invoice.PaymentAmount, 2, MidpointRounding.AwayFromZero));
     }
 
-    private static void CreateLegacyMysPdf(string path, bool useOcrLikeMoney)
+    private static void CreateLegacyMysPdf(
+        string path,
+        bool useOcrLikeMoney,
+        bool damagePaymentHeader)
     {
         using var document = new PdfDocument();
         var page = document.AddPage();
@@ -125,7 +131,8 @@ public sealed class LegacyHysPdfImportTests
         var headers = new[]
         {
             "S.NO", "İLÇE ADI", "KURUM_ADI", "Tüketici No:", "FATURA_NO",
-            "FATURA_TARİHİ", "TOPLAM_TUTAR", "KDV TUTARI", "DAMGA VERGİSİ", "ELE GEÇEN MİKTAR"
+            "FATURA_TARİHİ", "TOPLAM_TUTAR", "KDV TUTARI", "DAMGA VERGİSİ",
+            damagePaymentHeader ? "E.G.M." : "ELE GEÇEN MİKTAR"
         };
         for (var i = 0; i < headers.Length; i++)
             graphics.DrawString(headers[i], bold, XBrushes.Black, x[i], 88);
