@@ -41,10 +41,12 @@ public sealed class HistoricalPdfImportService
     private static readonly string[] DateFormats = { "dd.MM.yyyy", "d.M.yyyy" };
     private static readonly CultureInfo Tr = CultureInfo.GetCultureInfo("tr-TR");
     private readonly TaxCalculationService _taxCalculationService;
+    private readonly LegacyHysPdfImportService _legacyHysPdfImportService;
 
     public HistoricalPdfImportService(TaxCalculationService? taxCalculationService = null)
     {
         _taxCalculationService = taxCalculationService ?? new TaxCalculationService();
+        _legacyHysPdfImportService = new LegacyHysPdfImportService(_taxCalculationService);
     }
 
     public HistoricalPdfImportPreview Read(
@@ -59,11 +61,10 @@ public sealed class HistoricalPdfImportService
             cancellationToken.ThrowIfCancellationRequested();
             if (!string.Equals(Path.GetExtension(sourcePath), ".pdf", StringComparison.OrdinalIgnoreCase))
                 return Invalid(sourcePath, fileName, "Yalnız PDF dosyaları arşive eklenebilir.");
-            if (!TryExtractHysNumberFromFileName(
-                    Path.GetFileNameWithoutExtension(sourcePath),
-                    out var hysNumber,
-                    out var hysError))
-                return Invalid(sourcePath, fileName, "Dosya adında geçerli bir HYS kodu bulunamadı. " + hysError);
+            var hasFileHys = TryExtractHysNumberFromFileName(
+                Path.GetFileNameWithoutExtension(sourcePath),
+                out var hysNumber,
+                out var hysError);
 
             using var document = PdfDocument.Open(sourcePath);
             cancellationToken.ThrowIfCancellationRequested();
@@ -79,7 +80,19 @@ public sealed class HistoricalPdfImportService
             var pages = pageBuffer.ToArray();
             var allText = string.Join(" ", pages.SelectMany(page => page.Lines).Select(line => line.Text));
             if (!Contains(allText, "FATURA ÖDEME LİSTESİ"))
-                return Invalid(sourcePath, fileName, "Belge DoğruFatura ödeme listesi düzeniyle uyuşmuyor.", hysNumber);
+            {
+                return _legacyHysPdfImportService.Read(
+                    sourcePath,
+                    schools,
+                    fallbackAuthorityProfile,
+                    cancellationToken);
+            }
+
+            if (!hasFileHys)
+                return Invalid(
+                    sourcePath,
+                    fileName,
+                    "Dosya adında geçerli bir HYS kodu bulunamadı. " + hysError);
 
             var invoiceType = InvoiceTypes.FirstOrDefault(type => Contains(allText, type));
             if (invoiceType is null)
