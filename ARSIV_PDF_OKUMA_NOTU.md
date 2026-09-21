@@ -163,3 +163,18 @@ Son test koşusunda `CS0103` ile yanlış fixture değişken adı ve `CA1859` an
 - `BuildInvoiceRows` -> `LineData[]` dönüş tipi
 
 Durum: **132/132 + 0 warning tekrar testi bekleniyor.**
+
+
+## 21.09.2026 — OCR komşu satır ayrımı
+
+132 testlik kapıda OCR-benzeri 2023 MYS varyantında 3 beklenen faturadan 2'si okunuyordu.
+
+Neden:
+- Aynı satırdaki OCR hücrelerini toplamak için kullanılan Y tolerans bantları komşu fatura satırlarında üst üste gelebiliyordu.
+
+Yeni kural:
+- Her kelime yalnızca en yakın `Fatura Tarihi` satır ankrajına atanır.
+- OCR'ın küçük dikey kaymaları tolere edilir.
+- Komşu fatura satırlarının hücreleri birbirine karıştırılmaz.
+
+Durum: **132/132 + 0 warning tekrar testi bekleniyor.**
