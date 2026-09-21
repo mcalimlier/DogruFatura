@@ -92,3 +92,24 @@ Düzeltme:
 - Yeni testte oluşan tek CA1307 analyzer uyarısı da temizlendi.
 
 Durum: yeni kod için **131/131 + 0 warning** tekrar doğrulaması ve ardından gerçek 2023/2026 smoke bekleniyor.
+
+
+## 21.09.2026 — 2023 para OCR ve tarama penceresi
+
+2023 MYS gerçek PDF'de belge ve satır tanındı; kalan sorun para hücrelerinin eski tarama/OCR biçimiydi.
+
+Eklenen toleranslar:
+- düşmüş ondalık ayıracı için son iki rakam kuruş adayı,
+- sık OCR harf/rakam karışmalarının para hücresinde kontrollü normalizasyonu,
+- temizlenmiş tabloda SparseText OCR denemesi,
+- satır veri kapsamasına göre daha iyi OCR adayının seçilmesi,
+- Tutar + KDV ve en az bir basılı sonuç alanı hesap motoruyla doğrulanıyorsa diğer sonuç alanının güvenli hesaplanması.
+
+Kullanıcı deneyimi:
+- Teknik OCR adımları artık kullanıcıya gösterilmez.
+- Küçük `ARŞİV PDF TARANIYOR` penceresi açılır.
+- İndeterminate progress bar ve İPTAL düğmesi bulunur.
+- Dosya sayısı/dosya adı sade biçimde gösterilir.
+
+Beklenen otomatik test toplamı: **132**.
+Gerçek 2023 smoke bekleniyor.
