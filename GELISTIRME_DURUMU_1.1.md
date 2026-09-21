@@ -6350,3 +6350,39 @@ Sıradaki kapı:
 3. Hedef: **132/132, 0 hata, 0 uyarı**.
 4. Temizse `DERLE_CALISTIR.bat`.
 5. Gerçek 2023 MYS ve 2026 HYS smoke tekrarları.
+
+
+### 21.09.2026 — 132 test kapısı: OCR satır ankrajı komşu satır çakışması düzeltmesi
+
+Son yerel test sonucu:
+- Toplam: **132**
+- Başarılı: **131**
+- Başarısız: **1**
+- Uyarı: **0**
+- Derleme: başarılı.
+
+Tek başarısız test:
+- `LegacyMysTableWithoutDueDateIsImportedSafely(useOcrLikeMoney: True)`
+- Beklenen fatura adedi: **3**
+- Okunan fatura adedi: **2**
+
+Kök neden:
+- Yeni satır rekonstrüksiyonunda her tarih ankrajı etrafında sabit bir Y tolerans bandı kullanılıyordu.
+- 2023 OCR-benzeri fixture'da satırlar 20 birim aralıklı, bazı hücreler ise ±8 birim kaydırılmış durumda.
+- ±12..19 tolerans bandı komşu satırların bazı para hücrelerini aynı anda iki fatura satırına dahil edebiliyordu.
+- Bu çapraz bulaşma bir satırın doğrulamasını bozarak 3 satırdan yalnız 2'sinin kabul edilmesine yol açtı.
+
+Düzeltme:
+- Her OCR kelimesi artık yalnızca **en yakın Fatura Tarihi ankrajına** atanıyor.
+- Y toleransı OCR kaymalarını kapsamak için korunuyor ancak komşu satırla paylaşım kaldırıldı.
+- Böylece aynı fiziksel satırdaki ±8 civarı OCR kaymaları birleşirken komşu fatura satırının hücreleri karışmıyor.
+
+Commit:
+- `fd6d80d9e81054743154ee22dabfc8c6c8ed81c5`
+
+Sıradaki kapı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat`.
+3. Hedef: **132/132, 0 hata, 0 uyarı**.
+4. Temizse `DERLE_CALISTIR.bat`.
+5. Gerçek 2023 MYS ve 2026 HYS smoke tekrarları.
