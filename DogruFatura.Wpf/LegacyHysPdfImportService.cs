@@ -912,7 +912,7 @@ internal sealed class LegacyHysPdfImportService
             out _);
     }
 
-    private static IReadOnlyList<PageData> ExtractPdfTextPages(
+    private static List<PageData> ExtractPdfTextPages(
         string sourcePath,
         CancellationToken cancellationToken)
     {
@@ -1204,7 +1204,7 @@ internal sealed class LegacyHysPdfImportService
         return score;
     }
 
-    private static IReadOnlyList<LineData> BuildLines(IEnumerable<WordData> words)
+    private static LineData[] BuildLines(IEnumerable<WordData> words)
     {
         var lines = new List<List<WordData>>();
         foreach (var word in words.OrderBy(word => word.Top).ThenBy(word => word.Left))
@@ -1235,7 +1235,7 @@ internal sealed class LegacyHysPdfImportService
             .ToArray();
     }
 
-    private static IReadOnlyList<decimal> MoneyCandidates(string text)
+    private static List<decimal> MoneyCandidates(string text)
     {
         var normalized = (text ?? string.Empty)
             .Replace('O', '0')
