@@ -1785,31 +1785,44 @@ internal sealed class LegacyHysPdfImportService
             image.Width - 1,
             bottom);
 
-        using var blockPage = engine.Process(
-            image,
-            region,
-            PageSegMode.SingleBlock);
-        var blockCandidate = CreateOcrPage(pageNumber, image, blockPage);
+        PageData blockCandidate;
+        double blockConfidence;
+        using (var blockPage = engine.Process(
+                   image,
+                   region,
+                   PageSegMode.SingleBlock))
+        {
+            blockCandidate = CreateOcrPage(pageNumber, image, blockPage);
+            blockConfidence = blockPage.MeanConfidence;
+        }
+
         currentBest = SelectBetterOcrCandidate(
             blockCandidate,
-            blockPage.MeanConfidence,
+            blockConfidence,
             currentBest,
             ref bestScore);
 
         cancellationToken.ThrowIfCancellationRequested();
-        using var sparsePage = engine.Process(
-            image,
-            region,
-            PageSegMode.SparseText);
-        var sparseCandidate = CreateOcrPage(pageNumber, image, sparsePage);
+
+        PageData sparseCandidate;
+        double sparseConfidence;
+        using (var sparsePage = engine.Process(
+                   image,
+                   region,
+                   PageSegMode.SparseText))
+        {
+            sparseCandidate = CreateOcrPage(pageNumber, image, sparsePage);
+            sparseConfidence = sparsePage.MeanConfidence;
+        }
+
         currentBest = SelectBetterOcrCandidate(
             sparseCandidate,
-            sparsePage.MeanConfidence,
+            sparseConfidence,
             currentBest,
             ref bestScore);
 
         var merged = MergeOcrCandidates(blockCandidate, sparseCandidate);
-        var mergedConfidence = (blockPage.MeanConfidence + sparsePage.MeanConfidence) / 2d;
+        var mergedConfidence = (blockConfidence + sparseConfidence) / 2d;
         return SelectBetterOcrCandidate(
             merged,
             mergedConfidence,
