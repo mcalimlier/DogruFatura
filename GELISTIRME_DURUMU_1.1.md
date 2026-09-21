@@ -6477,3 +6477,56 @@ Sıradaki kapı:
 4. Temizse `DERLE_CALISTIR.bat`.
 5. Gerçek 2023 MYS tekrar smoke.
 6. 2026 kısa regresyon smoke.
+
+
+### 21.09.2026 — Gerçek 2023 MYS: sonuç hücrelerini Ödeme Emri toplamıyla güvenli tamamlama
+
+Son gerçek smoke:
+- `TESTLERI_CALISTIR.bat`: başarılı.
+- 2026 HYS: başarılı.
+- 2023 MYS: tablo/satır tanınıyor; hata tekrar para doğrulama aşamasında:
+  `Tutar/KDV/Damga Vergisi/Ödeme sütunları güvenilir biçimde doğrulanamadı.`
+
+Gerçek 2023 OCR çıktısı ayrıntılı incelendi:
+- satır 1: Tutar/KDV/Ödeme büyük ölçüde okunabiliyor, Damga hücresi bazı modlarda kayıp;
+- satır 2: Tutar/KDV/Ödeme okunabiliyor, Damga hücresi bazı modlarda kayıp;
+- satır 3: Tutar ve KDV okunabiliyor; Damga + Ele Geçen Miktar aynı OCR modunda birlikte kaybolabiliyor.
+- Bu nedenle yalnız satır içi sonuç hücrelerinden doğrulama, gerçek 2023 taramasında tek başına yeterli değil.
+
+Kaynak Ödeme Emri ana sayfasında belge toplamları güvenilir metin katmanında mevcut:
+- Brüt toplam: 2.504,70
+- Damga/Kesinti toplamı: 19,79
+- Net/Ödenmesi gereken toplam: 2.484,91
+
+Uygulanan güvenli fallback:
+- OCR parse sırasında okunabilir ana sayfa ile OCR fatura sayfası artık birleştirilir; ana sayfa metadata/toplamları kaybolmaz.
+- `Ödeme Emri Toplam Tutarı` bölümünden brüt, damga/kesinti ve net ödeme toplamı çıkarılır.
+- Satırda Tutar + KDV güvenilir okunmuş fakat Damga/Ödeme sonuç hücreleri OCR tarafından bozulmuşsa hesap motoru satır sonucunu geçici olarak türetebilir.
+- Bu tür türetilmiş satır varsa belge ancak **tüm faturaların toplamı ana Ödeme Emri toplamlarıyla birebir uyuşursa** kabul edilir:
+  - toplam Tutar = belge Brüt toplamı,
+  - toplam Damga = belge Kesinti toplamı,
+  - toplam Ödeme = belge Net toplamı.
+- Toplamlardan biri uyuşmazsa belge reddedilir.
+- Böylece eksik OCR hücresine kör güvenilmez; birinci sayfadaki resmi belge toplamı ikinci bağımsız doğrulama kapısı olur.
+
+Önizleme açıklamasında türetilmiş satır varsa açık not gösterilir:
+`OCR'ın okuyamadığı sonuç tutarları Ödeme Emri toplamlarıyla doğrulanarak tamamlandı.`
+
+Regresyon:
+- 2023 MYS theory'nin gerçek-arşiv varyantında son satırın Damga ve Ödeme hücreleri bilinçli olarak okunamaz hale getirildi.
+- Sentetik Ödeme Emri toplamı 2.504,70 / 19,79 / 2.484,91 olarak eklendi.
+- Parser bu satırı yalnız aggregate toplam doğrulamasıyla kabul etmelidir.
+- Test toplamı **133** olarak kalır.
+
+Commitler:
+- Ana sayfa + OCR sayfası birleştirme, belge toplamı doğrulaması ve aggregate recovery: `7efa0c1c04f0184271f8ada28f140d2f449b5ef0`
+- Aggregate recovery regresyonu: `a9c679f17346f24fd264ba8575b6446be305fe9d`
+- İki sonuç hücresi de okunamadığında aggregate fallback'e izin: `65315fc5609ea32371894f574561b66b1f4cec22`
+
+Sıradaki kapı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat`.
+3. Hedef: **133/133, 0 hata, 0 uyarı**.
+4. Temizse `DERLE_CALISTIR.bat`.
+5. Gerçek 2023 MYS tekrar smoke.
+6. 2023 yeşilse 2026 kısa regresyon smoke.
