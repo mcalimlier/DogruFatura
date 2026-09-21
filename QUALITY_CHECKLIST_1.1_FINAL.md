@@ -31,6 +31,7 @@
 - `setup-smoke` bu nedenle çalışmadı.
 - Bu durum gerçek bir C# build/test hatası olarak kabul edilmemektedir; GitHub Actions job başlangıç/runner tarafında ayrı bir engeldir.
 - Final tag ve kullanıcıya dağıtılacak Setup, gerçek Windows build/test/setup-smoke kapısı tamamlanana kadar bekletilir.
+- 21.09.2026 legacy HYS/PDF düzeltme dalı yerel otomatik test kapısı: **128/128 başarılı, 0 başarısız**. Release merge öncesinde gerçek 2025 + 2026 tarihsel PDF `ARŞİV EKLE` smoke testi ve kapatma X görsel kontrolü bekleniyor.
 
 RC1 kullanıcı doğrulaması tamamlandıktan sonra 1.1.0 sürüm numarası finale alınmıştır. Bu liste gerçek dağıtım paketi oluşturulmadan önce tamamlanır.
 
