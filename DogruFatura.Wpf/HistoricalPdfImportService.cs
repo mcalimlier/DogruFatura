@@ -188,21 +188,25 @@ public sealed class HistoricalPdfImportService
             return false;
         }
 
-        // Eski kullanıcı arşivlerinde "48) HYS-2026-34546180" gibi sıra numarası
-        // ve HYS sayısının içinde ayırıcı tire bulunabiliyor. Uygulamanın sakladığı
-        // standart biçim değişmez: HYS-202634546180.
+        // Eski kullanıcı arşivlerinde HYS öncesi MYS numaraları da bulunur.
+        // "48) HYS-2026-34546180" / "1) MYS-2023-4010364" gibi sıra numarası
+        // ve belge sayısının içinde ayırıcı tire bulunabilir.
         var match = Regex.Match(
             value,
-            @"(?:^|[^A-Z0-9])HYS\s*-?\s*(?<number>[0-9][0-9\s-]*)$",
+            @"(?:^|[^A-Z0-9])(?<prefix>HYS|MYS)\s*-?\s*(?<number>[0-9][0-9\s-]*)$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         if (!match.Success)
         {
-            errorMessage = "Örnek geçerli adlar: HYS-2026146253.pdf veya 48) HYS-2026-34546180.pdf.";
+            errorMessage = "Örnek geçerli adlar: HYS-2026146253.pdf, 48) HYS-2026-34546180.pdf veya 1) MYS-2023-4010364.pdf.";
             return false;
         }
 
         var numericPart = Regex.Replace(match.Groups["number"].Value, @"[\s-]", string.Empty);
-        if (!HysPaymentOrderService.TryNormalize(numericPart, out hysNumber, out var normalizeError))
+        var prefix = match.Groups["prefix"].Value.ToUpperInvariant();
+        if (!HysPaymentOrderService.TryNormalize(
+                prefix + "-" + numericPart,
+                out hysNumber,
+                out var normalizeError))
         {
             errorMessage = normalizeError;
             return false;
