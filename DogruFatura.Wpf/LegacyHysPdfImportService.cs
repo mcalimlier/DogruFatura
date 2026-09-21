@@ -7,8 +7,9 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
-using Windows.Graphics.Imaging;
-using Windows.Media.Ocr;
+using TesseractOCR.Enums;
+using TesseractEngine = TesseractOCR.Engine;
+using TesseractPix = TesseractOCR.Pix.Image;
 using Windows.Storage;
 using Windows.Storage.Streams;
 
@@ -784,6 +785,12 @@ internal sealed class LegacyHysPdfImportService
         {
             throw;
         }
+        catch (DllNotFoundException ex)
+        {
+            return new OcrPageResult(
+                Array.Empty<PageData>(),
+                "OCR motorunun yerel bileşenleri yüklenemedi: " + ex.Message);
+        }
         catch (Exception ex)
         {
             return new OcrPageResult(Array.Empty<PageData>(), ex.Message);
@@ -794,18 +801,18 @@ internal sealed class LegacyHysPdfImportService
         string sourcePath,
         CancellationToken cancellationToken)
     {
-        var engine = OcrEngine.TryCreateFromUserProfileLanguages();
-        if (engine is null)
+        var tessdataFile = Path.Combine(AppContext.BaseDirectory, "tessdata", "tur.traineddata");
+        if (!File.Exists(tessdataFile))
         {
-            var fallbackLanguage = OcrEngine.AvailableRecognizerLanguages.FirstOrDefault();
-            if (fallbackLanguage is not null)
-                engine = OcrEngine.TryCreateFromLanguage(fallbackLanguage);
-        }
-
-        if (engine is null)
             return new OcrPageResult(
                 Array.Empty<PageData>(),
-                "Windows OCR dili kullanılamıyor. Windows Dil ayarlarında OCR desteği olan bir dil kurulmalıdır.");
+                "Türkçe OCR modeli kurulumda bulunamadı.");
+        }
+
+        using var engine = new TesseractEngine(
+            AppContext.BaseDirectory,
+            Language.Turkish,
+            EngineMode.LstmOnly);
 
         var file = await StorageFile.GetFileFromPathAsync(sourcePath);
         var document = await Windows.Data.Pdf.PdfDocument.LoadFromFileAsync(file);
@@ -815,47 +822,40 @@ internal sealed class LegacyHysPdfImportService
         {
             cancellationToken.ThrowIfCancellationRequested();
             using var pdfPage = document.GetPage(pageIndex);
-            using var stream = new InMemoryRandomAccessStream();
-
-            var destinationWidth = (uint)Math.Clamp(
-                Math.Round(pdfPage.Size.Width * 2.5d),
-                1200d,
-                Math.Min(2200d, OcrEngine.MaxImageDimension));
-            var renderOptions = new Windows.Data.Pdf.PdfPageRenderOptions
-            {
-                DestinationWidth = destinationWidth
-            };
-
-            await pdfPage.RenderToStreamAsync(stream, renderOptions);
-            stream.Seek(0);
-            var decoder = await BitmapDecoder.CreateAsync(stream);
+            var pngBytes = await RenderPdfPageAsync(pdfPage);
+            using var sourceImage = TesseractPix.LoadFromMemory(pngBytes);
 
             PageData? bestPage = null;
             var bestScore = int.MinValue;
-            foreach (var rotation in new[]
-                     {
-                         BitmapRotation.None,
-                         BitmapRotation.Clockwise90Degrees,
-                         BitmapRotation.Clockwise270Degrees
-                     })
+
+            bestPage = SelectBetterOcrPage(
+                engine,
+                sourceImage,
+                (int)pageIndex + 1,
+                bestPage,
+                ref bestScore,
+                cancellationToken);
+
+            using (var clockwise = sourceImage.Rotate90(RotationDirection.Clockwise))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                var transform = new BitmapTransform { Rotation = rotation };
-                using var bitmap = await decoder.GetSoftwareBitmapAsync(
-                    BitmapPixelFormat.Bgra8,
-                    BitmapAlphaMode.Premultiplied,
-                    transform,
-                    ExifOrientationMode.IgnoreExifOrientation,
-                    ColorManagementMode.DoNotColorManage);
+                bestPage = SelectBetterOcrPage(
+                    engine,
+                    clockwise,
+                    (int)pageIndex + 1,
+                    bestPage,
+                    ref bestScore,
+                    cancellationToken);
+            }
 
-                var result = await engine.RecognizeAsync(bitmap);
-                var pageData = CreateOcrPage((int)pageIndex + 1, bitmap, result);
-                var score = HeaderScore(pageData) * 1000 + pageData.Words.Count;
-                if (score <= bestScore)
-                    continue;
-
-                bestScore = score;
-                bestPage = pageData;
+            using (var counterClockwise = sourceImage.Rotate90(RotationDirection.CounterClockwise))
+            {
+                bestPage = SelectBetterOcrPage(
+                    engine,
+                    counterClockwise,
+                    (int)pageIndex + 1,
+                    bestPage,
+                    ref bestScore,
+                    cancellationToken);
             }
 
             if (bestPage is not null)
@@ -865,41 +865,113 @@ internal sealed class LegacyHysPdfImportService
         return new OcrPageResult(pages, string.Empty);
     }
 
+    private static PageData? SelectBetterOcrPage(
+        TesseractEngine engine,
+        TesseractPix image,
+        int pageNumber,
+        PageData? currentBest,
+        ref int bestScore,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var page = engine.Process(image, PageSegMode.Auto);
+        var candidate = CreateOcrPage(pageNumber, image, page);
+        var score = HeaderScore(candidate) * 10000
+                    + (int)Math.Round(page.MeanConfidence * 100d)
+                    + Math.Min(candidate.Words.Count, 5000);
+
+        if (score <= bestScore)
+            return currentBest;
+
+        bestScore = score;
+        return candidate;
+    }
+
+    private static async Task<byte[]> RenderPdfPageAsync(Windows.Data.Pdf.PdfPage page)
+    {
+        using var stream = new InMemoryRandomAccessStream();
+        var destinationWidth = (uint)Math.Clamp(
+            Math.Round(page.Size.Width * 3d),
+            1600d,
+            2600d);
+        var options = new Windows.Data.Pdf.PdfPageRenderOptions
+        {
+            DestinationWidth = destinationWidth
+        };
+
+        await page.RenderToStreamAsync(stream, options);
+        stream.Seek(0);
+
+        var length = checked((uint)stream.Size);
+        using var reader = new DataReader(stream.GetInputStreamAt(0));
+        await reader.LoadAsync(length);
+        var bytes = new byte[length];
+        reader.ReadBytes(bytes);
+        return bytes;
+    }
+
     private static PageData CreateOcrPage(
         int pageNumber,
-        SoftwareBitmap bitmap,
-        OcrResult result)
+        TesseractPix image,
+        TesseractOCR.Page page)
     {
-        var words = result.Lines
-            .SelectMany(line => line.Words)
-            .Where(word => !string.IsNullOrWhiteSpace(word.Text))
-            .Select(word => new WordData(
-                word.Text.Trim(),
-                word.BoundingRect.X,
-                word.BoundingRect.X + word.BoundingRect.Width,
-                word.BoundingRect.Y,
-                word.BoundingRect.Y + word.BoundingRect.Height))
+        var words = new List<WordData>();
+        using var layout = page.Layout;
+        foreach (var block in layout)
+        {
+            foreach (var paragraph in block.Paragraphs)
+            {
+                foreach (var textLine in paragraph.TextLines)
+                {
+                    foreach (var word in textLine.Words)
+                    {
+                        var text = word.Text?.Trim();
+                        var box = word.BoundingBox;
+                        if (string.IsNullOrWhiteSpace(text) || !box.HasValue)
+                            continue;
+
+                        var rect = box.Value;
+                        words.Add(new WordData(
+                            text,
+                            rect.X1,
+                            rect.X2,
+                            rect.Y1,
+                            rect.Y2));
+                    }
+                }
+            }
+        }
+
+        var ordered = words
             .OrderBy(word => word.Top)
             .ThenBy(word => word.Left)
             .ToArray();
 
         return new PageData(
             pageNumber,
-            bitmap.PixelWidth,
-            bitmap.PixelHeight,
-            words,
-            BuildLines(words));
+            image.Width,
+            image.Height,
+            ordered,
+            BuildLines(ordered));
     }
 
     private static int HeaderScore(PageData page)
     {
+        if (TryFindHeaderLayout(page, out var layout))
+            return 100 + layout.DetectedRequiredCount;
+
         var found = new HashSet<ColumnKind>();
-        foreach (var line in page.Lines)
+        for (var lineIndex = 0; lineIndex < page.Lines.Count; lineIndex++)
         {
+            var candidateWords = new List<WordData>(page.Lines[lineIndex].Words);
+            if (lineIndex + 1 < page.Lines.Count
+                && page.Lines[lineIndex + 1].Top - page.Lines[lineIndex].Top < 36d)
+                candidateWords.AddRange(page.Lines[lineIndex + 1].Words);
+
             foreach (var pair in HeaderAliases)
             {
                 if (!found.Contains(pair.Key)
-                    && TryFindAliasCenter(line.Words, pair.Value, out _))
+                    && TryFindAliasCenter(candidateWords, pair.Value, out _))
                     found.Add(pair.Key);
             }
         }
