@@ -320,9 +320,7 @@ internal sealed class LegacyHysPdfImportService
         var institutionText = NormalizeInstitutionCell(
             ReadColumn(line.Words, header, ColumnKind.Institution));
         var serviceNumber = DigitsOnly(ReadColumn(line.Words, header, ColumnKind.ServiceNumber));
-        var invoiceNumber = ReadColumn(line.Words, header, ColumnKind.InvoiceNumber)
-            .Replace(" ", string.Empty, StringComparison.Ordinal)
-            .Trim();
+        var invoiceNumber = ReadInvoiceNumber(line.Words, header);
 
         if (string.IsNullOrWhiteSpace(institutionText))
         {
@@ -761,6 +759,41 @@ internal sealed class LegacyHysPdfImportService
         }
 
         return previous[right.Length];
+    }
+
+    private static string ReadInvoiceNumber(
+        IReadOnlyList<WordData> words,
+        HeaderLayout header)
+    {
+        var direct = ReadColumn(words, header, ColumnKind.InvoiceNumber)
+            .Replace(" ", string.Empty, StringComparison.Ordinal)
+            .Trim();
+        if (!string.IsNullOrWhiteSpace(direct))
+            return direct;
+
+        if (!header.Ranges.TryGetValue(ColumnKind.InvoiceNumber, out var range))
+            return string.Empty;
+
+        // Uzun fatura numaraları dar başlığın merkez sınırını aşabilir.
+        // Merkez tabanlı normal okuma boş kaldığında, kendi sütunuyla anlamlı
+        // geometrik örtüşmesi olan kelimeleri güvenli fallback olarak kullan.
+        var overlapping = words
+            .Where(word =>
+            {
+                var width = Math.Max(1d, word.Right - word.Left);
+                var overlap = Math.Max(
+                    0d,
+                    Math.Min(word.Right, range.Right) - Math.Max(word.Left, range.Left));
+                return overlap / width >= 0.35d
+                       || word.Left >= range.Left && word.Left < range.Right;
+            })
+            .OrderBy(word => word.Left)
+            .Select(word => word.Text)
+            .ToArray();
+
+        return string.Concat(overlapping)
+            .Replace(" ", string.Empty, StringComparison.Ordinal)
+            .Trim();
     }
 
     private static string ReadColumn(
