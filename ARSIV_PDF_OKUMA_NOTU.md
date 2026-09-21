@@ -230,3 +230,15 @@ Yeni kural:
 OCR sayfası, okunabilir ana sayfa ile birleştirildiği için belge numarası, tarih, tür ve resmi toplamlar OCR fallback sırasında korunur.
 
 Durum: **133/133 otomatik test + gerçek 2023 smoke bekleniyor.**
+
+
+## 21.09.2026 — Aggregate recovery fixture düzeltmesi
+
+133 testlik kapıda 132 test geçti. Tek failure, belge parse hatası değildi; test, aggregate fallback notunu bekliyordu fakat fixture'daki `XX/YY` hücreleri fallback'i kesin olarak tetiklemiyordu.
+
+Yeni fixture davranışı:
+- son 2023 MYS satırındaki Damga ve Ödeme hücreleri hiç çizilmez;
+- böylece gerçek OCR kaybı doğrudan simüle edilir;
+- satır yalnız resmi Ödeme Emri toplamlarıyla aggregate doğrulama üzerinden tamamlanabilir.
+
+Beklenen: **133/133**.
