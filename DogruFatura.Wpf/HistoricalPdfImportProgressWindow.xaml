@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Arşiv PDF Taranıyor"
         Width="430"
-        Height="190"
+        Height="220"
         WindowStartupLocation="CenterOwner"
         WindowStyle="None"
         ResizeMode="NoResize"
@@ -55,16 +55,30 @@
             <Button Grid.Row="3"
                     x:Name="CancelButton"
                     Content="İPTAL"
-                    Width="96"
-                    Height="34"
+                    Width="110"
+                    Height="38"
                     Margin="0,18,0,0"
+                    Padding="0"
                     HorizontalAlignment="Center"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
                     Background="#FF365D7D"
                     Foreground="White"
                     BorderThickness="0"
+                    FontSize="14"
                     FontWeight="SemiBold"
                     IsCancel="True"
-                    Click="Cancel_Click"/>
+                    Click="Cancel_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
         </Grid>
     </Border>
 </Window>
