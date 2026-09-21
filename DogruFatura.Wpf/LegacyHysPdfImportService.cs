@@ -880,17 +880,33 @@ internal sealed class LegacyHysPdfImportService
                 .ToArray();
         }
 
-        var rows = new List<LineData>();
-        var usedAnchorCenters = new List<double>();
+        var uniqueAnchors = new List<WordData>();
         foreach (var anchor in anchors)
         {
-            if (usedAnchorCenters.Any(center => Math.Abs(center - anchor.CenterY) < 8d))
+            if (uniqueAnchors.Any(existing => Math.Abs(existing.CenterY - anchor.CenterY) < 8d))
                 continue;
 
-            usedAnchorCenters.Add(anchor.CenterY);
-            var tolerance = Math.Clamp(anchor.Height * 0.8d, 12d, 19d);
+            uniqueAnchors.Add(anchor);
+        }
+
+        var rows = new List<LineData>();
+        foreach (var anchor in uniqueAnchors)
+        {
+            var tolerance = Math.Clamp(anchor.Height * 1.25d, 14d, 24d);
             var rowWords = dataWords
-                .Where(word => Math.Abs(word.CenterY - anchor.CenterY) <= tolerance)
+                .Where(word =>
+                {
+                    var distance = Math.Abs(word.CenterY - anchor.CenterY);
+                    if (distance > tolerance)
+                        return false;
+
+                    // OCR aynı fiziksel satırdaki hücreleri birkaç piksel yukarı/aşağı
+                    // kaydırabilir. Sabit bantlar komşu satırları üst üste bindirebildiği
+                    // için her kelimeyi en yakın fatura-tarihi ankrajına ait say.
+                    var nearestAnchorDistance = uniqueAnchors
+                        .Min(candidate => Math.Abs(word.CenterY - candidate.CenterY));
+                    return Math.Abs(distance - nearestAnchorDistance) < 0.01d;
+                })
                 .OrderBy(word => word.Left)
                 .ToArray();
 
