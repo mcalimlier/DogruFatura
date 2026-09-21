@@ -33,7 +33,7 @@ internal sealed class LegacyHysPdfImportService
     private static readonly IReadOnlyDictionary<ColumnKind, string[]> HeaderAliases =
         new Dictionary<ColumnKind, string[]>
         {
-            [ColumnKind.Sequence] = new[] { "no", "sira no", "sıra no" },
+            [ColumnKind.Sequence] = new[] { "no", "sira no", "sıra no", "s no", "s.no", "sno" },
             [ColumnKind.Institution] = new[]
             {
                 "okul adi", "okul adı", "kurum adi", "kurum adı",
@@ -43,7 +43,8 @@ internal sealed class LegacyHysPdfImportService
             {
                 "hizmet numarasi", "hizmet numarası", "hizmet no",
                 "abone numarasi", "abone numarası", "abone no",
-                "tesisat numarasi", "tesisat numarası", "tesisat no"
+                "tesisat numarasi", "tesisat numarası", "tesisat no",
+                "tuketici numarasi", "tüketici numarası", "tuketici no", "tüketici no"
             },
             [ColumnKind.InvoiceNumber] = new[]
             {
@@ -61,7 +62,7 @@ internal sealed class LegacyHysPdfImportService
             [ColumnKind.Payable] = new[]
             {
                 "odenecek tutar", "ödenecek tutar", "fatura tutari", "fatura tutarı",
-                "brut tutar", "brüt tutar"
+                "brut tutar", "brüt tutar", "toplam tutar"
             },
             [ColumnKind.Vat] = new[]
             {
@@ -74,7 +75,8 @@ internal sealed class LegacyHysPdfImportService
             },
             [ColumnKind.Payment] = new[]
             {
-                "odeme tutari", "ödeme tutarı", "net odeme", "net ödeme", "net tutar"
+                "odeme tutari", "ödeme tutarı", "net odeme", "net ödeme", "net tutar",
+                "ele gecen miktar", "ele geçen miktar"
             }
         };
 
@@ -84,7 +86,6 @@ internal sealed class LegacyHysPdfImportService
         ColumnKind.ServiceNumber,
         ColumnKind.InvoiceNumber,
         ColumnKind.InvoiceDate,
-        ColumnKind.DueDate,
         ColumnKind.Payable,
         ColumnKind.Vat,
         ColumnKind.StampDuty,
@@ -205,6 +206,7 @@ internal sealed class LegacyHysPdfImportService
         }
 
         var invoices = new List<InvoiceRecord>();
+        var missingDueDateCount = 0;
         HeaderLayout? usedHeader = null;
         foreach (var page in pages)
         {
@@ -222,6 +224,7 @@ internal sealed class LegacyHysPdfImportService
                         reportDate.Value,
                         out var invoice,
                         out var lineLooksLikeInvoice,
+                        out var dueDateWasMissing,
                         out var errorMessage))
                 {
                     if (lineLooksLikeInvoice)
@@ -239,6 +242,8 @@ internal sealed class LegacyHysPdfImportService
                 }
 
                 invoices.Add(invoice!);
+                if (dueDateWasMissing)
+                    missingDueDateCount++;
             }
         }
 
@@ -281,12 +286,17 @@ internal sealed class LegacyHysPdfImportService
             return true;
         }
 
+        var dueDateNote = missingDueDateCount > 0
+            ? $" • {missingDueDateCount} kayıtta son ödeme tarihi belgede bulunmadığı için fatura tarihi kullanıldı."
+            : string.Empty;
+
         preview = new HistoricalPdfImportPreview(
             sourcePath,
             fileName,
             true,
             $"{pages.Count} sayfa ve {invoices.Count} fatura semantik sütun başlıklarıyla doğrulandı"
-            + (usedOcr ? " • bozuk/eski PDF metin katmanı için OCR kullanıldı." : "."),
+            + (usedOcr ? " • bozuk/eski PDF metin katmanı için OCR kullanıldı." : ".")
+            + dueDateNote,
             hysNumber,
             invoiceType,
             invoices.Count,
@@ -303,19 +313,36 @@ internal sealed class LegacyHysPdfImportService
         DateTime reportDate,
         out InvoiceRecord? invoice,
         out bool lineLooksLikeInvoice,
+        out bool dueDateWasMissing,
         out string errorMessage)
     {
         invoice = null;
+        dueDateWasMissing = false;
         errorMessage = string.Empty;
 
         var invoiceDateText = ReadColumn(line.Words, header, ColumnKind.InvoiceDate);
-        var dueDateText = ReadColumn(line.Words, header, ColumnKind.DueDate);
         var hasInvoiceDate = TryDate(invoiceDateText, out var invoiceDate);
-        var hasDueDate = TryDate(dueDateText, out var dueDate);
+        var headerHasDueDate = header.Ranges.ContainsKey(ColumnKind.DueDate);
+        var dueDateText = headerHasDueDate
+            ? ReadColumn(line.Words, header, ColumnKind.DueDate)
+            : string.Empty;
+        var hasDueDate = headerHasDueDate && TryDate(dueDateText, out var dueDate);
 
         lineLooksLikeInvoice = hasInvoiceDate || hasDueDate;
-        if (!hasInvoiceDate || !hasDueDate)
+        if (!hasInvoiceDate)
             return false;
+
+        if (headerHasDueDate && !hasDueDate)
+        {
+            errorMessage = "Son ödeme/vade tarihi okunamadı.";
+            return false;
+        }
+
+        if (!headerHasDueDate)
+        {
+            dueDate = invoiceDate;
+            dueDateWasMissing = true;
+        }
 
         var institutionText = NormalizeInstitutionCell(
             ReadColumn(line.Words, header, ColumnKind.Institution));
@@ -937,54 +964,57 @@ internal sealed class LegacyHysPdfImportService
         out string hysNumber,
         out string errorMessage)
     {
-        var hasFileHys = HistoricalPdfImportService.TryExtractHysNumberFromFileName(
+        var hasFileNumber = HistoricalPdfImportService.TryExtractHysNumberFromFileName(
             Path.GetFileNameWithoutExtension(sourcePath),
-            out var fileHys,
+            out var fileNumber,
             out var fileError);
-        var hasDocumentHys = TryExtractHysNumberFromText(documentText, out var documentHys);
+        var hasDocumentNumber = TryExtractPaymentOrderNumberFromText(
+            documentText,
+            out var documentNumber);
 
-        if (hasFileHys && hasDocumentHys
-            && !string.Equals(fileHys, documentHys, StringComparison.Ordinal))
+        if (hasFileNumber && hasDocumentNumber
+            && !string.Equals(fileNumber, documentNumber, StringComparison.Ordinal))
         {
             hysNumber = string.Empty;
-            errorMessage = $"Dosya adındaki HYS ({fileHys}) ile PDF içindeki HYS ({documentHys}) uyuşmuyor.";
+            errorMessage = $"Dosya adındaki Ödeme Emri Belge No ({fileNumber}) ile PDF içindeki değer ({documentNumber}) uyuşmuyor.";
             return false;
         }
 
-        if (hasDocumentHys)
+        if (hasDocumentNumber)
         {
-            hysNumber = documentHys;
+            hysNumber = documentNumber;
             errorMessage = string.Empty;
             return true;
         }
 
-        if (hasFileHys)
+        if (hasFileNumber)
         {
-            hysNumber = fileHys;
+            hysNumber = fileNumber;
             errorMessage = string.Empty;
             return true;
         }
 
         hysNumber = string.Empty;
-        errorMessage = "HYS Ödeme Emri Belge No ne dosya adından ne de PDF içeriğinden okunabildi. " + fileError;
+        errorMessage = "Ödeme Emri Belge No ne dosya adından ne de PDF içeriğinden okunabildi. " + fileError;
         return false;
     }
 
-    private static bool TryExtractHysNumberFromText(string text, out string hysNumber)
+    private static bool TryExtractPaymentOrderNumberFromText(string text, out string hysNumber)
     {
         hysNumber = string.Empty;
         var normalized = NormalizeKey(text);
         var match = Regex.Match(
             normalized,
-            @"\bhys\s*[-:]?\s*(?<year>20[0-9]{2})\s*[- ]?\s*(?<number>[0-9]{4,24})\b",
+            @"\b(?<prefix>hys|mys)\s*[-:]?\s*(?<year>20[0-9]{2})\s*[- ]?\s*(?<number>[0-9]{4,24})\b",
             RegexOptions.CultureInvariant);
         if (!match.Success)
             return false;
 
-        return HysPaymentOrderService.TryNormalize(
-            match.Groups["year"].Value + match.Groups["number"].Value,
-            out hysNumber,
-            out _);
+        var raw = match.Groups["prefix"].Value.ToUpperInvariant()
+                  + "-"
+                  + match.Groups["year"].Value
+                  + match.Groups["number"].Value;
+        return HysPaymentOrderService.TryNormalize(raw, out hysNumber, out _);
     }
 
     private static List<PageData> ExtractPdfTextPages(
@@ -1050,16 +1080,17 @@ internal sealed class LegacyHysPdfImportService
         string sourcePath,
         CancellationToken cancellationToken)
     {
-        var tessdataFile = Path.Combine(AppContext.BaseDirectory, "tessdata", "tur.traineddata");
+        var tessdataDirectory = Path.Combine(AppContext.BaseDirectory, "tessdata");
+        var tessdataFile = Path.Combine(tessdataDirectory, "tur.traineddata");
         if (!File.Exists(tessdataFile))
         {
             return new OcrPageResult(
                 Array.Empty<PageData>(),
-                "Türkçe OCR modeli kurulumda bulunamadı.");
+                "Türkçe OCR modeli kurulumda bulunamadı: " + tessdataFile);
         }
 
         using var engine = new TesseractEngine(
-            AppContext.BaseDirectory,
+            tessdataDirectory,
             Language.Turkish,
             EngineMode.LstmOnly);
 
