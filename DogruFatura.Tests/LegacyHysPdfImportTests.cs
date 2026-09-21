@@ -208,7 +208,7 @@ public sealed class LegacyHysPdfImportTests
         for (var i = 0; i < headers.Length; i++)
             graphics.DrawString(headers[i], bold, XBrushes.Black, x[i], 88);
 
-        var row = useAlternativeHeaders
+        var row = alternative
             ? new[]
             {
                 "1", "Tatar Ortaokulu", "12330", "AAA2025000417018", "13.O1.2O25",
