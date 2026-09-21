@@ -31,3 +31,10 @@ Gerçek arşiv örnekleri:
 ## Kural
 
 Yeni bir eski PDF çeşidi çıktığında mevcut okuyucuyu tek belgeye özel sabit koordinatlarla yamamak yerine, yeni başlık eşanlamlıları ve semantik okuma kuralları eklenmelidir.
+
+
+## Son test notu — 21.09.2026
+
+Sentetik legacy PDF testinde bazı sayfa geometrilerinde sıra numarası okul adına taşarak `1 Tatar Ortaokulu` şeklinde okunabildi. Okuyucu artık kurum hücresinin başındaki saf sıra numarasını temizliyor. Bu düzeltme gerçek kurum adındaki diğer rakamlara dokunmuyor.
+
+Durum: düzeltme kodlandı, 128/128 tekrar testi bekleniyor.
