@@ -137,3 +137,19 @@ Yeni kural:
 Aynı değişiklik iki analyzer uyarısını da temizler: `CA1870` ve `CA1861`.
 
 Durum: **132/132 + 0 warning tekrar testi bekleniyor.**
+
+
+## 21.09.2026 — Gerçek OCR satır rekonstrüksiyonu
+
+Gerçek 2023/2026 smoke, yalnız karakter düzeltmesinin yeterli olmadığını gösterdi. Sparse OCR aynı fiziksel fatura satırındaki hücreleri farklı text-line gruplarına ayırabiliyor.
+
+Yeni yaklaşım:
+- Fatura Tarihi sütunundaki tarih satır ankrajıdır.
+- Aynı yatay Y bandındaki hücreler tekrar tek semantik fatura satırında birleştirilir.
+- OCR tarih karakterleri kontrollü normalize edilir.
+- OCR aday seçiminde gerçek para/vergi tutarlılığı kullanılır.
+- 2026'da gerçek Son Ödeme Tarihi varsa okunması tercih edilir; uydurma fallback yapılmaz.
+
+Tarama penceresindeki İPTAL yazısı için pencere/düğme yüksekliği artırıldı ve düğme yerel template ile merkezlendi.
+
+Durum: **132/132 + 0 warning ve gerçek 2023/2026 tekrar smoke bekleniyor.**
