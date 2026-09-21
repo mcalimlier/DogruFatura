@@ -6135,3 +6135,29 @@ Sıradaki kapı:
 5. Ardından yalnız 2026 HYS PDF denenmeli.
 6. İşlem birkaç saniye sürebilir; ilerleme mesajları değişmeye devam ettiği sürece iptal edilmemeli.
 7. Önizleme başarılı olursa gerçek arşive ekleme ayrı smoke olarak denenmeli.
+
+
+### 21.09.2026 — 131/131 sonrası CA1068 temizliği
+
+Son yerel test:
+- Toplam: **131**
+- Başarılı: **131**
+- Başarısız: **0**
+- Atlandı: **0**
+- Kalan tek uyarı: `CA1068` — `HistoricalPdfImportService.Read` içinde `CancellationToken` son parametre değildi.
+
+Uygulanan düzeltme:
+- `HistoricalPdfImportService.Read` imzasında `CancellationToken` son parametreye taşındı.
+- Ana ekran çağrısı yeni parametre sırasına göre güncellendi.
+- Cancellation regresyon testi named argument ile güncellendi.
+
+Commitler:
+- API: `81c29a54380e73163379908a8874c20f6178af1e`
+- Ana çağrı: `f41eeb63bab655fdc34445f8b309a8bd426e08d3`
+- Cancellation testi: `f7abf8736455642c6b018cb24b37201ef1af925a`
+
+Sıradaki kapı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat` — hedef **131/131, 0 warning**.
+3. Sonuç temizse `DERLE_CALISTIR.bat`.
+4. Gerçek 2023 MYS ve 2026 HYS PDF smoke testi.
