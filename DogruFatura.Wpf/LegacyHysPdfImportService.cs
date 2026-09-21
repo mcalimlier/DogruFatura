@@ -77,7 +77,7 @@ internal sealed class LegacyHysPdfImportService
             [ColumnKind.Payment] = new[]
             {
                 "odeme tutari", "ödeme tutarı", "net odeme", "net ödeme", "net tutar",
-                "ele gecen miktar", "ele geçen miktar"
+                "ele gecen miktar", "ele geçen miktar", "ele miktar"
             }
         };
 
@@ -641,22 +641,99 @@ internal sealed class LegacyHysPdfImportService
                     centers[pair.Key] = center;
             }
 
+            var detectedRequiredCount = RequiredColumns.Count(centers.ContainsKey);
+            if (detectedRequiredCount < RequiredColumns.Length - 1)
+                continue;
+
+            // Eski tarama/OCR çıktılarında sağdaki "Damga Vergisi" veya
+            // "Ele Geçen Miktar" başlığından biri kaybolabiliyor. Yedi temel
+            // sütun güvenilir bulunduysa tek eksik sütunun merkezi komşu
+            // semantik sütunlardan güvenli biçimde türetilir.
+            if (detectedRequiredCount == RequiredColumns.Length - 1)
+                TryInferSingleMissingRequiredCenter(page.Width, centers);
+
             var requiredCount = RequiredColumns.Count(centers.ContainsKey);
-            if (requiredCount < 7)
+            if (requiredCount != RequiredColumns.Length)
                 continue;
 
             var candidate = BuildHeaderLayout(page.Width, centers, bottom);
             if (candidate is null)
                 continue;
 
-            if (best is null || requiredCount > best.DetectedRequiredCount)
-                best = candidate with { DetectedRequiredCount = requiredCount };
+            if (best is null || detectedRequiredCount > best.DetectedRequiredCount)
+                best = candidate with { DetectedRequiredCount = detectedRequiredCount };
         }
 
         if (best is null || RequiredColumns.Any(column => !best.Ranges.ContainsKey(column)))
             return false;
 
         layout = best;
+        return true;
+    }
+
+    private static bool TryInferSingleMissingRequiredCenter(
+        double pageWidth,
+        Dictionary<ColumnKind, double> centers)
+    {
+        var missing = RequiredColumns
+            .Where(column => !centers.ContainsKey(column))
+            .ToArray();
+        if (missing.Length != 1)
+            return false;
+
+        var semanticOrder = new[]
+        {
+            ColumnKind.Institution,
+            ColumnKind.ServiceNumber,
+            ColumnKind.InvoiceNumber,
+            ColumnKind.InvoiceDate,
+            ColumnKind.DueDate,
+            ColumnKind.Payable,
+            ColumnKind.Vat,
+            ColumnKind.StampDuty,
+            ColumnKind.Payment
+        };
+
+        var missingIndex = Array.IndexOf(semanticOrder, missing[0]);
+        if (missingIndex < 0)
+            return false;
+
+        double? leftCenter = null;
+        for (var index = missingIndex - 1; index >= 0; index--)
+        {
+            if (!centers.TryGetValue(semanticOrder[index], out var center))
+                continue;
+            leftCenter = center;
+            break;
+        }
+
+        double? rightCenter = null;
+        for (var index = missingIndex + 1; index < semanticOrder.Length; index++)
+        {
+            if (!centers.TryGetValue(semanticOrder[index], out var center))
+                continue;
+            rightCenter = center;
+            break;
+        }
+
+        double inferredCenter;
+        if (leftCenter.HasValue && rightCenter.HasValue)
+        {
+            inferredCenter = (leftCenter.Value + rightCenter.Value) / 2d;
+        }
+        else if (leftCenter.HasValue && missing[0] == ColumnKind.Payment)
+        {
+            inferredCenter = (leftCenter.Value + pageWidth) / 2d;
+        }
+        else
+        {
+            return false;
+        }
+
+        if (inferredCenter <= 0d || inferredCenter >= pageWidth)
+            return false;
+
+        centers[missing[0]] = inferredCenter;
         return true;
     }
 
