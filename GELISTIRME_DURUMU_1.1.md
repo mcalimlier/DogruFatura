@@ -6322,3 +6322,31 @@ Sıradaki kapı:
 5. Ardından 2026 HYS gerçek PDF.
 6. Mini pencerede İPTAL yazısının tam göründüğünü kontrol et.
 7. 2023 ve 2026 ikisi de yeşil olmadan final Setup üretme.
+
+
+### 21.09.2026 — 132 test kapısı derleme hatası ve CA1859 temizliği
+
+Son yerel test koşusunda testler çalışmaya başlamadan önce iki yeni sorun yakalandı:
+
+1. `LegacyHysPdfImportTests.cs` içinde 2025 alternatif başlık fixture'ında yanlış değişken adı kullanılmıştı:
+   - yanlış: `useAlternativeHeaders`
+   - doğru mevcut parametre: `alternative`
+   Bu nedenle `CS0103` derleme hatası oluştu.
+
+2. `LegacyHysPdfImportService.BuildInvoiceRows` dönüş tipi `IReadOnlyList<LineData>` idi.
+   Metot tüm dönüş yollarında doğrudan dizi ürettiği için analyzer `CA1859` verdi.
+
+Düzeltmeler:
+- Fixture koşulu mevcut `alternative` theory parametresine bağlandı.
+- `BuildInvoiceRows` dönüş tipi `LineData[]` yapıldı.
+
+Commitler:
+- Test derleme düzeltmesi: `db457ae228cc48a8495789dabf445768885e9fa0`
+- CA1859 temizliği: `48dacf25aad53507b7eb3d69053ff28d7d64c2d1`
+
+Sıradaki kapı:
+1. Fetch/Pull.
+2. `TESTLERI_CALISTIR.bat`.
+3. Hedef: **132/132, 0 hata, 0 uyarı**.
+4. Temizse `DERLE_CALISTIR.bat`.
+5. Gerçek 2023 MYS ve 2026 HYS smoke tekrarları.
