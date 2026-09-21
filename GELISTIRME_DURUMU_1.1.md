@@ -5831,3 +5831,80 @@ Final üretimden sonra:
 dağıtılmalıdır.
 
 Kod/UI kapsamı değişmedi; yalnız release/imza politikası kullanıcı kararıyla güncellendi.
+
+
+## 21.09.2026 — ARŞİV EKLE eski HYS/PDF uyumluluk düzeltmesi — KODLANDI, YEREL DOĞRULAMA BEKLİYOR
+
+Final kurulum sonrası gerçek tarihsel arşivlerle yapılan smoke testinde `ARŞİV EKLE` akışının iki farklı eski HYS PDF ailesini reddettiği görüldü.
+
+### Kök neden
+
+- Mevcut `HistoricalPdfImportService` tarihsel PDF'yi önce tam olarak `FATURA ÖDEME LİSTESİ` metniyle tanıyordu.
+- Kullanıcının eski arşivindeki belgeler Hazine/Maliye `ÖDEME EMRİ BELGESİ` + fatura eki düzenindeydi.
+- 2025 örneğinin fatura eki normal metin katmanına sahipti.
+- 2026 örneğinin fatura eki 90° dönük ve Unicode eşlemesi olmayan eski/bozuk PDF font kodlamasına sahipti; metin katmanı okunabilir Türkçe yerine anlamsız karakterler veriyordu.
+- Bu nedenle yalnız sabit başlık veya sabit koordinat yaklaşımı arşiv uyumluluğu için yeterli değildi.
+
+### Uygulanan yaklaşım
+
+Çalışma dalı:
+- `fix/archive-import-legacy-hys`
+
+Yeni `LegacyHysPdfImportService`:
+- PDF'yi dosya adına/tek bir şablona göre değil **semantik sütun başlıklarına** göre tanır.
+- Sütun sırası değişse de başlıkların gerçek yatay konumlarından sınırlar oluşturur.
+- İki satıra bölünmüş başlıkları destekler.
+- Küçük OCR/yazım farklarında kontrollü yakın eşleşme kullanır.
+- Başlık eşanlamlıları desteklenir:
+  - Okul/Kurum Adı
+  - Hizmet/Abone/Tesisat No
+  - Fatura/Belge No
+  - Fatura/Belge Tarihi
+  - Son Ödeme/Vade Tarihi
+  - Ödenecek/Fatura/Brüt Tutar
+  - KDV
+  - Damga Vergisi
+  - Ödeme/Net Tutar
+- HYS numarası mümkünse PDF içeriğinden, ayrıca dosya adından okunur; ikisi mevcutsa uyuşmazlık güvenli şekilde reddedilir.
+- Vergi/tutar doğrulaması mevcut `TaxCalculationService` ile yapılmaya devam eder; OCR sonucu körlemesine kabul edilmez.
+- OCR'ın para alanlarına ekleyebildiği tek karakterli sembol/rakam bozulmaları alternatif aday olarak denenir ve yalnız vergi hesabıyla tutarlı kombinasyon kabul edilir.
+- Okul adında OCR'ın boşluk düşürmesi durumuna karşı boşluksuz normalize eşleşme desteklenir.
+- Belge tarihi etiket, yakın satırlar ve tekrarlanan imza/belge tarihi üzerinden bulunabilir.
+
+### Bozuk/eski metin katmanı için OCR fallback
+
+- Normal PDF metin okuma önce denenir.
+- Semantik fatura başlıkları bulunamazsa yalnız o zaman OCR fallback devreye girer.
+- `TesseractOCR 5.5.2` + Türkçe `tessdata_fast` modeli kullanılır.
+- Türkçe model build sırasında sabit upstream commit'ten indirilir ve publish/final Setup içine `tessdata\tur.traineddata` olarak dahil edilir; son kullanıcıda internet gerekmez.
+- Renkli tablo başlıklarını okuyabilmek için OCR öncesi gri ton/çizgi temizleme uygulanır.
+- Normal, 90° saat yönü ve 90° ters yön denenir; semantik başlık ve belge terimleri en güçlü olan yön seçilir.
+- OCR yalnız eski/bozuk PDF fallback'idir; normal DoğruFatura PDF yolu değişmedi.
+
+### Önizleme kapatma simgesi
+
+`HistoricalPdfImportDialog.xaml` sağ üst kapatma düğmesindeki font glyph bağımlılığı kaldırıldı.
+- `Segoe MDL2 Assets` karakteri yerine WPF `Path` ile çizilen vektörel X kullanılıyor.
+- Böylece eksik/bozuk kutu simgesi fonta bağlı olmaktan çıkarıldı.
+
+### Regresyon testi
+
+Yeni `LegacyHysPdfImportTests`:
+- resmi eski sütun başlıklarını,
+- alternatif başlık adlarını
+aynı semantik parser üzerinden doğrular.
+
+Eklenen theory vakaları nedeniyle mevcut 126 test tabanında beklenen toplam yerel sonuç **128/128**'dir.
+
+### Doğrulama durumu
+
+GitHub Actions runner sorunu devam ediyor: Windows job yine hiçbir step oluşturmadan runner seviyesinde failure oluyor; bu nedenle CI sonucu kod build sonucu sayılmıyor.
+
+Sıradaki kapı:
+1. GitHub Desktop → Fetch origin.
+2. `fix/archive-import-legacy-hys` dalına geç.
+3. `TESTLERI_CALISTIR.bat` çalıştır.
+4. Beklenen: Release/Debug derleme hatasız ve **128/128** test.
+5. Uygulamayı çalıştırıp kullanıcıdan alınan iki gerçek PDF'yi ayrı ayrı `ARŞİV EKLE` ile dene.
+6. Önizleme penceresindeki sağ üst X simgesini görsel olarak kontrol et.
+7. Gerçek PDF smoke yeşil olmadan `release/1.1.0` dalına merge/final Setup yenilemesi yapılmayacak.
