@@ -196,3 +196,19 @@ Yeni kural:
 içeren yakın satırlar başlık devamı değil veri parçası kabul edilir.
 
 Durum: **132/132 + 0 warning tekrar testi bekleniyor.**
+
+
+## 21.09.2026 — Tek eksik OCR başlığı geometrik fallback
+
+Gerçek 2023 MYS taramasında bütün tablo sütunları görselde mevcut olmasına rağmen OCR bazı modlarda sağdaki para başlıklarından birini atlayabiliyor.
+
+Yeni güvenlik kuralı:
+- 8 zorunlu semantik sütunun 7'si güvenilir bulunursa yalnız **tek** eksik sütun geometriden türetilebilir.
+- İki komşu sütun arasındaki eksik merkez ara noktadan bulunur.
+- Son `Ele Geçen Miktar` sütunu eksikse son bilinen merkez ile sayfa sağ kenarı arasından türetilir.
+- 2 veya daha fazla temel sütun eksikse belge kabul edilmez.
+
+Ayrıca `Ele Miktar` OCR alias'ı eklendi.
+
+Beklenen test toplamı: **133**.
+Durum: **133/133 + gerçek 2023 smoke bekleniyor.**
