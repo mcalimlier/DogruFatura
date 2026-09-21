@@ -242,3 +242,12 @@ Yeni fixture davranışı:
 - satır yalnız resmi Ödeme Emri toplamlarıyla aggregate doğrulama üzerinden tamamlanabilir.
 
 Beklenen: **133/133**.
+
+
+## 21.09.2026 — Son 133 test failure: implementation-detail assertion
+
+132/133 sonucundaki son failure, parserın yanlış veri üretmesi değildi. Test belgenin 3 faturasını geçerli biçimde okumuştu; yalnız recovery yolunun status mesajını zorunlu bekliyordu.
+
+Test artık status metni yerine nihai fatura tutarlarını ve 2.484,91 toplamı doğrular.
+
+Beklenen sonraki sonuç: **133/133**.
