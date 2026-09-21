@@ -151,7 +151,7 @@ internal sealed class LegacyHysPdfImportService
         }
         catch (Exception ex)
         {
-            return Invalid(sourcePath, fileName, "Eski HYS PDF'si okunamadı: " + ex.Message);
+            return Invalid(sourcePath, fileName, "Eski ödeme emri PDF'si okunamadı: " + ex.Message);
         }
     }
 
@@ -678,6 +678,22 @@ internal sealed class LegacyHysPdfImportService
 
         foreach (var alias in aliases.OrderByDescending(alias => NormalizeKey(alias).Length))
         {
+            var compactAlias = NormalizeToken(alias);
+            if (!string.IsNullOrEmpty(compactAlias))
+            {
+                var compactMatch = available
+                    .Where(word => TokenMatches(
+                        NormalizeToken(word.Text),
+                        compactAlias))
+                    .OrderBy(word => word.Right - word.Left)
+                    .FirstOrDefault();
+                if (compactMatch is not null)
+                {
+                    center = compactMatch.CenterX;
+                    return true;
+                }
+            }
+
             var tokens = Tokenize(alias);
             if (tokens.Length == 0)
                 continue;
