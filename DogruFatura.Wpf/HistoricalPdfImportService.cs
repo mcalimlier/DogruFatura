@@ -9,6 +9,13 @@ using UglyToad.PdfPig.Content;
 
 namespace DogruFatura.Wpf;
 
+public enum HistoricalPdfImportScanMode
+{
+    Automatic,
+    Fast,
+    Strong
+}
+
 public sealed record HistoricalPdfImportPreview(
     string SourcePath,
     string FileName,
@@ -54,7 +61,8 @@ public sealed class HistoricalPdfImportService
         IReadOnlyList<SchoolRecord> schools,
         AuthorityProfile fallbackAuthorityProfile,
         IProgress<string>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        HistoricalPdfImportScanMode scanMode = HistoricalPdfImportScanMode.Automatic)
     {
         var fileName = Path.GetFileName(sourcePath);
         try
@@ -87,7 +95,8 @@ public sealed class HistoricalPdfImportService
                     schools,
                     fallbackAuthorityProfile,
                     cancellationToken,
-                    progress);
+                    progress,
+                    scanMode);
             }
 
             if (!hasFileHys)

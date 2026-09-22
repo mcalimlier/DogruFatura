@@ -15,18 +15,20 @@ public partial class HistoricalPdfImportProgressWindow : Window
 
     public event EventHandler? CancelRequested;
 
-    public void SetFileProgress(int current, int total, string fileName)
+    public void SetFileProgress(int current, int total, string fileName, string stageMessage)
     {
         FileText.Text = $"{current}/{total} dosya işleniyor • {fileName}";
-        MessageText.Text = "Arşiv PDF taranıyor, lütfen bekleyiniz...";
+        MessageText.Text = stageMessage;
     }
 
-    public void SetWorking()
+    public void SetWorking(string message)
     {
         if (_cancelRequested)
             return;
 
-        MessageText.Text = "Arşiv PDF taranıyor, lütfen bekleyiniz...";
+        MessageText.Text = string.IsNullOrWhiteSpace(message)
+            ? "Arşiv PDF taranıyor, lütfen bekleyiniz..."
+            : message;
     }
 
     public void SetCancelling()

@@ -33,9 +33,11 @@ public sealed class LegacyHysPdfImportTests
                 "Halil ÖZENÇ",
                 "Şube Müdürü",
                 "Özgür BAYSAL",
-                "İlçe Milli Eğitim Müdürü"));
+                "İlçe Milli Eğitim Müdürü"),
+            scanMode: HistoricalPdfImportScanMode.Fast);
 
         Assert.True(preview.IsValid, preview.Status);
+        Assert.DoesNotContain("OCR kullanıldı", preview.Status, StringComparison.Ordinal);
         Assert.Equal("HYS-202518581984", preview.HysNumber);
         Assert.Equal("Elektrik", preview.InvoiceType);
         Assert.Equal(1, preview.InvoiceCount);

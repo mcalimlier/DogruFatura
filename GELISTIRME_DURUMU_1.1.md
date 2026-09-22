@@ -6727,3 +6727,14 @@ Sıradaki kalite kapısı:
 5. Temizse `DERLE_CALISTIR.bat`.
 6. Önce yalnız gerçek `MYS-2023-4010364.pdf` smoke.
 7. 2023 yeşil olursa 2026 kısa regresyon smoke.
+
+
+## 22.09.2026 — İki aşamalı arşiv import performans paketi
+
+- Toplu arşiv PDF seçimi hızlı tarama ve güçlü özel tarama olarak iki aşamaya ayrıldı.
+- Kolay/metin katmanlı belgeler OCR çalıştırılmadan sonuçlandırılıyor.
+- Yalnız başarısız belgeler güçlü OCR kuyruğuna giriyor; başarılı belgeler yeniden işlenmiyor.
+- Sonuç sırası, çift belge kontrolleri, kullanıcı onayı, iptal ve rollback güvenliği korundu.
+- Güçlü OCR için belge başına 2 dakika süre sınırı eklendi.
+- Hızlı modun OCR'ye girmediğini ve kolay legacy PDF'nin hızlı modda okunduğunu doğrulayan regresyon testleri eklendi.
+- Gerçek Windows test kapısı ve normal 2023/2026 + anomalik MYS smoke sonuçları bekleniyor.

@@ -306,3 +306,18 @@ Yeni fallback yalnız bu tür zayıf metin katmanlı legacy sayfalarda çalış�
 Normal çalışan arşiv formatlarının yolu değiştirilmez.
 
 Durum: **133/133 tekrar test + gerçek anomalik 2023 smoke bekleniyor.**
+
+
+## 22.09.2026 — İki aşamalı toplu arşiv taraması
+
+Toplu arşiv ekleme akışı performans ve güvenlik amacıyla iki aşamaya ayrıldı:
+
+1. Tüm seçili PDF'ler önce yalnız metin katmanı ve ucuz doğrulamalarla hızlı taranır.
+2. Hızlı taramada geçemeyen belgeler ayrı kuyruğa alınır ve yalnız bu belgelerde güçlü OCR çalışır.
+3. Başarılı belgeler ikinci kez okunmaz; sonuçlar özgün dosya sırasıyla önizlemeye taşınır.
+4. Çift HYS/MYS ve hedef PDF kontrolleri iki aşama tamamlandıktan sonra tek kez uygulanır.
+5. Güçlü tarama belge başına iki dakika ile sınırlıdır; süre aşımı diğer belgeleri durdurmaz.
+6. İptal ve onaydan önce diske yazmama davranışı korunur.
+
+Tarama modları: `Automatic` mevcut tek-belge uyumluluğunu, `Fast` OCR'siz ilk aşamayı,
+`Strong` ise metin katmanı yetmediğinde güçlü OCR tekrarını temsil eder.

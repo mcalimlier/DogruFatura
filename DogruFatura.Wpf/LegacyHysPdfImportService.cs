@@ -105,7 +105,8 @@ internal sealed class LegacyHysPdfImportService
         IReadOnlyList<SchoolRecord> schools,
         AuthorityProfile fallbackAuthorityProfile,
         CancellationToken cancellationToken,
-        IProgress<string>? progress = null)
+        IProgress<string>? progress = null,
+        HistoricalPdfImportScanMode scanMode = HistoricalPdfImportScanMode.Automatic)
     {
         var fileName = Path.GetFileName(sourcePath);
         try
@@ -114,15 +115,29 @@ internal sealed class LegacyHysPdfImportService
             progress?.Report("PDF metin katmanı okunuyor");
 
             var extractedPages = ExtractPdfTextPages(sourcePath, cancellationToken);
-            if (TryParsePages(
-                    sourcePath,
-                    fileName,
-                    extractedPages,
-                    schools,
-                    fallbackAuthorityProfile,
-                    usedOcr: false,
-                    out var extractedPreview))
+            var extractedWasParsed = TryParsePages(
+                sourcePath,
+                fileName,
+                extractedPages,
+                schools,
+                fallbackAuthorityProfile,
+                usedOcr: false,
+                out var extractedPreview);
+
+            if (extractedWasParsed
+                && (extractedPreview.IsValid || scanMode == HistoricalPdfImportScanMode.Automatic))
                 return extractedPreview;
+
+            if (scanMode == HistoricalPdfImportScanMode.Fast)
+            {
+                return extractedWasParsed
+                    ? extractedPreview.WithError(
+                        extractedPreview.Status + " Güçlü taramada yeniden denenecek.")
+                    : Invalid(
+                        sourcePath,
+                        fileName,
+                        "Hızlı taramada güvenilir fatura tablosu bulunamadı. Güçlü taramada yeniden denenecek.");
+            }
 
             cancellationToken.ThrowIfCancellationRequested();
             progress?.Report("Eski/bozuk PDF için OCR hazırlanıyor");
@@ -142,6 +157,9 @@ internal sealed class LegacyHysPdfImportService
                     usedOcr: true,
                     out var ocrPreview))
                 return ocrPreview;
+
+            if (extractedWasParsed)
+                return extractedPreview;
 
             var reason = string.IsNullOrWhiteSpace(ocrResult.ErrorMessage)
                 ? "Belgede tanınan fatura tablosu bulunamadı."

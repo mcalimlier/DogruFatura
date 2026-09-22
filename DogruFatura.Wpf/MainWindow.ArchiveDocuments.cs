@@ -12,6 +12,7 @@ namespace DogruFatura.Wpf;
 
 public partial class MainWindow
 {
+    private static readonly TimeSpan HistoricalPdfStrongScanTimeout = TimeSpan.FromMinutes(2);
     private CancellationTokenSource? _historicalPdfImportCancellation;
 
     private void SynchronizeArchivePdfs_Click(object sender, RoutedEventArgs e) =>
@@ -134,7 +135,8 @@ public partial class MainWindow
             var selectedHysNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var schools = AllSchools.ToList();
             var authorityProfile = _authorityProfile;
-            var buffer = new List<HistoricalPdfImportPreview>(dialog.FileNames.Length);
+            var buffer = new HistoricalPdfImportPreview?[dialog.FileNames.Length];
+            var strongCandidateIndexes = new List<int>();
 
             for (var index = 0; index < dialog.FileNames.Length; index++)
             {
@@ -144,22 +146,75 @@ public partial class MainWindow
                 progressWindow.SetFileProgress(
                     index + 1,
                     dialog.FileNames.Length,
-                    Path.GetFileName(fileName));
+                    Path.GetFileName(fileName),
+                    "1. aşama: hızlı metin taraması");
                 SetArchiveStatus(
-                    $"{index + 1}/{dialog.FileNames.Length} arşiv PDF işleniyor...");
+                    $"Hızlı tarama: {index + 1}/{dialog.FileNames.Length} arşiv PDF işleniyor...");
 
-                var progress = new Progress<string>(_ => progressWindow.SetWorking());
-
+                var progress = new Progress<string>(message => progressWindow.SetWorking(message));
                 var preview = await Task.Run(
                     () => _historicalPdfImportService.Read(
                         fileName,
                         schools,
                         authorityProfile,
                         progress,
-                        cancellation.Token),
+                        cancellation.Token,
+                        HistoricalPdfImportScanMode.Fast),
                     cancellation.Token);
 
                 cancellation.Token.ThrowIfCancellationRequested();
+                buffer[index] = preview;
+                if (!preview.IsValid)
+                    strongCandidateIndexes.Add(index);
+
+                SetArchiveStatus(
+                    $"Hızlı tarama: {index + 1}/{dialog.FileNames.Length} tamamlandı; "
+                    + $"{strongCandidateIndexes.Count} dosya güçlü taramaya ayrıldı.");
+            }
+
+            for (var strongIndex = 0; strongIndex < strongCandidateIndexes.Count; strongIndex++)
+            {
+                cancellation.Token.ThrowIfCancellationRequested();
+
+                var fileIndex = strongCandidateIndexes[strongIndex];
+                var fileName = dialog.FileNames[fileIndex];
+                progressWindow.SetFileProgress(
+                    strongIndex + 1,
+                    strongCandidateIndexes.Count,
+                    Path.GetFileName(fileName),
+                    "2. aşama: güçlü özel OCR taraması");
+                SetArchiveStatus(
+                    $"Güçlü tarama: {strongIndex + 1}/{strongCandidateIndexes.Count} sorunlu PDF işleniyor...");
+
+                using var strongCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
+                strongCancellation.CancelAfter(HistoricalPdfStrongScanTimeout);
+                var progress = new Progress<string>(message => progressWindow.SetWorking(message));
+                try
+                {
+                    buffer[fileIndex] = await Task.Run(
+                        () => _historicalPdfImportService.Read(
+                            fileName,
+                            schools,
+                            authorityProfile,
+                            progress,
+                            strongCancellation.Token,
+                            HistoricalPdfImportScanMode.Strong),
+                        strongCancellation.Token);
+                }
+                catch (OperationCanceledException) when (!cancellation.IsCancellationRequested)
+                {
+                    buffer[fileIndex] = (buffer[fileIndex]
+                        ?? throw new InvalidOperationException("Hızlı tarama sonucu bulunamadı."))
+                        .WithError("Güçlü tarama 2 dakikalık süre sınırını aştı.");
+                }
+            }
+
+            var finalized = new List<HistoricalPdfImportPreview>(dialog.FileNames.Length);
+            for (var index = 0; index < buffer.Length; index++)
+            {
+                var fileName = dialog.FileNames[index];
+                var preview = buffer[index]
+                    ?? throw new InvalidOperationException("PDF tarama sonucu oluşturulamadı.");
 
                 if (preview.IsValid && knownHysNumbers.Contains(preview.HysNumber))
                 {
@@ -180,12 +235,10 @@ public partial class MainWindow
                         preview = preview.WithError($"{Path.GetFileName(destinationPath)} Arşivlenenler klasöründe zaten bulunuyor.");
                 }
 
-                buffer.Add(preview);
-                SetArchiveStatus(
-                    $"{index + 1}/{dialog.FileNames.Length} arşiv PDF doğrulandı.");
+                finalized.Add(preview);
             }
 
-            previews = buffer;
+            previews = finalized;
         }
         catch (OperationCanceledException)
         {
