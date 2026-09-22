@@ -1705,15 +1705,18 @@ internal sealed class LegacyHysPdfImportService
 
             var probeTimer = Stopwatch.StartNew();
             progress?.Report($"OCR {pageNumber}/{document.PageCount}: yön hızlıca belirleniyor");
-            var probePngBytes = await RenderPdfPageAsync(pdfPage, OrientationProbeWidth);
-            cancellationToken.ThrowIfCancellationRequested();
-            using var probeImage = TesseractPix.LoadFromMemory(probePngBytes);
-            using var probeGray = probeImage.ConvertRGBToGray();
-            var probe = DetectBestOcrOrientation(
-                engine,
-                probeGray,
-                pageNumber,
-                cancellationToken);
+            OrientationProbeResult probe;
+            {
+                var probePngBytes = await RenderPdfPageAsync(pdfPage, OrientationProbeWidth);
+                cancellationToken.ThrowIfCancellationRequested();
+                using var probeImage = TesseractPix.LoadFromMemory(probePngBytes);
+                using var probeGray = probeImage.ConvertRGBToGray();
+                probe = DetectBestOcrOrientation(
+                    engine,
+                    probeGray,
+                    pageNumber,
+                    cancellationToken);
+            }
 
             progress?.Report(
                 $"OCR {pageNumber}/{document.PageCount}: {OrientationText(probe.Orientation)} seçildi "
