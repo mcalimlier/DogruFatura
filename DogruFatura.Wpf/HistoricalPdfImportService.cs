@@ -1,5 +1,6 @@
 using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -49,11 +50,68 @@ public sealed class HistoricalPdfImportService
     private static readonly CultureInfo Tr = CultureInfo.GetCultureInfo("tr-TR");
     private readonly TaxCalculationService _taxCalculationService;
     private readonly LegacyHysPdfImportService _legacyHysPdfImportService;
+    private readonly object _pageCacheLock = new();
+    private readonly Dictionary<string, CachedPdfPages> _pageCache =
+        new(StringComparer.OrdinalIgnoreCase);
 
     public HistoricalPdfImportService(TaxCalculationService? taxCalculationService = null)
     {
         _taxCalculationService = taxCalculationService ?? new TaxCalculationService();
         _legacyHysPdfImportService = new LegacyHysPdfImportService(_taxCalculationService);
+    }
+
+    internal void ClearBatchCache()
+    {
+        lock (_pageCacheLock)
+            _pageCache.Clear();
+    }
+
+    private PdfPageData[] GetOrExtractPages(
+        string sourcePath,
+        CancellationToken cancellationToken,
+        out bool cacheHit)
+    {
+        var fullPath = Path.GetFullPath(sourcePath);
+        var fileInfo = new FileInfo(fullPath);
+        fileInfo.Refresh();
+
+        lock (_pageCacheLock)
+        {
+            if (_pageCache.TryGetValue(fullPath, out var cached)
+                && cached.Length == fileInfo.Length
+                && cached.LastWriteTimeUtcTicks == fileInfo.LastWriteTimeUtc.Ticks)
+            {
+                cacheHit = true;
+                return cached.Pages;
+            }
+        }
+
+        var pages = ExtractPdfPages(fullPath, cancellationToken);
+        var entry = new CachedPdfPages(
+            fileInfo.Length,
+            fileInfo.LastWriteTimeUtc.Ticks,
+            pages);
+
+        lock (_pageCacheLock)
+            _pageCache[fullPath] = entry;
+
+        cacheHit = false;
+        return pages;
+    }
+
+    private static PdfPageData[] ExtractPdfPages(
+        string sourcePath,
+        CancellationToken cancellationToken)
+    {
+        using var document = PdfDocument.Open(sourcePath);
+        var pageBuffer = new List<PdfPageData>(document.NumberOfPages);
+        foreach (var page in document.GetPages())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            pageBuffer.Add(ExtractPage(page));
+        }
+
+        return pageBuffer.ToArray();
     }
 
     public HistoricalPdfImportPreview Read(
@@ -75,18 +133,19 @@ public sealed class HistoricalPdfImportService
                 out var hysNumber,
                 out var hysError);
 
-            using var document = PdfDocument.Open(sourcePath);
+            var textTimer = Stopwatch.StartNew();
+            var pages = GetOrExtractPages(
+                sourcePath,
+                cancellationToken,
+                out var pageCacheHit);
+            progress?.Report(
+                pageCacheHit
+                    ? $"PDF metin katmanı önbellekten alındı ({textTimer.ElapsedMilliseconds} ms)"
+                    : $"PDF metin katmanı bir kez çıkarıldı ({textTimer.ElapsedMilliseconds} ms)");
             cancellationToken.ThrowIfCancellationRequested();
-            if (document.NumberOfPages == 0)
+            if (pages.Length == 0)
                 return Invalid(sourcePath, fileName, "PDF sayfa içermiyor.");
 
-            var pageBuffer = new List<PdfPageData>(document.NumberOfPages);
-            foreach (var page in document.GetPages())
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                pageBuffer.Add(ExtractPage(page));
-            }
-            var pages = pageBuffer.ToArray();
             var allText = string.Join(" ", pages.SelectMany(page => page.Lines).Select(line => line.Text));
             if (!Contains(allText, "FATURA ÖDEME LİSTESİ"))
             {
@@ -96,7 +155,8 @@ public sealed class HistoricalPdfImportService
                     fallbackAuthorityProfile,
                     cancellationToken,
                     progress,
-                    scanMode);
+                    scanMode,
+                    pages);
             }
 
             if (!hasFileHys)
@@ -168,7 +228,7 @@ public sealed class HistoricalPdfImportService
                 sourcePath,
                 fileName,
                 true,
-                $"{document.NumberOfPages} sayfa ve {invoices.Count} fatura doğrulandı{compensationNote}.",
+                $"{pages.Length} sayfa ve {invoices.Count} fatura doğrulandı{compensationNote}.",
                 hysNumber,
                 invoiceType,
                 invoices.Count,
@@ -235,7 +295,8 @@ public sealed class HistoricalPdfImportService
                 word.Text.Trim(),
                 Convert.ToDouble(word.BoundingBox.Left, CultureInfo.InvariantCulture),
                 Convert.ToDouble(word.BoundingBox.Right, CultureInfo.InvariantCulture),
-                pageHeight - Convert.ToDouble(word.BoundingBox.Top, CultureInfo.InvariantCulture)))
+                pageHeight - Convert.ToDouble(word.BoundingBox.Top, CultureInfo.InvariantCulture),
+                pageHeight - Convert.ToDouble(word.BoundingBox.Bottom, CultureInfo.InvariantCulture)))
             .OrderBy(word => word.Top)
             .ThenBy(word => word.Left)
             .ToArray();
@@ -520,19 +581,29 @@ public sealed class HistoricalPdfImportService
         0m,
         null);
 
-    private sealed record PdfWordData(string Text, double Left, double Right, double Top)
+    internal sealed record PdfWordData(
+        string Text,
+        double Left,
+        double Right,
+        double Top,
+        double Bottom)
     {
         public double CenterX => (Left + Right) / 2d;
     }
 
-    private sealed record PdfLineData(double Top, string Text, IReadOnlyList<PdfWordData> Words);
+    internal sealed record PdfLineData(double Top, string Text, IReadOnlyList<PdfWordData> Words);
 
-    private sealed record PdfPageData(
+    internal sealed record PdfPageData(
         int PageNumber,
         double Width,
         double Height,
         IReadOnlyList<PdfWordData> Words,
         IReadOnlyList<PdfLineData> Lines);
+
+    private sealed record CachedPdfPages(
+        long Length,
+        long LastWriteTimeUtcTicks,
+        PdfPageData[] Pages);
 
     private sealed record ParsedInvoiceRow(
         int SequenceNumber,

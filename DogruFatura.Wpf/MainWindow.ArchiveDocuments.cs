@@ -128,6 +128,7 @@ public partial class MainWindow
 
         try
         {
+            _historicalPdfImportService.ClearBatchCache();
             var knownHysNumbers = ArchivedLists
                 .Where(archive => !string.IsNullOrWhiteSpace(archive.HysPaymentOrderDocumentNumber))
                 .Select(archive => archive.HysPaymentOrderDocumentNumber)
@@ -255,6 +256,7 @@ public partial class MainWindow
         }
         finally
         {
+            _historicalPdfImportService.ClearBatchCache();
             progressWindow.CompleteAndClose();
             _historicalPdfImportCancellation = null;
             ArchiveImportButton.IsEnabled = true;

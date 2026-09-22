@@ -73,4 +73,64 @@ public sealed class HistoricalPdfImportCancellationTests
             }
         }
     }
+
+    [Fact]
+    public void FastScanReusesExtractedPagesWithinBatch()
+    {
+        var folder = Path.Combine(
+            Path.GetTempPath(),
+            "DogruFatura_PageCacheTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        var path = Path.Combine(folder, "1) MYS-2023-4010364.pdf");
+
+        try
+        {
+            using (var document = new PdfDocument())
+            {
+                document.AddPage();
+                document.Save(path);
+            }
+
+            var messages = new List<string>();
+            var progress = new InlineProgress<string>(messages.Add);
+            var service = new HistoricalPdfImportService();
+
+            _ = service.Read(
+                path,
+                Array.Empty<SchoolRecord>(),
+                AuthorityProfileDefaults.Create(),
+                progress,
+                HistoricalPdfImportScanMode.Fast);
+            _ = service.Read(
+                path,
+                Array.Empty<SchoolRecord>(),
+                AuthorityProfileDefaults.Create(),
+                progress,
+                HistoricalPdfImportScanMode.Fast);
+
+            Assert.Contains(
+                messages,
+                message => message.Contains("tekrar açılmadan", StringComparison.Ordinal));
+            Assert.Contains(
+                messages,
+                message => message.Contains("önbellekten", StringComparison.Ordinal));
+        }
+        finally
+        {
+            try
+            {
+                if (Directory.Exists(folder))
+                    Directory.Delete(folder, true);
+            }
+            catch
+            {
+                // Test geçici dosya temizliği best-effort.
+            }
+        }
+    }
+
+    private sealed class InlineProgress<T>(Action<T> report) : IProgress<T>
+    {
+        public void Report(T value) => report(value);
+    }
 }

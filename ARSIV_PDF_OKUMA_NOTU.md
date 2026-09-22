@@ -335,3 +335,35 @@ Güçlü OCR performans yolu yeniden düzenlendi:
 - Tek satırlı görüntü belgelerinde doğruluk için tüm mevcut tablo modları korunur.
 - Belirsiz/eksik sonuçlarda ham gri, çizgi temizlenmiş görüntü ve satır para bandı fallback'leri devam eder.
 - `HistoricalPdfImportService.Read` imzasında `CancellationToken` son parametreye alınarak CA1068 giderildi.
+
+
+---
+
+## 22.09.2026 — Performans Paketi 2: Tek Metin Çıkarımı ve Kademeli OCR
+
+Uygulananlar:
+
+- Hızlı ve güçlü aşamalar arasında PdfPig sayfa verisi dosya kimliği
+  (tam yol + boyut + son değiştirme zamanı) ile önbelleğe alındı.
+- Genel okuyucunun çıkardığı sayfalar legacy okuyucuya aktarıldı; aynı Read
+  çağrısında PDF'nin ikinci kez açılması kaldırıldı.
+- Toplu aktarım başında ve sonunda önbellek temizlenerek işlem dışına veri
+  taşınması engellendi.
+- 1000 px yön ön-taramasının en iyi PageData sonucu artık saklanıyor.
+- Ön-tarama en az iki tutarlı fatura satırı üretiyorsa yüksek çözünürlüklü render
+  ve OCR tamamen atlanıyor.
+- Ön-tarama yetersizse önce 1500 px ara kademe deneniyor; geçerliyse son kademe
+  çalıştırılmıyor.
+- 1600–2600 px son kademe yalnız ara kademe yetersizse devreye giriyor.
+- RemoveLines temizliği ham/gri OCR yetersiz kaldıktan sonra tembel çalışıyor.
+- Eksik para satırı bir OCR modundan sonra tutarlı hale gelirse kalan modlar
+  çalıştırılmıyor.
+- PdfPig, yön ön-taraması, ara çözünürlük, son çözünürlük ve sayfa toplam süreleri
+  ilerleme metninde milisaniye olarak gösteriliyor.
+- Yeni regresyon testi hızlı taramanın çıkarılmış sayfaları yeniden kullandığını
+  ve legacy okuyucunun PDF'yi tekrar açmadığını doğruluyor.
+
+Beklenen test hedefi: **136/136 test, 0 hata, 0 uyarı**.
+
+Not: Bu paket kaynak PDF'yi döndürmez veya yeniden yazmaz. Arşiv PDF'sinin
+SHA-256 değeri ve kanıt niteliği korunur.

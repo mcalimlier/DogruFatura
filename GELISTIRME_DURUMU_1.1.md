@@ -6750,3 +6750,20 @@ Sıradaki kalite kapısı:
 - CA1068 için CancellationToken son parametreye taşındı ve yansıma tabanlı regresyon testi eklendi.
 - Önceki 134 test tabanına bir yeni test eklendi; yeni hedef 135/135, 0 hata, 0 uyarı.
 - Gerçek Windows build/test ve karma normal+dönük PDF süre smoke sonucu bekleniyor.
+
+
+---
+
+## 22.09.2026 — Arşiv PDF Performans Paketi 2 Uygulandı
+
+- Tek toplu aktarımda hızlı ve güçlü taramalar aynı PdfPig sayfa verisini kullanır.
+- Genel okuyucudan legacy okuyucuya geçişte PDF yeniden açılmaz.
+- 1000 px yön ön-tarama sonucu yeterliyse yüksek çözünürlüklü OCR atlanır.
+- Yetersiz belgelerde 1500 px ara kademe, ardından yalnız gerekirse mevcut
+  1600–2600 px son kademe çalışır.
+- Çizgi temizleme ve ek para OCR modları doğrulama başarısına göre tembel/erken
+  çıkışlı çalışır.
+- İlerleme ekranına aşama süreleri eklendi.
+- FastScanReusesExtractedPagesWithinBatch regresyon testi eklendi.
+- Hedef: 136/136 test, 0 hata, 0 uyarı.
+- Windows doğrulaması bekleniyor.
