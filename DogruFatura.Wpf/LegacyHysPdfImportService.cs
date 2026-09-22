@@ -1847,12 +1847,93 @@ internal sealed class LegacyHysPdfImportService
         for (var index = 1; index < candidates.Count; index++)
             merged = MergeOcrCandidates(merged, candidates[index].Page);
 
+        // Gerçek MYS-2023-4010364 taramasında tablo bandı genel olarak okunuyor
+        // ancak 2. ve 3. satırda özellikle KDV gibi tekil para hücreleri tam tablo
+        // OCR'ında kaybolabiliyor. Başlık ve fatura-tarihi ankrajı bulunduysa yalnız
+        // doğrulanamayan satırın sağdaki para bandını tekrar tara. Bu ikinci geçiş
+        // genel 2023 parserını değiştirmez; yalnız image-dominant legacy fallback
+        // içinde ve yalnız tutarsız para satırlarında çalışır.
+        merged = EnhanceMissingMoneyRowsWithFocusedOcr(
+            engine,
+            image,
+            pageNumber,
+            merged,
+            cancellationToken);
+
         var mergedConfidence = candidates.Average(item => item.Confidence);
         return SelectBetterOcrCandidate(
             merged,
             mergedConfidence,
             currentBest,
             ref bestScore);
+    }
+
+    private static PageData EnhanceMissingMoneyRowsWithFocusedOcr(
+        TesseractEngine engine,
+        TesseractPix image,
+        int pageNumber,
+        PageData page,
+        CancellationToken cancellationToken)
+    {
+        if (!TryFindHeaderLayout(page, out var header)
+            || !header.Ranges.TryGetValue(ColumnKind.Payable, out var payableRange))
+            return page;
+
+        var enhanced = page;
+        var rows = BuildInvoiceRows(page, header);
+        foreach (var row in rows)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var invoiceDateText = ReadColumn(row.Words, header, ColumnKind.InvoiceDate);
+            if (!TryDate(invoiceDateText, out _)
+                || HasConsistentMoneyTuple(row, header))
+                continue;
+
+            var rowHeight = Math.Max(1d, row.Bottom - row.Top);
+            var padding = Math.Clamp(rowHeight * 0.80d, 8d, 24d);
+            var top = Math.Clamp(
+                (int)Math.Floor(row.Top - padding),
+                1,
+                image.Height - 2);
+            var bottom = Math.Clamp(
+                (int)Math.Ceiling(row.Bottom + padding),
+                top + 4,
+                image.Height - 1);
+            var left = Math.Clamp(
+                (int)Math.Floor(payableRange.Left),
+                1,
+                image.Width - 2);
+
+            if (bottom <= top || left >= image.Width - 1)
+                continue;
+
+            var moneyRegion = TesseractOCR.Rect.FromCoords(
+                left,
+                top,
+                image.Width - 1,
+                bottom);
+
+            foreach (var mode in new[]
+                     {
+                         PageSegMode.SingleBlock,
+                         PageSegMode.SingleLine,
+                         PageSegMode.SparseText
+                     })
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                PageData rowCandidate;
+                using (var ocrPage = engine.Process(image, moneyRegion, mode))
+                {
+                    rowCandidate = CreateOcrPage(pageNumber, image, ocrPage);
+                }
+
+                enhanced = MergeOcrCandidates(enhanced, rowCandidate);
+            }
+        }
+
+        return enhanced;
     }
 
     private static bool IsImageDominantLegacyPage(PageData? extractedPage)
