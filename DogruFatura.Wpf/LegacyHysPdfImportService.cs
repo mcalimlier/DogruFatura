@@ -22,6 +22,15 @@ namespace DogruFatura.Wpf;
 /// </summary>
 internal sealed class LegacyHysPdfImportService
 {
+    private const uint OrientationProbeWidth = 1000;
+
+    private enum OcrOrientation
+    {
+        Normal,
+        Clockwise,
+        CounterClockwise
+    }
+
     private static readonly CultureInfo Tr = CultureInfo.GetCultureInfo("tr-TR");
     private static readonly string[] DateFormats =
     {
@@ -1654,124 +1663,42 @@ internal sealed class LegacyHysPdfImportService
             }
 
             var useFocusedTableOcr = IsImageDominantLegacyPage(extractedPage);
-
-            progress?.Report($"OCR {pageNumber}/{document.PageCount}: sayfa hazırlanıyor");
             using var pdfPage = document.GetPage(pageIndex);
-            var pngBytes = await RenderPdfPageAsync(pdfPage);
-            using var sourceImage = TesseractPix.LoadFromMemory(pngBytes);
 
-            PageData? bestPage = null;
-            var bestScore = int.MinValue;
-
-            progress?.Report($"OCR {pageNumber}/{document.PageCount}: normal yön taranıyor");
-            bestPage = SelectBetterOcrPage(
+            progress?.Report($"OCR {pageNumber}/{document.PageCount}: yön hızlıca belirleniyor");
+            var probePngBytes = await RenderPdfPageAsync(pdfPage, OrientationProbeWidth);
+            cancellationToken.ThrowIfCancellationRequested();
+            using var probeImage = TesseractPix.LoadFromMemory(probePngBytes);
+            using var probeGray = probeImage.ConvertRGBToGray();
+            var orientation = DetectBestOcrOrientation(
                 engine,
-                sourceImage,
-                PageSegMode.Auto,
-                (int)pageIndex + 1,
-                bestPage,
-                ref bestScore,
+                probeGray,
+                pageNumber,
                 cancellationToken);
 
+            progress?.Report(
+                $"OCR {pageNumber}/{document.PageCount}: {OrientationText(orientation)} seçildi");
+            var pngBytes = await RenderPdfPageAsync(pdfPage);
+            cancellationToken.ThrowIfCancellationRequested();
+            using var sourceImage = TesseractPix.LoadFromMemory(pngBytes);
             using var gray = sourceImage.ConvertRGBToGray();
             using var cleaned = gray.RemoveLines(150, 150);
-            progress?.Report($"OCR {pageNumber}/{document.PageCount}: tablo temizleniyor");
-            bestPage = SelectBetterOcrPage(
-                engine,
-                cleaned,
-                PageSegMode.SingleBlock,
-                (int)pageIndex + 1,
-                bestPage,
-                ref bestScore,
-                cancellationToken);
-            bestPage = SelectBetterOcrPage(
-                engine,
-                cleaned,
-                PageSegMode.SparseText,
-                (int)pageIndex + 1,
-                bestPage,
-                ref bestScore,
-                cancellationToken);
 
-            progress?.Report($"OCR {pageNumber}/{document.PageCount}: 90° yön deneniyor");
-            using (var clockwise = cleaned.Rotate90(RotationDirection.Clockwise))
-            {
-                bestPage = SelectBetterOcrPage(
+            var bestPage = useFocusedTableOcr
+                ? ProcessFocusedOcrForOrientation(
                     engine,
-                    clockwise,
-                    PageSegMode.SingleBlock,
-                    (int)pageIndex + 1,
-                    bestPage,
-                    ref bestScore,
-                    cancellationToken);
-                bestPage = SelectBetterOcrPage(
+                    gray,
+                    cleaned,
+                    orientation,
+                    pageNumber,
+                    cancellationToken)
+                : ProcessGeneralOcrForOrientation(
                     engine,
-                    clockwise,
-                    PageSegMode.SparseText,
-                    (int)pageIndex + 1,
-                    bestPage,
-                    ref bestScore,
+                    sourceImage,
+                    cleaned,
+                    orientation,
+                    pageNumber,
                     cancellationToken);
-                bestPage = SelectBetterTableRegionOcr(
-                    engine,
-                    clockwise,
-                    (int)pageIndex + 1,
-                    bestPage,
-                    ref bestScore,
-                    cancellationToken);
-            }
-
-            if (useFocusedTableOcr)
-            {
-                using var clockwiseGray = gray.Rotate90(RotationDirection.Clockwise);
-                bestPage = SelectBetterTableRegionOcr(
-                    engine,
-                    clockwiseGray,
-                    (int)pageIndex + 1,
-                    bestPage,
-                    ref bestScore,
-                    cancellationToken);
-            }
-
-            progress?.Report($"OCR {pageNumber}/{document.PageCount}: ters 90° yön deneniyor");
-            using (var counterClockwise = cleaned.Rotate90(RotationDirection.CounterClockwise))
-            {
-                bestPage = SelectBetterOcrPage(
-                    engine,
-                    counterClockwise,
-                    PageSegMode.SingleBlock,
-                    (int)pageIndex + 1,
-                    bestPage,
-                    ref bestScore,
-                    cancellationToken);
-                bestPage = SelectBetterOcrPage(
-                    engine,
-                    counterClockwise,
-                    PageSegMode.SparseText,
-                    (int)pageIndex + 1,
-                    bestPage,
-                    ref bestScore,
-                    cancellationToken);
-                bestPage = SelectBetterTableRegionOcr(
-                    engine,
-                    counterClockwise,
-                    (int)pageIndex + 1,
-                    bestPage,
-                    ref bestScore,
-                    cancellationToken);
-            }
-
-            if (useFocusedTableOcr)
-            {
-                using var counterClockwiseGray = gray.Rotate90(RotationDirection.CounterClockwise);
-                bestPage = SelectBetterTableRegionOcr(
-                    engine,
-                    counterClockwiseGray,
-                    (int)pageIndex + 1,
-                    bestPage,
-                    ref bestScore,
-                    cancellationToken);
-            }
 
             if (bestPage is not null)
             {
@@ -1782,6 +1709,195 @@ internal sealed class LegacyHysPdfImportService
 
         return new OcrPageResult(pages, string.Empty);
     }
+
+    private static OcrOrientation DetectBestOcrOrientation(
+        TesseractEngine engine,
+        TesseractPix image,
+        int pageNumber,
+        CancellationToken cancellationToken)
+    {
+        var bestOrientation = OcrOrientation.Normal;
+        var bestScore = int.MinValue;
+
+        EvaluateOrientation(
+            engine,
+            image,
+            OcrOrientation.Normal,
+            pageNumber,
+            ref bestOrientation,
+            ref bestScore,
+            cancellationToken);
+
+        using (var clockwise = image.Rotate90(RotationDirection.Clockwise))
+        {
+            EvaluateOrientation(
+                engine,
+                clockwise,
+                OcrOrientation.Clockwise,
+                pageNumber,
+                ref bestOrientation,
+                ref bestScore,
+                cancellationToken);
+        }
+
+        using (var counterClockwise = image.Rotate90(RotationDirection.CounterClockwise))
+        {
+            EvaluateOrientation(
+                engine,
+                counterClockwise,
+                OcrOrientation.CounterClockwise,
+                pageNumber,
+                ref bestOrientation,
+                ref bestScore,
+                cancellationToken);
+        }
+
+        return bestOrientation;
+    }
+
+    private static void EvaluateOrientation(
+        TesseractEngine engine,
+        TesseractPix image,
+        OcrOrientation orientation,
+        int pageNumber,
+        ref OcrOrientation bestOrientation,
+        ref int bestScore,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var page = engine.Process(image, PageSegMode.SparseText);
+        var candidate = CreateOcrPage(pageNumber, image, page);
+        var score = OcrCandidateScore(candidate, page.MeanConfidence);
+        if (score <= bestScore)
+            return;
+
+        bestScore = score;
+        bestOrientation = orientation;
+    }
+
+    private static PageData? ProcessFocusedOcrForOrientation(
+        TesseractEngine engine,
+        TesseractPix gray,
+        TesseractPix cleaned,
+        OcrOrientation orientation,
+        int pageNumber,
+        CancellationToken cancellationToken)
+    {
+        if (orientation == OcrOrientation.Normal)
+            return ProcessFocusedOcr(engine, gray, cleaned, pageNumber, cancellationToken);
+
+        var direction = orientation == OcrOrientation.Clockwise
+            ? RotationDirection.Clockwise
+            : RotationDirection.CounterClockwise;
+        using var orientedGray = gray.Rotate90(direction);
+        using var orientedCleaned = cleaned.Rotate90(direction);
+        return ProcessFocusedOcr(
+            engine,
+            orientedGray,
+            orientedCleaned,
+            pageNumber,
+            cancellationToken);
+    }
+
+    private static PageData? ProcessFocusedOcr(
+        TesseractEngine engine,
+        TesseractPix gray,
+        TesseractPix cleaned,
+        int pageNumber,
+        CancellationToken cancellationToken)
+    {
+        PageData? bestPage = null;
+        var bestScore = int.MinValue;
+        bestPage = SelectBetterTableRegionOcr(
+            engine,
+            gray,
+            pageNumber,
+            bestPage,
+            ref bestScore,
+            cancellationToken);
+        if (IsTableOcrComplete(bestPage))
+            return bestPage;
+
+        return SelectBetterTableRegionOcr(
+            engine,
+            cleaned,
+            pageNumber,
+            bestPage,
+            ref bestScore,
+            cancellationToken);
+    }
+
+    private static PageData? ProcessGeneralOcrForOrientation(
+        TesseractEngine engine,
+        TesseractPix source,
+        TesseractPix cleaned,
+        OcrOrientation orientation,
+        int pageNumber,
+        CancellationToken cancellationToken)
+    {
+        if (orientation == OcrOrientation.Normal)
+            return ProcessGeneralOcr(engine, source, cleaned, pageNumber, cancellationToken);
+
+        var direction = orientation == OcrOrientation.Clockwise
+            ? RotationDirection.Clockwise
+            : RotationDirection.CounterClockwise;
+        using var orientedSource = source.Rotate90(direction);
+        using var orientedCleaned = cleaned.Rotate90(direction);
+        return ProcessGeneralOcr(
+            engine,
+            orientedSource,
+            orientedCleaned,
+            pageNumber,
+            cancellationToken);
+    }
+
+    private static PageData? ProcessGeneralOcr(
+        TesseractEngine engine,
+        TesseractPix source,
+        TesseractPix cleaned,
+        int pageNumber,
+        CancellationToken cancellationToken)
+    {
+        PageData? bestPage = null;
+        var bestScore = int.MinValue;
+        bestPage = SelectBetterOcrPage(
+            engine,
+            source,
+            PageSegMode.Auto,
+            pageNumber,
+            bestPage,
+            ref bestScore,
+            cancellationToken);
+        if (IsTableOcrComplete(bestPage))
+            return bestPage;
+
+        bestPage = SelectBetterOcrPage(
+            engine,
+            cleaned,
+            PageSegMode.SingleBlock,
+            pageNumber,
+            bestPage,
+            ref bestScore,
+            cancellationToken);
+        if (IsTableOcrComplete(bestPage))
+            return bestPage;
+
+        return SelectBetterOcrPage(
+            engine,
+            cleaned,
+            PageSegMode.SparseText,
+            pageNumber,
+            bestPage,
+            ref bestScore,
+            cancellationToken);
+    }
+
+    private static string OrientationText(OcrOrientation orientation) => orientation switch
+    {
+        OcrOrientation.Clockwise => "90° saat yönü",
+        OcrOrientation.CounterClockwise => "90° ters yön",
+        _ => "normal yön"
+    };
 
     private static PageData? SelectBetterOcrPage(
         TesseractEngine engine,
@@ -1835,6 +1951,7 @@ internal sealed class LegacyHysPdfImportService
             bottom);
 
         var candidates = new List<(PageData Page, double Confidence)>();
+        PageData? merged = null;
 
         foreach (var mode in new[]
                  {
@@ -1854,16 +1971,27 @@ internal sealed class LegacyHysPdfImportService
             }
 
             candidates.Add((candidate, confidence));
+            merged = merged is null
+                ? candidate
+                : MergeOcrCandidates(merged, candidate);
             currentBest = SelectBetterOcrCandidate(
                 candidate,
                 confidence,
                 currentBest,
                 ref bestScore);
+
+            if (!IsTableOcrComplete(merged))
+                continue;
+
+            return SelectBetterOcrCandidate(
+                merged,
+                candidates.Average(item => item.Confidence),
+                currentBest,
+                ref bestScore);
         }
 
-        var merged = candidates[0].Page;
-        for (var index = 1; index < candidates.Count; index++)
-            merged = MergeOcrCandidates(merged, candidates[index].Page);
+        if (merged is null)
+            return currentBest;
 
         // Gerçek MYS-2023-4010364 taramasında tablo bandı genel olarak okunuyor
         // ancak 2. ve 3. satırda özellikle KDV gibi tekil para hücreleri tam tablo
@@ -1871,17 +1999,19 @@ internal sealed class LegacyHysPdfImportService
         // doğrulanamayan satırın sağdaki para bandını tekrar tara. Bu ikinci geçiş
         // genel 2023 parserını değiştirmez; yalnız image-dominant legacy fallback
         // içinde ve yalnız tutarsız para satırlarında çalışır.
-        merged = EnhanceMissingMoneyRowsWithFocusedOcr(
-            engine,
-            image,
-            pageNumber,
-            merged,
-            cancellationToken);
+        if (!IsTableOcrComplete(merged))
+        {
+            merged = EnhanceMissingMoneyRowsWithFocusedOcr(
+                engine,
+                image,
+                pageNumber,
+                merged,
+                cancellationToken);
+        }
 
-        var mergedConfidence = candidates.Average(item => item.Confidence);
         return SelectBetterOcrCandidate(
             merged,
-            mergedConfidence,
+            candidates.Average(item => item.Confidence),
             currentBest,
             ref bestScore);
     }
@@ -1970,6 +2100,42 @@ internal sealed class LegacyHysPdfImportService
                || meaningfulCharacters < 180;
     }
 
+    private static bool IsTableOcrComplete(PageData? page)
+    {
+        if (page is null || !TryFindHeaderLayout(page, out var header))
+            return false;
+
+        var invoiceRows = BuildInvoiceRows(page, header)
+            .Where(row => TryDate(
+                ReadColumn(row.Words, header, ColumnKind.InvoiceDate),
+                out _))
+            .ToArray();
+
+        // Tek satırlı görüntü belgelerinde tüm modlar korunur. Erken çıkış,
+        // yalnız en az iki satırın da para dörtlüsü tutarlıysa devreye girer.
+        if (invoiceRows.Length < 2
+            || invoiceRows.Any(row => !HasConsistentMoneyTuple(row, header)))
+            return false;
+
+        if (!header.Ranges.TryGetValue(ColumnKind.Sequence, out var sequenceRange))
+            return true;
+
+        var sequenceNumbers = new HashSet<int>();
+        foreach (var word in page.Words.Where(word =>
+                     word.Top > header.Bottom + 1d
+                     && word.CenterX >= sequenceRange.Left
+                     && word.CenterX < sequenceRange.Right))
+        {
+            var digits = DigitsOnly(word.Text);
+            if (digits.Length <= 3
+                && int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var sequence)
+                && sequence > 0)
+                sequenceNumbers.Add(sequence);
+        }
+
+        return sequenceNumbers.Count <= invoiceRows.Length;
+    }
+
     private static PageData MergeOcrCandidates(
         PageData first,
         PageData second)
@@ -2009,11 +2175,7 @@ internal sealed class LegacyHysPdfImportService
         PageData? currentBest,
         ref int bestScore)
     {
-        var score = HeaderScore(candidate) * 1_000_000
-                    + InvoiceDataScore(candidate) * 100_000
-                    + SemanticDocumentScore(candidate) * 10_000
-                    + (int)Math.Round(meanConfidence * 100d)
-                    + Math.Min(candidate.Words.Count, 5000);
+        var score = OcrCandidateScore(candidate, meanConfidence);
 
         if (score <= bestScore)
             return currentBest;
@@ -2022,16 +2184,30 @@ internal sealed class LegacyHysPdfImportService
         return candidate;
     }
 
-    private static async Task<byte[]> RenderPdfPageAsync(Windows.Data.Pdf.PdfPage page)
+    private static int OcrCandidateScore(PageData candidate, double meanConfidence) =>
+        HeaderScore(candidate) * 1_000_000
+        + InvoiceDataScore(candidate) * 100_000
+        + SemanticDocumentScore(candidate) * 10_000
+        + (int)Math.Round(meanConfidence * 100d)
+        + Math.Min(candidate.Words.Count, 5000);
+
+    private static Task<byte[]> RenderPdfPageAsync(Windows.Data.Pdf.PdfPage page)
     {
-        using var stream = new InMemoryRandomAccessStream();
         var destinationWidth = (uint)Math.Clamp(
             Math.Round(page.Size.Width * 3d),
             1600d,
             2600d);
+        return RenderPdfPageAsync(page, destinationWidth);
+    }
+
+    private static async Task<byte[]> RenderPdfPageAsync(
+        Windows.Data.Pdf.PdfPage page,
+        uint destinationWidth)
+    {
+        using var stream = new InMemoryRandomAccessStream();
         var options = new Windows.Data.Pdf.PdfPageRenderOptions
         {
-            DestinationWidth = destinationWidth
+            DestinationWidth = Math.Clamp(destinationWidth, 600u, 2600u)
         };
 
         await page.RenderToStreamAsync(stream, options);

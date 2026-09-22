@@ -23,6 +23,18 @@ public sealed class HistoricalPdfImportCancellationTests
     }
 
     [Fact]
+    public void ReadKeepsCancellationTokenAsLastParameter()
+    {
+        var method = typeof(HistoricalPdfImportService)
+            .GetMethod(nameof(HistoricalPdfImportService.Read));
+
+        Assert.NotNull(method);
+        Assert.Equal(
+            typeof(CancellationToken),
+            method!.GetParameters()[^1].ParameterType);
+    }
+
+    [Fact]
     public void FastScanDefersUnrecognizedPdfWithoutStartingStrongOcr()
     {
         var folder = Path.Combine(

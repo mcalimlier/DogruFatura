@@ -61,8 +61,8 @@ public sealed class HistoricalPdfImportService
         IReadOnlyList<SchoolRecord> schools,
         AuthorityProfile fallbackAuthorityProfile,
         IProgress<string>? progress = null,
-        CancellationToken cancellationToken = default,
-        HistoricalPdfImportScanMode scanMode = HistoricalPdfImportScanMode.Automatic)
+        HistoricalPdfImportScanMode scanMode = HistoricalPdfImportScanMode.Automatic,
+        CancellationToken cancellationToken = default)
     {
         var fileName = Path.GetFileName(sourcePath);
         try

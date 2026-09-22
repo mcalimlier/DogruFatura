@@ -6738,3 +6738,15 @@ Sıradaki kalite kapısı:
 - Güçlü OCR için belge başına 2 dakika süre sınırı eklendi.
 - Hızlı modun OCR'ye girmediğini ve kolay legacy PDF'nin hızlı modda okunduğunu doğrulayan regresyon testleri eklendi.
 - Gerçek Windows test kapısı ve normal 2023/2026 + anomalik MYS smoke sonuçları bekleniyor.
+
+
+## 22.09.2026 — OCR yön ön-taraması ve CA1068 düzeltmesi
+
+- Güçlü OCR üç yönde yüksek çözünürlük çalıştırmak yerine 1000 px ön-taramayla tek yön seçiyor.
+- Seçilen yön yüksek çözünürlükte işleniyor; image-dominant legacy sayfada tablo bandı önce geliyor.
+- En az iki eksiksiz ve parasal olarak tutarlı satır oluşunca kalan OCR modları atlanıyor.
+- Tek satırlı ve belirsiz belgelerde doğruluk fallback'leri korunuyor.
+- Orijinal PDF yeniden yazılmıyor; SHA-256 belge bütünlüğü korunuyor.
+- CA1068 için CancellationToken son parametreye taşındı ve yansıma tabanlı regresyon testi eklendi.
+- Önceki 134 test tabanına bir yeni test eklendi; yeni hedef 135/135, 0 hata, 0 uyarı.
+- Gerçek Windows build/test ve karma normal+dönük PDF süre smoke sonucu bekleniyor.

@@ -158,8 +158,8 @@ public partial class MainWindow
                         schools,
                         authorityProfile,
                         progress,
-                        cancellation.Token,
-                        HistoricalPdfImportScanMode.Fast),
+                        HistoricalPdfImportScanMode.Fast,
+                        cancellation.Token),
                     cancellation.Token);
 
                 cancellation.Token.ThrowIfCancellationRequested();
@@ -197,8 +197,8 @@ public partial class MainWindow
                             schools,
                             authorityProfile,
                             progress,
-                            strongCancellation.Token,
-                            HistoricalPdfImportScanMode.Strong),
+                            HistoricalPdfImportScanMode.Strong,
+                            strongCancellation.Token),
                         strongCancellation.Token);
                 }
                 catch (OperationCanceledException) when (!cancellation.IsCancellationRequested)

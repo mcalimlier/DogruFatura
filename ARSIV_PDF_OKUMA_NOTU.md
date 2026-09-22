@@ -321,3 +321,17 @@ Toplu arşiv ekleme akışı performans ve güvenlik amacıyla iki aşamaya ayr�
 
 Tarama modları: `Automatic` mevcut tek-belge uyumluluğunu, `Fast` OCR'siz ilk aşamayı,
 `Strong` ise metin katmanı yetmediğinde güçlü OCR tekrarını temsil eder.
+
+
+## 22.09.2026 — Seçili yön OCR ve erken çıkış optimizasyonu
+
+Güçlü OCR performans yolu yeniden düzenlendi:
+
+- Sorunlu sayfa önce 1000 piksel genişlikte düşük maliyetli yön taramasından geçer.
+- Normal, +90° ve -90° adayları semantik başlık, fatura satırı ve OCR güven puanıyla karşılaştırılır.
+- Yüksek çözünürlüklü OCR yalnız seçilen yönde çalışır; kaynak PDF diskte dönüştürülmez.
+- Image-dominant sayfalarda tam sayfa yerine seçilen yöndeki tablo bandı önceliklidir.
+- En az iki satırın Tutar/KDV/Damga/Ödeme dörtlüsü tutarlıysa kalan OCR modlarından erken çıkılır.
+- Tek satırlı görüntü belgelerinde doğruluk için tüm mevcut tablo modları korunur.
+- Belirsiz/eksik sonuçlarda ham gri, çizgi temizlenmiş görüntü ve satır para bandı fallback'leri devam eder.
+- `HistoricalPdfImportService.Read` imzasında `CancellationToken` son parametreye alınarak CA1068 giderildi.
