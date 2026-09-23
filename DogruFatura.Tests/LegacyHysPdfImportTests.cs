@@ -258,6 +258,26 @@ public sealed class LegacyHysPdfImportTests
             MidpointRounding.AwayFromZero));
     }
 
+    [Fact]
+    public void FirstInvoiceHeaderSplitAcrossRowsStillMatchesPaymentOrder()
+    {
+        using var temp = new TempFile("8) HYS-2025-19794703.pdf");
+        CreateFourTwoPageInvoicesPdf(temp.Path, splitHeading: true,
+            wrongStamp: false, splitFirstHeader: true);
+
+        var preview = new HistoricalPdfImportService().Read(
+            temp.Path, Array.Empty<SchoolRecord>(),
+            AuthorityProfileDefaults.Create(),
+            scanMode: HistoricalPdfImportScanMode.Fast);
+
+        Assert.True(preview.IsValid, preview.Status);
+        Assert.Equal(4, preview.Archive!.Invoices.Count);
+        Assert.Equal(new DateTime(2025, 2, 28), preview.Archive.Invoices[0].InvoiceDate);
+        Assert.Equal(2638.50m, preview.Archive.Invoices[0].PayableAmount);
+        Assert.Equal(5386.97m, decimal.Round(preview.PaymentTotal, 2,
+            MidpointRounding.AwayFromZero));
+    }
+
     [Theory]
     [InlineData("19) HYS-2025-20585737.pdf", "HYS-2025-20585737",
         "6.472,10", "51,13", "6.420,97",
@@ -375,7 +395,7 @@ public sealed class LegacyHysPdfImportTests
 
     private static void CreateFourTwoPageInvoicesPdf(
         string path, bool splitHeading, bool wrongStamp,
-        bool dueDateBeforeInvoiceDate = false)
+        bool dueDateBeforeInvoiceDate = false, bool splitFirstHeader = false)
     {
         using (var document = new PdfDocument())
         {
@@ -424,16 +444,29 @@ public sealed class LegacyHysPdfImportTests
                     g.DrawString("Tüketici No: " + item.Item2, font, XBrushes.Black, 40, 230);
                     g.DrawString("Fatura No: " + item.Item1, font, XBrushes.Black, 300, 280);
                     var isFirst = item.Item1 == "EAB2025000055348";
-                    if (dueDateBeforeInvoiceDate && isFirst)
-                        g.DrawString("10-03-2025", font, XBrushes.Black, 400, 340);
-                    g.DrawString("FAT URA T ARİHİ: "
-                        + (isFirst ? "28-02-2025" : "26-02-2025")
-                        + " ÖDENECEK T UT AR: "
-                        + item.Item3 + " TL", font, XBrushes.Black, 40, 350);
-                    g.DrawString(dueDateBeforeInvoiceDate && isFirst
-                            ? "SON ÖDEME TARİHİ:"
-                            : "SON ÖDEME TARİHİ: 10-03-2025",
-                        font, XBrushes.Black, 40, 365);
+                    if (splitFirstHeader && isFirst)
+                    {
+                        g.DrawString("28-02-2025", font, XBrushes.Black, 120, 337);
+                        g.DrawString("ÖDENECEK", font, XBrushes.Black, 210, 337);
+                        g.DrawString("FAT URA T ARİHİ:", font, XBrushes.Black, 40, 350);
+                        g.DrawString("SON ÖDEME TARİHİ: 10-03-2025",
+                            font, XBrushes.Black, 390, 350);
+                        g.DrawString("T UT AR:" + item.Item3 + " TL",
+                            font, XBrushes.Black, 260, 363);
+                    }
+                    else
+                    {
+                        if (dueDateBeforeInvoiceDate && isFirst)
+                            g.DrawString("10-03-2025", font, XBrushes.Black, 400, 340);
+                        g.DrawString("FAT URA T ARİHİ: "
+                            + (isFirst ? "28-02-2025" : "26-02-2025")
+                            + " ÖDENECEK T UT AR: "
+                            + item.Item3 + " TL", font, XBrushes.Black, 40, 350);
+                        g.DrawString(dueDateBeforeInvoiceDate && isFirst
+                                ? "SON ÖDEME TARİHİ:"
+                                : "SON ÖDEME TARİHİ: 10-03-2025",
+                            font, XBrushes.Black, 40, 365);
+                    }
                 }
                 var second = document.AddPage();
                 using var details = XGraphics.FromPdfPage(second);
