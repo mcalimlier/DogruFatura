@@ -540,3 +540,19 @@ okumada bu tarihi reddediyordu. Bu alana özgü tarih okuyucu artık
 sütunda birden fazla aday varsa kayıt yine reddedilir. Dokuz sayfalık fatura
 testi ilk ekin hem çok satırlı başlık hem eksik tarih ayracı varyantlarını
 kapsar. Gerçek Windows aktarımının sonucu henüz görülmedi.
+## Üçüncü ekran görüntüsü: bitişik yinelenen son ödeme tarihi (23.09.2026)
+
+Son sonuç ekranı ilk faturanın tarih/tutar aşamasını geçtiğini, bu kez
+"Son ödeme tarihi başlık yakınında tekil olarak okunamadı" dediğini
+gösterdi. Gerçek PDF'nin ilk fatura başlık bandı bir metin çıkarımında
+`10-03-202510-03-2025`, sağ sütunda ise
+`10-03-202510-03SONÖDEMETARİHİ:-2025` üretebiliyor. Önceki tarih
+deseni yılın ardından başka rakam olmasını tümüyle yasakladığından
+10-03-2025 değerini dışlıyordu. Başlık tarih deseninde yılın ardından
+ikinci bir tarih başlangıcı gelirse ilk tam ve geçerli tarihe izin verildi;
+`10-03-20251` gibi kopuk sayısal ekler hâlâ reddedilir. Kaynak PDF'de
+sağ sütunlar bağımsız okunup 2., 4., 6. ve 8. sayfaların son ödeme
+tarihleri 10-03-2025 olarak doğrulandı. Regresyon testinde ilk faturanın
+hem `28-022025` tarihi hem de bitişik yinelenen vadesiyle dört faturanın
+tek HYS toplamına bağlanması sınanır. Uygulamanın Windows ortamındaki
+gerçek arşiv sonucu hâlâ kullanıcı denemesiyle teyit edilmelidir.
