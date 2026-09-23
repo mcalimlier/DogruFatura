@@ -398,3 +398,43 @@ ortamında .NET SDK olmadığı için derleme ve Windows gerçek PDF testi henü
 çalıştırılmadı. Kullanıcı Windows'ta `TESTLERI_CALISTIR.bat` ve
 `DERLE_CALISTIR.bat` ile doğrulamalı; ardından 24 PDF'yi yeniden seçerek dört
 dosyanın adını, OCR aşamasını ve metin raporunu kontrol etmelidir.
+
+---
+
+## 23.09.2026 — HYS ödeme emrine eklenmiş e-Fatura ve gerçek OCR durumu
+
+Gerçek örnek: `24) HYS-2025-21213030.pdf`. Belgenin birinci sayfasında
+resmî ödeme emri, ikinci sayfasında e-Fatura bulunuyor. Ödeme emrinde klasik
+fatura listesi tablosu yok; eski parserın tablo bulamaması bu nedenle
+beklenebilir. Metin katmanı her iki sayfada da okunabildiğinden önce hedefli
+metin okuma yapılır; uygun veriler çıkarılamazsa güçlü aşamada gerekli sayfa
+görüntü OCR'ına girer.
+
+Yeni hedefli yol şu alanları e-Faturadan okur: fatura numarası, sözleşme/tüketici
+hesap numarası, fatura ve vade tarihi, ödenecek tutar ve KDV. Hizmet numarası
+kaynak okul/kurum kayıtlarında tekil eşleşiyorsa kurum ve VKN oradan alınır;
+aksi durumda faturanın alıcı unvanı kullanılır. Damga vergisi ve net ödeme
+mevcut DoğruFatura hesap motoruyla hesaplanır ve eklenecek tüm faturaların
+brüt/damga/net toplamı ödeme emrindeki gerçek toplamlarla bire bir
+karşılaştırılır. Uyuşmuyorsa otomatik kapalı arşiv kaydı oluşturulmaz.
+Kaynak PDF dönüştürülmez veya yeniden yazılmaz.
+
+Örnek belge değerleri: e-Faturada 4.911,20 TL ödenecek tutar ve 818,53 TL
+KDV; ödeme emrinde 4.911,20 TL brüt, 38,80 TL kesinti ve 4.872,40 TL net.
+Faturadaki 4.911,17 TL ara tutar ve 0,03 TL yuvarlama ayrı bilgidir; kayıt
+için faturanın ve ödeme emrinin 4.911,20 TL ödenecek/brüt tutarı kullanılır.
+
+Güçlü aşamaya girmek görüntü OCR'ının gerçekten çalıştığı anlamına gelmez.
+Önceki semantik sözcük puanına göre sayfa atlama kuralı, okunamayan e-Fatura
+sayfasını atlayabiliyordu. Artık yalnız toplamları metinden doğrulanan ödeme
+emri sayfası atlanır; sorunlu fatura sayfası OCR'a girer. Önizleme ve metin
+raporu gerçek OCR çalıştı / sayfalar atlandı / OCR başlamadı ayrımını gösterir.
+
+Örnek dosyada ödeme emri mevcut olduğundan uygulama yeni bir resmî ödeme emri
+üretmez. Yalnız e-Fatura içeren ayrı bir PDF resmî HYS belgesi olarak kapalı
+arşive alınmaz; bunun için ayrı taslak iş akışı ve gerçek örnek gerekir.
+
+Üç regresyon testi eklendi: ödeme emri + ek fatura başarılı, toplamlar
+uyuşmayınca ret, yalnız fatura varken resmî ödeme emri üretmeme. Önceki 137
+testle beklenen toplam 140'tır. Windows .NET derleme/test ve gerçek örnekle
+çalıştırma bu ortamda henüz yapılamadı.
