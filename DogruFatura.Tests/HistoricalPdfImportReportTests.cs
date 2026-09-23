@@ -33,12 +33,25 @@ public sealed class HistoricalPdfImportReportTests
             var report = File.ReadAllText(path);
 
             Assert.StartsWith(root, path);
-            Assert.Contains("Seçilen: 24 | Eklenen: 20 | Eklenemeyen: 4", report);
-            Assert.Contains("MYS-2025-21.pdf | EKLENEMEDİ", report);
-            Assert.Contains("MYS-2025-24.pdf | EKLENEMEDİ", report);
+            Assert.Contains("Seçilen: 24 | Eklenen: 20 | Zaten arşivde: 0 | İnceleme gereken: 4", report);
+            Assert.Contains("MYS-2025-21.pdf | İNCELEME GEREKİYOR", report);
+            Assert.Contains("MYS-2025-24.pdf | İNCELEME GEREKİYOR", report);
             Assert.Contains("Güçlü tarama • OCR denendi", report);
             Assert.Contains("Tutar alanı okunamadı.", report);
             Assert.Contains("MYS-2025-1.pdf | EKLENDİ", report);
+            var rerun = previews
+                .Select(item => item.IsValid
+                    ? (item.WithError("İşlem arşivinde zaten kayıtlı.")
+                        with { AlreadyArchived = true })
+                    : item)
+                .ToArray();
+            var rerunPath = HistoricalPdfImportReport.Write(
+                root, rerun, Array.Empty<HistoricalPdfImportPreview>(), "Tekrar seçim");
+            var rerunReport = File.ReadAllText(rerunPath);
+
+            Assert.Contains("Eklenen: 0 | Zaten arşivde: 20 | İnceleme gereken: 4", rerunReport);
+            Assert.Contains("MYS-2025-1.pdf | ZATEN ARŞİVDE", rerunReport);
+            Assert.Contains("MYS-2025-21.pdf | İNCELEME GEREKİYOR", rerunReport);
         }
         finally
         {
