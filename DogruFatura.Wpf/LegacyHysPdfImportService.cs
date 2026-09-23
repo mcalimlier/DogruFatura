@@ -412,14 +412,15 @@ internal sealed class LegacyHysPdfImportService
             }
 
             if (!TryReadEmbeddedInvoice(
-                    group, invoiceType, reportDate.Value, schools, out var invoice)
+                    group, invoiceType, reportDate.Value, schools,
+                    out var invoice, out var invoiceError)
                 && (group.Count != 1
                     || !TryReadEmbeddedInvoiceSinglePage(
                         group[0], invoiceType, reportDate.Value, schools,
                         out invoice)))
             {
                 preview = Invalid(sourcePath, fileName,
-                    $"{page.PageNumber}. sayfadan başlayan faturanın numara, hizmet, tarih, tutar veya KDV bilgisi doğrulanamadı.",
+                    $"{page.PageNumber}. sayfadan başlayan fatura doğrulanamadı: {invoiceError}",
                     hysNumber, invoiceType);
                 return false;
             }
@@ -673,9 +674,11 @@ internal sealed class LegacyHysPdfImportService
         string invoiceType,
         DateTime reportDate,
         IReadOnlyList<SchoolRecord> schools,
-        out InvoiceRecord? invoice)
+        out InvoiceRecord? invoice,
+        out string error)
     {
         invoice = null;
+        error = string.Empty;
         var first = pages[0];
         var invoiceNumbers = Regex.Matches(
                 string.Join(" ", first.Lines.Select(line => line.Text)),
@@ -683,16 +686,23 @@ internal sealed class LegacyHysPdfImportService
             .Select(match => match.Value)
             .Distinct(StringComparer.Ordinal).ToArray();
         if (invoiceNumbers.Length != 1)
+        {
+            error = "Bu ekin ilk sayfasında tek bir fatura numarası bulunamadı.";
             return false;
+        }
 
         var headerLine = first.Lines.FirstOrDefault(line =>
             NormalizeKey(line.Text).Replace(" ", string.Empty, StringComparison.Ordinal)
                 .Contains("faturatarihi", StringComparison.Ordinal));
         if (headerLine is null)
+        {
+            error = "Fatura tarihi başlığı okunamadı.";
             return false;
+        }
         var headerText = string.Join(" ", first.Lines
             .Where(line => Math.Abs(line.Top - headerLine.Top) < 26d)
             .OrderBy(line => line.Top).Select(line => line.Text));
+        var compactHeader = Regex.Replace(headerText, @"\s+", string.Empty);
         var dates = Regex.Matches(
                 headerText,
                 @"[0-3]?\d\s*[-./]\s*[01]?\d\s*[-./]\s*20\d{2}",
@@ -701,11 +711,28 @@ internal sealed class LegacyHysPdfImportService
             .Select(value => TryDate(value, out var parsed) ? parsed : (DateTime?)null)
             .Where(date => date.HasValue).Select(date => date!.Value)
             .Distinct().ToArray();
-        if (dates.Length < 2
-            || !TryEmbeddedMoney(
-                headerText.Replace(" ", string.Empty, StringComparison.Ordinal),
+        // Tarihler PDF koordinatlarında ayrı satırlara bölünebilir. Örneğin
+        // son ödeme tarihi faturanın tarihinden önce çıkarılır; dizi sırası
+        // bu iki alanın anlamını belirlemez.
+        if (!TryEmbeddedDate(compactHeader,
+                @"faturatar[iİı]h[iİı]", out var invoiceDate)
+            || !TryEmbeddedMoney(compactHeader,
                 @"[öo]denecektutar", out var payable))
+        {
+            error = "Fatura tarihi veya ödenecek tutar başlıktan okunamadı.";
             return false;
+        }
+        if (!TryEmbeddedDate(compactHeader,
+                @"son[öo]demetar[iİı]h[iİı]", out var dueDate))
+        {
+            var otherDates = dates.Where(date => date != invoiceDate).ToArray();
+            if (otherDates.Length != 1)
+            {
+                error = "Son ödeme tarihi başlık yakınında tekil olarak okunamadı.";
+                return false;
+            }
+            dueDate = otherDates[0];
+        }
 
         var vatLines = pages.SelectMany(page => page.Lines)
             .Where(line => Regex.IsMatch(
@@ -713,7 +740,10 @@ internal sealed class LegacyHysPdfImportService
                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
             .ToArray();
         if (vatLines.Length == 0)
+        {
+            error = "Ek sayfalarda KDV satırı bulunamadı.";
             return false;
+        }
         var vat = 0m;
         foreach (var line in vatLines)
         {
@@ -726,11 +756,17 @@ internal sealed class LegacyHysPdfImportService
             if (!money.Success
                 || !NumberParser.TryNonNegativeDecimal(
                     money.Groups["value"].Value, out var amount))
+            {
+                error = "KDV satırındaki tutar okunamadı.";
                 return false;
+            }
             vat += amount;
         }
         if (vat <= 0m)
+        {
+            error = "KDV toplamı sıfır veya eksik.";
             return false;
+        }
 
         var consumerLine = first.Lines.FirstOrDefault(line =>
             NormalizeKey(line.Text).Replace(" ", string.Empty, StringComparison.Ordinal)
@@ -740,7 +776,10 @@ internal sealed class LegacyHysPdfImportService
             : Regex.Matches(consumerLine.Text, @"\d{7,20}(?!\d)",
                 RegexOptions.CultureInvariant).LastOrDefault()?.Value ?? string.Empty;
         if (string.IsNullOrWhiteSpace(serviceNumber))
+        {
+            error = "Tüketici / abone numarası okunamadı.";
             return false;
+        }
 
         var recipientName = ExtractEmbeddedRecipient(first);
         var byService = schools.Where(school =>
@@ -750,24 +789,37 @@ internal sealed class LegacyHysPdfImportService
                 serviceNumber.TrimStart('0'),
                 StringComparison.Ordinal)).ToArray();
         if (byService.Length > 1)
+        {
+            error = "Abone numarası birden fazla kurumla eşleşti.";
             return false;
+        }
         var school = byService.SingleOrDefault();
         var institutionName = school?.Name ?? recipientName;
         if (string.IsNullOrWhiteSpace(institutionName))
+        {
+            error = "Kurum adı ekten veya kayıtlı aboneden bulunamadı.";
             return false;
+        }
 
         var calculation = _taxCalculationService.Calculate(payable, vat, invoiceType);
         if (!calculation.IsValid)
+        {
+            error = "Fatura vergi hesabı: " + calculation.Message;
             return false;
+        }
         var candidate = new InvoiceRecord(
             Guid.NewGuid(), reportDate,
             school?.InstitutionType ?? InferInstitutionType(institutionName),
             institutionName, school?.Vkn ?? string.Empty, invoiceType,
-            invoiceNumbers[0], serviceNumber, dates[0], dates[1],
+            invoiceNumbers[0], serviceNumber, invoiceDate, dueDate,
             payable, vat, calculation.VatBase, calculation.StampDuty,
             calculation.PaymentAmount, 0m, school?.SchoolId ?? Guid.Empty);
-        if (!InvoiceValidationService.Validate(candidate).IsValid)
+        var validation = InvoiceValidationService.Validate(candidate);
+        if (!validation.IsValid)
+        {
+            error = "Fatura " + invoiceNumbers[0] + ": " + validation.Message;
             return false;
+        }
 
         invoice = candidate;
         return true;
