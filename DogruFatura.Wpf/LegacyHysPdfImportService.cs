@@ -178,7 +178,13 @@ internal sealed class LegacyHysPdfImportService
                 return ocrPreview with { OcrAttempted = true };
 
             if (extractedWasParsed)
-                return extractedPreview with { OcrAttempted = true };
+            {
+                var ocrNote = string.IsNullOrWhiteSpace(ocrResult.ErrorMessage)
+                    ? " Güçlü OCR denendi ancak sonuç doğrulanamadı."
+                    : " Güçlü OCR denendi ancak sonuç doğrulanamadı: " + ocrResult.ErrorMessage;
+                return extractedPreview.WithError(extractedPreview.Status + ocrNote)
+                    with { OcrAttempted = true };
+            }
 
             var reason = string.IsNullOrWhiteSpace(ocrResult.ErrorMessage)
                 ? "Belgede tanınan fatura tablosu bulunamadı."
