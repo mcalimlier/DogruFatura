@@ -39,19 +39,42 @@ public static class ClosedArchiveSnapshotService
         ArgumentNullException.ThrowIfNull(archive);
 
         var normalized = archive.Normalize();
-        var snapshot = new ClosedArchiveSnapshot(
+        // Normal arşivler için eski snapshot şemasını aynen koru. Böylece
+        // mevcut kapalı arşivlerin daha önce yazılmış SHA-256 mühürleri geçerli kalır.
+        if (!normalized.IsLegacyEvidenceOnly)
+        {
+            var snapshot = new ClosedArchiveSnapshot(
+                normalized.Id,
+                normalized.ArchiveNumber,
+                normalized.ArchivedAt,
+                normalized.InvoiceType,
+                normalized.Invoices,
+                normalized.AuthorityProfile,
+                normalized.HysPaymentOrderDocumentNumber,
+                normalized.IsClosed,
+                normalized.ClosedAt);
+
+            var legacyBytes = JsonSerializer.SerializeToUtf8Bytes(snapshot, JsonOptions);
+            return Convert.ToHexString(SHA256.HashData(legacyBytes));
+        }
+
+        var evidenceSnapshot = new LegacyEvidenceClosedArchiveSnapshot(
             normalized.Id,
             normalized.ArchiveNumber,
             normalized.ArchivedAt,
             normalized.InvoiceType,
-            normalized.Invoices,
+            normalized.LegacyEvidenceItems ?? new List<LegacyInvoiceEvidenceRecord>(),
+            normalized.LegacyGrossTotal,
+            normalized.LegacyStampDutyTotal,
+            normalized.LegacyPaymentTotal,
+            normalized.LegacyEvidenceNote,
             normalized.AuthorityProfile,
             normalized.HysPaymentOrderDocumentNumber,
             normalized.IsClosed,
             normalized.ClosedAt);
 
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(snapshot, JsonOptions);
-        return Convert.ToHexString(SHA256.HashData(bytes));
+        var evidenceBytes = JsonSerializer.SerializeToUtf8Bytes(evidenceSnapshot, JsonOptions);
+        return Convert.ToHexString(SHA256.HashData(evidenceBytes));
     }
 
     public static bool Matches(ArchivedInvoiceList archive) =>
@@ -67,6 +90,21 @@ public static class ClosedArchiveSnapshotService
         DateTime ArchivedAt,
         string InvoiceType,
         IReadOnlyList<InvoiceRecord> Invoices,
+        AuthorityProfile AuthorityProfile,
+        string HysPaymentOrderDocumentNumber,
+        bool IsClosed,
+        DateTime? ClosedAt);
+
+    private sealed record LegacyEvidenceClosedArchiveSnapshot(
+        Guid Id,
+        string ArchiveNumber,
+        DateTime ArchivedAt,
+        string InvoiceType,
+        IReadOnlyList<LegacyInvoiceEvidenceRecord> EvidenceItems,
+        decimal GrossTotal,
+        decimal StampDutyTotal,
+        decimal PaymentTotal,
+        string EvidenceNote,
         AuthorityProfile AuthorityProfile,
         string HysPaymentOrderDocumentNumber,
         bool IsClosed,
