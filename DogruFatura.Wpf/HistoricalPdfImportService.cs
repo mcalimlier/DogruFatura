@@ -29,11 +29,12 @@ public sealed record HistoricalPdfImportPreview(
     ArchivedInvoiceList? Archive)
 {
     public bool OcrAttempted { get; init; }
+    public bool AlreadyArchived { get; init; }
     public string ScanDetail { get; init; } = "Hızlı metin taraması";
 
     public string InvoiceCountText => IsValid ? $"{InvoiceCount} fatura" : "—";
     public string PaymentTotalText => IsValid ? NumberParser.Money(PaymentTotal) : "—";
-    public string ResultText => IsValid ? "EKLEMEYE HAZIR" : "HATALI";
+    public string ResultText => IsValid ? "EKLEMEYE HAZIR" : AlreadyArchived ? "ZATEN ARŞİVDE" : "HATALI";
 
     public HistoricalPdfImportPreview WithError(string message) => this with
     {
