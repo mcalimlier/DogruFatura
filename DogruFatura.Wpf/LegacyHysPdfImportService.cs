@@ -385,7 +385,6 @@ internal sealed class LegacyHysPdfImportService
         }
 
         if (string.IsNullOrWhiteSpace(invoiceNumber)
-            || string.IsNullOrWhiteSpace(serviceNumber)
             || !TryEmbeddedDate(text, @"fatura\s+tar[iİı]h[iİı]", out var invoiceDate)
             || !TryEmbeddedDate(text, @"son\s+[öo]deme\s+tar[iİı]h[iİı]", out var dueDate)
             || !TryEmbeddedMoney(text, @"[öo]denecek\s+tutar", out var payable)
@@ -393,13 +392,29 @@ internal sealed class LegacyHysPdfImportService
             return false;
 
         var recipientName = ExtractEmbeddedRecipient(page);
+        var recipientKey = NormalizeKey(recipientName);
+        var schoolsByName = string.IsNullOrWhiteSpace(recipientKey)
+            ? Array.Empty<SchoolRecord>()
+            : schools.Where(school =>
+                NormalizeKey(school.Name) == recipientKey).ToArray();
+        if (string.IsNullOrWhiteSpace(serviceNumber))
+        {
+            if (schoolsByName.Length != 1)
+                return false;
+            serviceNumber = schoolsByName[0].GetServiceNumber(invoiceType);
+            if (string.IsNullOrWhiteSpace(serviceNumber))
+                return false;
+        }
+
         var matchedSchools = schools
             .Where(school => string.Equals(
                 school.GetServiceNumber(invoiceType),
                 serviceNumber,
                 StringComparison.Ordinal))
             .ToArray();
-        if (matchedSchools.Length > 1)
+        if (matchedSchools.Length > 1
+            || (schoolsByName.Length == 1 && matchedSchools.Length == 1
+                && !ReferenceEquals(schoolsByName[0], matchedSchools[0])))
             return false;
         var school = matchedSchools.SingleOrDefault();
         var institutionName = school?.Name ?? recipientName;
