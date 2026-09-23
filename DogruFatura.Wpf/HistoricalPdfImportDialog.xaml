@@ -41,6 +41,7 @@
                             <DataGridTextColumn Header="Tür" Binding="{Binding InvoiceType}" Width="80"/>
                             <DataGridTextColumn Header="Adet" Binding="{Binding InvoiceCountText}" Width="82"/>
                             <DataGridTextColumn Header="Ödeme" Binding="{Binding PaymentTotalText}" Width="115"/>
+                            <DataGridTextColumn Header="Tarama" Binding="{Binding ScanDetail}" Width="205"/>
                             <DataGridTextColumn Header="Sonuç" Binding="{Binding ResultText}" Width="125"/>
                             <DataGridTextColumn Header="Açıklama" Binding="{Binding Status}" Width="*"/>
                         </DataGrid.Columns>
