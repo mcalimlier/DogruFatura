@@ -556,3 +556,15 @@ tarihleri 10-03-2025 olarak doğrulandı. Regresyon testinde ilk faturanın
 hem `28-022025` tarihi hem de bitişik yinelenen vadesiyle dört faturanın
 tek HYS toplamına bağlanması sınanır. Uygulamanın Windows ortamındaki
 gerçek arşiv sonucu hâlâ kullanıcı denemesiyle teyit edilmelidir.
+## Gerçek uygulama sonucu: 8 numaralı PDF başarıyla eklendi (23.09.2026)
+
+Kullanıcı, ilk faturanın tarih/tutar ve yinelenen vade alanlarının düzeltilmiş
+sürümüyle 8 numaralı PDF'nin arşive aktarımının başarılı olduğunu bildirdi.
+Önceki "0 dosya arşivlendi" ekranı başarısız denemeye aittir; yeni başarılı
+sonuç kullanıcı doğrulamasıdır. Arşiv listesinin ekran görüntüsü henüz
+paylaşılmadığından fatura sayısı ve net tutar uygulama ekranından ayrıca
+teyit edilmemiştir. Kaynak PDF metni bağımsız olarak dört fatura,
+5.430,50 TL brüt, 839,00 TL KDV, 43,53 TL damga ve 5.386,97 TL net
+olarak doğrulanmıştı. Windows CI derleme/test adımını başlatmadığından
+otomatik test sonucu ayrıca mevcut değildir. Özgün PDF'nin içindeki resmî
+ödeme emri kullanılır; yeni resmî belge düzenlenmez.
