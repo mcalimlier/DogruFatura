@@ -52,6 +52,11 @@ public sealed class ArchivePdfSynchronizationService
                 }
                 else
                 {
+                    if (archive.IsLegacyEvidenceOnly)
+                        throw new InvalidOperationException(
+                            "Kaynak-delil arşivinin özgün PDF'si eksik. "
+                            + "Satır düzeyinde vergi/fatura tarihi bulunmadığı için bu PDF yapay olarak yeniden üretilemez.");
+
                     var reportData = CreateReportData(archive);
                     _savePdf(reportData, targetPath);
                     createdCount++;
