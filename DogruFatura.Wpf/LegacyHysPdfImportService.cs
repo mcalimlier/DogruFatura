@@ -258,38 +258,45 @@ internal sealed class LegacyHysPdfImportService
         totals = default!;
         foreach (var page in paymentPages)
         {
-            var heading = page.Lines.FirstOrDefault(line =>
-                line.Top > page.Height * 0.30d
-                && NormalizeKey(line.Text).Contains("odeme emri", StringComparison.Ordinal));
-            if (heading is null)
-                continue;
-
-            foreach (var line in page.Lines.Where(line =>
-                         line.Top >= heading.Top
-                         && line.Top <= heading.Top + 40d))
+            // "Ödeme Emri Detayı" toplam tutar başlığı değildir.
+            // Gerçek toplam satırını bulana dek ilgili başlıkları tara.
+            var headings = page.Lines.Where(line =>
             {
-                var amounts = new List<decimal>();
-                foreach (Match match in Regex.Matches(
-                             line.Text,
-                             @"(?<!\d)(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}(?!\d)",
-                             RegexOptions.CultureInvariant))
+                var normalized = NormalizeKey(line.Text);
+                return line.Top > page.Height * 0.30d
+                    && normalized.Contains("odeme emri", StringComparison.Ordinal)
+                    && (normalized.Contains("brut tutar", StringComparison.Ordinal)
+                        || normalized.Contains("toplam tutari", StringComparison.Ordinal));
+            });
+            foreach (var heading in headings)
+            {
+                foreach (var line in page.Lines.Where(line =>
+                             line.Top >= heading.Top
+                             && line.Top <= heading.Top + 40d))
                 {
-                    if (NumberParser.TryNonNegativeDecimal(match.Value, out var amount))
-                        amounts.Add(amount);
+                    var amounts = new List<decimal>();
+                    foreach (Match match in Regex.Matches(
+                                 line.Text,
+                                 @"(?<!\d)(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}(?!\d)",
+                                 RegexOptions.CultureInvariant))
+                    {
+                        if (NumberParser.TryNonNegativeDecimal(match.Value, out var amount))
+                            amounts.Add(amount);
+                    }
+
+                    if (amounts.Count < 4)
+                        continue;
+                    var gross = amounts[0];
+                    var stamp = amounts[1];
+                    var payment = amounts[^1];
+                    if (gross <= 0m || stamp <= 0m || stamp >= gross * 0.1m
+                        || decimal.Round(gross - stamp, 2, MidpointRounding.AwayFromZero)
+                           != payment)
+                        continue;
+
+                    totals = new DocumentTotals(gross, stamp, payment);
+                    return true;
                 }
-
-                if (amounts.Count < 4)
-                    continue;
-                var gross = amounts[0];
-                var stamp = amounts[1];
-                var payment = amounts[^1];
-                if (gross <= 0m || stamp <= 0m || stamp >= gross * 0.1m
-                    || decimal.Round(gross - stamp, 2, MidpointRounding.AwayFromZero)
-                       != payment)
-                    continue;
-
-                totals = new DocumentTotals(gross, stamp, payment);
-                return true;
             }
         }
 
