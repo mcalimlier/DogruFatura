@@ -230,7 +230,8 @@ public partial class MainWindow
 
                 if (preview.IsValid && knownHysNumbers.Contains(preview.HysNumber))
                 {
-                    preview = preview.WithError($"{preview.HysNumber} işlem arşivinde zaten kayıtlı.")
+                    preview = preview.WithError(
+                        $"{preview.HysNumber} işlem arşivinde zaten kayıtlı. Okuma sonucu: {preview.Status}")
                         with { AlreadyArchived = true };
                 }
                 else if (preview.IsValid && !selectedHysNumbers.Add(preview.HysNumber))
