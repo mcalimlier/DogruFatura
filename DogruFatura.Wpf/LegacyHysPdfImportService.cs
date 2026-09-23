@@ -386,9 +386,7 @@ internal sealed class LegacyHysPdfImportService
         {
             var page = attachmentPages[index];
             var pageText = string.Join(" ", page.Lines.Select(line => line.Text));
-            var hasInvoice = Regex.IsMatch(
-                pageText, @"\b[A-Z]{3}20\d{11}\b",
-                RegexOptions.CultureInvariant);
+            var hasInvoice = FindEmbeddedInvoiceNumbers(pageText).Length > 0;
             if (!hasInvoice)
             {
                 preview = Invalid(sourcePath, fileName,
@@ -404,8 +402,7 @@ internal sealed class LegacyHysPdfImportService
             {
                 var next = attachmentPages[index];
                 var nextText = string.Join(" ", next.Lines.Select(line => line.Text));
-                if (Regex.IsMatch(nextText, @"\b[A-Z]{3}20\d{11}\b",
-                        RegexOptions.CultureInvariant))
+                if (FindEmbeddedInvoiceNumbers(nextText).Length > 0)
                     break;
                 group.Add(next);
                 index++;
@@ -680,11 +677,8 @@ internal sealed class LegacyHysPdfImportService
         invoice = null;
         error = string.Empty;
         var first = pages[0];
-        var invoiceNumbers = Regex.Matches(
-                string.Join(" ", first.Lines.Select(line => line.Text)),
-                @"\b[A-Z]{3}20\d{11}\b", RegexOptions.CultureInvariant)
-            .Select(match => match.Value)
-            .Distinct(StringComparer.Ordinal).ToArray();
+        var invoiceNumbers = FindEmbeddedInvoiceNumbers(
+            string.Join(" ", first.Lines.Select(line => line.Text)));
         if (invoiceNumbers.Length != 1)
         {
             error = "Bu ekin ilk sayfasında tek bir fatura numarası bulunamadı.";
@@ -873,30 +867,22 @@ internal sealed class LegacyHysPdfImportService
     {
         invoice = null;
         var text = string.Join(" ", page.Lines.Select(line => line.Text));
-        var invoiceNumber = Regex.Match(
-            text, @"\bfatura\s+no\s*:\s*(?<value>[A-Z0-9-]{8,50})",
-            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)
-            .Groups["value"].Value;
-        var serviceNumber = Regex.Match(
-            text, @"s[öo]zle[şs]me\s+hesap\s+no\s*:\s*(?<value>\d{4,50})",
-            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)
-            .Groups["value"].Value;
-        if (string.IsNullOrWhiteSpace(serviceNumber))
-        {
-            serviceNumber = Regex.Match(
-                text, @"t[üu]ket[iİı]ci\s+no\s*:\s*(?<value>\d{4,50})",
-                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)
-                .Groups["value"].Value;
-        }
-
-        if (string.IsNullOrWhiteSpace(invoiceNumber)
-            || !TryEmbeddedDate(text, @"fatura\s+tar[iİı]h[iİı]", out var invoiceDate)
+        var invoiceNumbers = FindEmbeddedInvoiceNumbers(text);
+        if (invoiceNumbers.Length != 1
+            || !TryEmbeddedDate(text, @"fatura\s+tar[iİı]h(?:[iİı])?", out var invoiceDate)
             || !TryEmbeddedDate(text, @"son\s+[öo]deme\s+tar[iİı]h[iİı]", out var dueDate)
             || !TryEmbeddedMoney(text, @"[öo]denecek\s+tutar", out var payable)
-            || !TryEmbeddedMoney(text, @"(?:elektr[iİı]k\s+)?kdv\s*\(\s*%\s*\d{1,2}\s*\)", out var vat))
+            || !TryEmbeddedVat(text, out var vat))
             return false;
 
+        var invoiceNumber = invoiceNumbers[0];
         var recipientName = ExtractEmbeddedRecipient(page);
+        var serviceCandidates = FindEmbeddedServiceNumbers(text);
+        var serviceNumber = ResolveEmbeddedServiceNumber(
+            serviceCandidates,
+            invoiceType,
+            recipientName,
+            schools);
         var recipientKey = NormalizeKey(recipientName);
         var schoolsByName = string.IsNullOrWhiteSpace(recipientKey)
             ? Array.Empty<SchoolRecord>()
@@ -913,8 +899,8 @@ internal sealed class LegacyHysPdfImportService
 
         var matchedSchools = schools
             .Where(school => string.Equals(
-                school.GetServiceNumber(invoiceType),
-                serviceNumber,
+                DigitsOnly(school.GetServiceNumber(invoiceType)).TrimStart('0'),
+                DigitsOnly(serviceNumber).TrimStart('0'),
                 StringComparison.Ordinal))
             .ToArray();
         if (matchedSchools.Length > 1
@@ -951,6 +937,15 @@ internal sealed class LegacyHysPdfImportService
         if (anchor is null)
             return string.Empty;
 
+        var sameLine = page.Words
+            .Where(word =>
+                word.Left > anchor.Right + 1d
+                && Math.Abs(word.Top - anchor.Top) < Math.Max(4d, anchor.Height * 0.7d))
+            .OrderBy(word => word.Left)
+            .ToArray();
+        if (sameLine.Length > 0)
+            return string.Join(" ", sameLine.Select(word => word.Text)).Trim();
+
         var following = page.Words
             .Where(word => word.Left >= anchor.Left - 2d
                 && word.Top > anchor.Top + 2d
@@ -965,6 +960,98 @@ internal sealed class LegacyHysPdfImportService
             .OrderBy(word => word.Left)
             .Select(word => word.Text)).Trim();
     }
+
+    private static string[] FindEmbeddedInvoiceNumbers(string text)
+    {
+        var values = new List<string>();
+        foreach (Match match in Regex.Matches(
+                     text ?? string.Empty,
+                     @"\bfatura\s+(?:no|numaras[iİı])\s*:?\s*(?<value>[A-Z0-9-]{8,50})",
+                     RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+        {
+            var value = match.Groups["value"].Value.Trim().TrimEnd('-', ':');
+            if (!string.IsNullOrWhiteSpace(value)
+                && !values.Contains(value, StringComparer.OrdinalIgnoreCase))
+                values.Add(value);
+        }
+
+        foreach (Match match in Regex.Matches(
+                     text ?? string.Empty,
+                     @"\b[A-Z]{3}20\d{11}\b",
+                     RegexOptions.CultureInvariant))
+        {
+            if (!values.Contains(match.Value, StringComparer.OrdinalIgnoreCase))
+                values.Add(match.Value);
+        }
+
+        return values.ToArray();
+    }
+
+    private static string[] FindEmbeddedServiceNumbers(string text)
+    {
+        var values = new List<string>();
+        foreach (var pattern in new[]
+                 {
+                     @"hesap\s+numaras[iİı]\s*:?\s*(?<value>\d{4,50})",
+                     @"s[öo]zle[şs]me\s+hesap\s+no\s*:?\s*(?<value>\d{4,50})",
+                     @"t[üu]ket[iİı]ci\s+no\s*:?\s*(?<value>\d{4,50})",
+                     @"h[iİı]zmet\s+no\s*:?\s*(?<value>\d{4,50})"
+                 })
+        {
+            foreach (Match match in Regex.Matches(
+                         text ?? string.Empty,
+                         pattern,
+                         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            {
+                var value = match.Groups["value"].Value;
+                if (!string.IsNullOrWhiteSpace(value)
+                    && !values.Contains(value, StringComparer.Ordinal))
+                    values.Add(value);
+            }
+        }
+
+        return values.ToArray();
+    }
+
+    private static string ResolveEmbeddedServiceNumber(
+        IReadOnlyList<string> candidates,
+        string invoiceType,
+        string recipientName,
+        IReadOnlyList<SchoolRecord> schools)
+    {
+        foreach (var candidate in candidates)
+        {
+            var normalizedCandidate = DigitsOnly(candidate).TrimStart('0');
+            var matches = schools.Where(school =>
+                    string.Equals(
+                        DigitsOnly(school.GetServiceNumber(invoiceType)).TrimStart('0'),
+                        normalizedCandidate,
+                        StringComparison.Ordinal))
+                .ToArray();
+            if (matches.Length == 1)
+                return candidate;
+        }
+
+        var recipientKey = NormalizeKey(recipientName);
+        var byName = string.IsNullOrWhiteSpace(recipientKey)
+            ? Array.Empty<SchoolRecord>()
+            : schools.Where(school =>
+                NormalizeKey(school.Name) == recipientKey).ToArray();
+        if (byName.Length == 1)
+        {
+            var fromSchool = DigitsOnly(byName[0].GetServiceNumber(invoiceType));
+            if (!string.IsNullOrWhiteSpace(fromSchool))
+                return fromSchool;
+        }
+
+        return candidates.FirstOrDefault() ?? string.Empty;
+    }
+
+    private static bool TryEmbeddedVat(string text, out decimal amount) =>
+        TryEmbeddedMoney(
+            text,
+            @"(?:elektr[iİı]k\s+)?kdv\s*(?:\(\s*%\s*\d{1,2}\s*\)|%\s*\d{1,2}(?:\s*\([^)]*\))?)",
+            out amount);
 
     private static bool TryEmbeddedDate(
         string text,
@@ -2612,7 +2699,8 @@ internal sealed class LegacyHysPdfImportService
         cancellationToken.ThrowIfCancellationRequested();
         using var sourceImage = TesseractPix.LoadFromMemory(pngBytes);
 
-        if (!useFocusedTableOcr)
+        if (!useFocusedTableOcr
+            || sourceImage.Width <= sourceImage.Height)
         {
             return ProcessGeneralOcrForOrientation(
                 engine,
