@@ -118,6 +118,8 @@ public partial class MainWindow
         ArchivePdfSyncButton.IsEnabled = false;
 
         var progressWindow = new HistoricalPdfImportProgressWindow { Owner = this };
+        var activeFileName = dialog.FileNames[0];
+        var buffer = new HistoricalPdfImportPreview?[dialog.FileNames.Length];
         progressWindow.CancelRequested += (_, _) =>
         {
             if (!cancellation.IsCancellationRequested)
@@ -136,7 +138,6 @@ public partial class MainWindow
             var selectedHysNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var schools = AllSchools.ToList();
             var authorityProfile = _authorityProfile;
-            var buffer = new HistoricalPdfImportPreview?[dialog.FileNames.Length];
             var strongCandidateIndexes = new List<int>();
 
             for (var index = 0; index < dialog.FileNames.Length; index++)
@@ -144,6 +145,7 @@ public partial class MainWindow
                 cancellation.Token.ThrowIfCancellationRequested();
 
                 var fileName = dialog.FileNames[index];
+                activeFileName = fileName;
                 progressWindow.SetFileProgress(
                     index + 1,
                     dialog.FileNames.Length,
@@ -179,6 +181,7 @@ public partial class MainWindow
 
                 var fileIndex = strongCandidateIndexes[strongIndex];
                 var fileName = dialog.FileNames[fileIndex];
+                activeFileName = fileName;
                 progressWindow.SetFileProgress(
                     strongIndex + 1,
                     strongCandidateIndexes.Count,
@@ -264,7 +267,21 @@ public partial class MainWindow
         }
         catch (Exception ex)
         {
-            SetArchiveStatus("Arşive eklenecek PDF dosyaları okunamadı: " + ex.Message, true);
+            var interrupted = buffer.Where(item => item is not null)
+                .Select(item => item!)
+                .Append(new HistoricalPdfImportPreview(
+                    activeFileName,
+                    Path.GetFileName(activeFileName),
+                    false,
+                    "Tarama beklenmedik şekilde kesildi: " + ex.Message,
+                    "—", "—", 0, 0m, null))
+                .ToArray();
+            SaveHistoricalPdfImportReport(
+                interrupted,
+                Array.Empty<HistoricalPdfImportPreview>(),
+                "Tarama hatası: " + ex.Message,
+                "PDF taraması kesildi; arşiv kaydı oluşturulmadı.",
+                showFailures: true);
             return;
         }
         finally
@@ -276,6 +293,22 @@ public partial class MainWindow
             ArchiveImportCancelButton.IsEnabled = false;
             ArchiveImportCancelButton.Visibility = Visibility.Collapsed;
             ArchivePdfSyncButton.IsEnabled = true;
+        }
+
+        if (previews.All(item => !item.IsValid))
+        {
+            SaveHistoricalPdfImportReport(
+                previews,
+                Array.Empty<HistoricalPdfImportPreview>(),
+                "Geçerli PDF bulunamadı",
+                "Aktarılabilecek geçerli PDF bulunamadı; arşiv kaydı oluşturulmadı.",
+                showFailures: true);
+            if (previews.All(item => item.AlreadyArchived))
+                MessageBox.Show(this,
+                    "Seçilen PDF zaten arşivde kayıtlı. Aynı ödeme emri yeniden eklenmedi.",
+                    "DoğruFatura - Arşiv Aktarım Sonucu",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
         }
 
         var importDialog = new HistoricalPdfImportDialog(previews) { Owner = this };
