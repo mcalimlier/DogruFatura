@@ -259,15 +259,17 @@ public sealed class LegacyHysPdfImportTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void FirstInvoiceHeaderSplitAcrossRowsStillMatchesPaymentOrder(
-        bool missingMonthYearSeparator)
+        bool missingMonthYearSeparator, bool duplicatedDueDate)
     {
         using var temp = new TempFile("8) HYS-2025-19794703.pdf");
         CreateFourTwoPageInvoicesPdf(temp.Path, splitHeading: true,
             wrongStamp: false, splitFirstHeader: true,
-            dropFirstInvoiceDateSeparator: missingMonthYearSeparator);
+            dropFirstInvoiceDateSeparator: missingMonthYearSeparator,
+            duplicateFirstDueDate: duplicatedDueDate);
 
         var preview = new HistoricalPdfImportService().Read(
             temp.Path, Array.Empty<SchoolRecord>(),
@@ -400,7 +402,8 @@ public sealed class LegacyHysPdfImportTests
     private static void CreateFourTwoPageInvoicesPdf(
         string path, bool splitHeading, bool wrongStamp,
         bool dueDateBeforeInvoiceDate = false, bool splitFirstHeader = false,
-        bool dropFirstInvoiceDateSeparator = false)
+        bool dropFirstInvoiceDateSeparator = false,
+        bool duplicateFirstDueDate = false)
     {
         using (var document = new PdfDocument())
         {
@@ -456,8 +459,10 @@ public sealed class LegacyHysPdfImportTests
                             font, XBrushes.Black, 120, 337);
                         g.DrawString("ÖDENECEK", font, XBrushes.Black, 210, 337);
                         g.DrawString("FAT URA T ARİHİ:", font, XBrushes.Black, 40, 350);
-                        g.DrawString("SON ÖDEME TARİHİ: 10-03-2025",
-                            font, XBrushes.Black, 390, 350);
+                        g.DrawString("SON ÖDEME TARİHİ: "
+                                + (duplicateFirstDueDate
+                                    ? "10-03-202510-03-2025" : "10-03-2025"),
+                            font, XBrushes.Black, 330, 350);
                         g.DrawString("T UT AR:" + item.Item3 + " TL",
                             font, XBrushes.Black, 260, 363);
                     }
