@@ -192,7 +192,7 @@ public partial class MainWindow
                 var progress = new Progress<string>(message => progressWindow.SetWorking(message));
                 try
                 {
-                    buffer[fileIndex] = await Task.Run(
+                    var strongPreview = await Task.Run(
                         () => _historicalPdfImportService.Read(
                             fileName,
                             schools,
@@ -201,12 +201,21 @@ public partial class MainWindow
                             HistoricalPdfImportScanMode.Strong,
                             strongCancellation.Token),
                         strongCancellation.Token);
+                    buffer[fileIndex] = strongPreview with
+                    {
+                        ScanDetail = strongPreview.OcrAttempted
+                            ? "Güçlü tarama • OCR denendi"
+                            : "Güçlü tarama • OCR gerekmedi/başlamadı"
+                    };
                 }
                 catch (OperationCanceledException) when (!cancellation.IsCancellationRequested)
                 {
                     buffer[fileIndex] = (buffer[fileIndex]
                         ?? throw new InvalidOperationException("Hızlı tarama sonucu bulunamadı."))
-                        .WithError("Güçlü tarama 2 dakikalık süre sınırını aştı.");
+                        .WithError("Güçlü tarama 2 dakikalık süre sınırını aştı.") with
+                    {
+                        ScanDetail = "Güçlü tarama • süre doldu; OCR durumu belirlenemedi"
+                    };
                 }
             }
 
@@ -267,12 +276,25 @@ public partial class MainWindow
 
         var importDialog = new HistoricalPdfImportDialog(previews) { Owner = this };
         if (importDialog.ShowDialog() != true)
+        {
+            SaveHistoricalPdfImportReport(
+                previews,
+                Array.Empty<HistoricalPdfImportPreview>(),
+                "Önizlemede vazgeçildi",
+                "PDF aktarımından vazgeçildi; seçilen dosyalar arşive eklenmedi.",
+                showFailures: false);
             return;
+        }
 
         var validItems = importDialog.ValidItems;
         if (validItems.Count == 0)
         {
-            SetArchiveStatus("Aktarılabilecek geçerli PDF bulunamadı.", true);
+            SaveHistoricalPdfImportReport(
+                previews,
+                Array.Empty<HistoricalPdfImportPreview>(),
+                "Geçerli PDF bulunamadı",
+                "Aktarılabilecek geçerli PDF bulunamadı.",
+                showFailures: true);
             return;
         }
 
@@ -323,7 +345,12 @@ public partial class MainWindow
             }
 
             RefreshArchiveView();
-            SetArchiveStatus("Arşiv ekleme işlemi tamamlanamadı: " + ex.Message, true);
+            SaveHistoricalPdfImportReport(
+                previews,
+                Array.Empty<HistoricalPdfImportPreview>(),
+                "Kayıt geri alındı: " + ex.Message,
+                "Arşiv ekleme işlemi tamamlanamadı: " + ex.Message,
+                showFailures: false);
             MessageBox.Show(
                 this,
                 "PDF kayıtları arşive eklenirken işlem geri alındı:\n\n" + ex.Message,
@@ -345,10 +372,62 @@ public partial class MainWindow
         var firstArchive = addedArchives.First();
         RefreshArchiveView(firstArchive.Id);
         RefreshDashboard();
-        SetArchiveStatus(
-            $"{addedArchives.Count} PDF, Ödeme Emri No ile kapalı arşiv kaydı olarak eklendi.",
-            false,
-            true);
+        SaveHistoricalPdfImportReport(
+            previews,
+            validItems,
+            "Aktarım tamamlandı",
+            $"{addedArchives.Count} PDF arşive eklendi.",
+            showFailures: true);
+    }
+
+    private void SaveHistoricalPdfImportReport(
+        IReadOnlyList<HistoricalPdfImportPreview> previews,
+        IReadOnlyList<HistoricalPdfImportPreview> imported,
+        string outcome,
+        string summary,
+        bool showFailures)
+    {
+        var failures = previews.Where(item => !item.IsValid).ToArray();
+        try
+        {
+            var reportPath = HistoricalPdfImportReport.Write(
+                _documentArchiveStorageService.RootDirectory,
+                previews,
+                imported,
+                outcome);
+            SetArchiveStatus(
+                $"{summary} {failures.Length} dosya eklenemedi. Rapor: {reportPath}",
+                failures.Length > 0,
+                true);
+            if (showFailures && failures.Length > 0)
+            {
+                var failureLines = failures
+                    .Take(8)
+                    .Select(item => $"• {item.FileName} — {item.ScanDetail}: {item.Status}");
+                var more = failures.Length > 8
+                    ? $"\n... ve {failures.Length - 8} dosya daha."
+                    : string.Empty;
+                MessageBox.Show(
+                    this,
+                    $"{summary}\n\nEklenemeyen dosyalar:\n{string.Join("\n", failureLines)}{more}\n\nTam rapor:\n{reportPath}",
+                    "DoğruFatura - Arşiv Aktarım Sonucu",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            SetArchiveStatus(
+                $"{summary} {failures.Length} dosya eklenemedi. Aktarım raporu kaydedilemedi: {ex.Message}",
+                true);
+            MessageBox.Show(
+                this,
+                $"Aktarım raporu DoğruFatura klasörüne kaydedilemedi:\n{ex.Message}\n\n"
+                + string.Join("\n", failures.Select(item => $"{item.FileName}: {item.Status}")),
+                "DoğruFatura - Rapor Hatası",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
     private void CancelHistoricalPdfImport_Click(object sender, RoutedEventArgs e)
