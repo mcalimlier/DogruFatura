@@ -204,8 +204,10 @@ public partial class MainWindow
                     buffer[fileIndex] = strongPreview with
                     {
                         ScanDetail = strongPreview.OcrAttempted
-                            ? "Güçlü tarama • OCR denendi"
-                            : "Güçlü tarama • OCR gerekmedi/başlamadı"
+                            ? "Güçlü tarama • OCR uygulandı"
+                            : strongPreview.OcrSkipped
+                                ? "Güçlü tarama • OCR uygulanmadı (metin sayfaları atlandı)"
+                                : "Güçlü tarama • OCR başlamadı (hata ayrıntısına bakın)"
                     };
                 }
                 catch (OperationCanceledException) when (!cancellation.IsCancellationRequested)
