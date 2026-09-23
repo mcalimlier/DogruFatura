@@ -34,6 +34,7 @@ internal sealed class LegacyHysPdfImportService
     }
 
     private static readonly CultureInfo Tr = CultureInfo.GetCultureInfo("tr-TR");
+    private static readonly decimal[] CandidateVatRates = { 0.01m, 0.10m, 0.20m };
     private static readonly string[] DateFormats =
     {
         "dd.MM.yyyy", "d.M.yyyy",
@@ -152,6 +153,11 @@ internal sealed class LegacyHysPdfImportService
                     fallbackAuthorityProfile, out var embeddedPreview))
                 return embeddedPreview;
 
+            if (TryParseDetailedAllowancePages(
+                    sourcePath, fileName, extractedPages, schools,
+                    fallbackAuthorityProfile, out var detailedPreview))
+                return detailedPreview;
+
             if (extractedWasParsed && scanMode == HistoricalPdfImportScanMode.Automatic)
                 return extractedPreview;
 
@@ -171,9 +177,9 @@ internal sealed class LegacyHysPdfImportService
             var ocrResult = TryExtractOcrPages(
                 sourcePath,
                 extractedPages,
-                cancellationToken,
                 progress,
-                () => ocrAttempted = true);
+                () => ocrAttempted = true,
+                cancellationToken);
             ocrAttempted |= ocrResult.OcrRan;
             var ocrSkipped = !ocrAttempted && string.IsNullOrWhiteSpace(ocrResult.ErrorMessage);
             var combinedPages = MergePages(extractedPages, ocrResult.Pages);
@@ -197,6 +203,11 @@ internal sealed class LegacyHysPdfImportService
                     sourcePath, fileName, combinedPages, schools,
                     fallbackAuthorityProfile, out var ocrEmbeddedPreview))
                 return ocrEmbeddedPreview with { OcrAttempted = ocrAttempted, OcrSkipped = ocrSkipped };
+
+            if (TryParseDetailedAllowancePages(
+                    sourcePath, fileName, combinedPages, schools,
+                    fallbackAuthorityProfile, out var ocrDetailedPreview))
+                return ocrDetailedPreview with { OcrAttempted = ocrAttempted, OcrSkipped = ocrSkipped };
 
             if (ocrPreview is not null)
                 return ocrPreview with { OcrAttempted = ocrAttempted, OcrSkipped = ocrSkipped };
@@ -314,22 +325,45 @@ internal sealed class LegacyHysPdfImportService
             return false;
 
         var invoices = new List<InvoiceRecord>();
-        foreach (var page in pages.Except(paymentPages))
+        var attachmentPages = pages.Except(paymentPages)
+            .OrderBy(page => page.PageNumber).ToArray();
+        for (var index = 0; index < attachmentPages.Length;)
         {
-            if (!TryReadEmbeddedInvoice(
-                    page, invoiceType, reportDate.Value, schools, out var invoice))
+            var page = attachmentPages[index];
+            var pageText = string.Join(" ", page.Lines.Select(line => line.Text));
+            var hasInvoice = Regex.IsMatch(
+                pageText, @"\b[A-Z]{3}20\d{11}\b",
+                RegexOptions.CultureInvariant);
+            if (!hasInvoice)
+                return false;
+
+            // Elektrik faturasında KDV dökümü çoğu kez sonraki sayfadadır.
+            var group = new List<PageData> { page };
+            index++;
+            while (index < attachmentPages.Length)
             {
-                // Görünen ama eksik okunan fatura sayfası sessizce atlanamaz.
-                var pageText = NormalizeKey(string.Join(" ",
-                    page.Lines.Select(line => line.Text)));
-                if (pageText.Contains("fatura no", StringComparison.Ordinal)
-                    || pageText.Contains("e fatura", StringComparison.Ordinal))
-                    return false;
-                continue;
+                var next = attachmentPages[index];
+                var nextText = string.Join(" ", next.Lines.Select(line => line.Text));
+                if (Regex.IsMatch(nextText, @"\b[A-Z]{3}20\d{11}\b",
+                        RegexOptions.CultureInvariant))
+                    break;
+                group.Add(next);
+                index++;
             }
 
+            if (!TryReadEmbeddedInvoice(
+                    group, invoiceType, reportDate.Value, schools, out var invoice)
+                && (group.Count != 1
+                    || !TryReadEmbeddedInvoiceSinglePage(
+                        group[0], invoiceType, reportDate.Value, schools,
+                        out invoice)))
+                return false;
             invoices.Add(invoice!);
         }
+
+        if (invoices.Select(invoice => invoice.InvoiceNumber)
+            .Distinct(StringComparer.Ordinal).Count() != invoices.Count)
+            return false;
 
         if (invoices.Count == 0 || !MatchesDocumentTotals(invoices, totals))
             return false;
@@ -352,14 +386,312 @@ internal sealed class LegacyHysPdfImportService
 
         preview = new HistoricalPdfImportPreview(
             sourcePath, fileName, true,
-            $"{paymentPages.Length} ödeme emri sayfası ve {invoices.Count} e-Fatura eki doğrulandı; "
+            $"{paymentPages.Length} ödeme emri sayfası ve {invoices.Count} fatura eki doğrulandı; "
             + "brüt, damga vergisi ve net tutar resmî ödeme emri toplamlarıyla eşleşti.",
             hysNumber, invoiceType, invoices.Count,
             invoices.Sum(invoice => invoice.PaymentAmount), archive);
         return true;
     }
 
+    // Bakanlık ödenek/fatura listesindeki satırlar iki fiziksel satıra taşabilir.
+    // Sütunlar başlıkların yatay konumlarından okunur; ödeme emri toplamı şarttır.
+    private bool TryParseDetailedAllowancePages(
+        string sourcePath,
+        string fileName,
+        IReadOnlyList<PageData> pages,
+        IReadOnlyList<SchoolRecord> schools,
+        AuthorityProfile fallbackAuthorityProfile,
+        out HistoricalPdfImportPreview preview)
+    {
+        preview = Invalid(sourcePath, fileName, "Ayrıntılı fatura listesi bulunamadı.");
+        var paymentPages = pages.Where(page =>
+            NormalizeKey(string.Join(" ", page.Lines.Select(line => line.Text)))
+                .Contains("odeme emri belgesi", StringComparison.Ordinal)).ToArray();
+        if (paymentPages.Length == 0
+            || (!TryFindEmbeddedOrderTotals(paymentPages, out var totals)
+                && !TryFindDocumentTotals(paymentPages, out totals)))
+            return false;
+
+        var reportPages = pages.Except(paymentPages)
+            .Where(page => NormalizeKey(string.Join(" ", page.Lines.Select(line => line.Text)))
+                .Contains("ayrintili gonderilen odenek fatura listesi", StringComparison.Ordinal))
+            .ToArray();
+        if (reportPages.Length == 0)
+            return false;
+        var paymentText = string.Join(" ",
+            paymentPages.SelectMany(page => page.Lines).Select(line => line.Text));
+        if (!TryResolveHysNumber(sourcePath, paymentText, out var hysNumber, out _))
+            return false;
+        var invoiceType = FindInvoiceType(paymentText);
+        var reportDate = FindReportDate(paymentPages);
+        if (invoiceType is null || !reportDate.HasValue)
+            return false;
+
+        var entries = new List<(string Name, string Number, string Service,
+            DateTime InvoiceDate, DateTime DueDate, decimal Payable)>();
+        foreach (var page in reportPages)
+        {
+            var header = page.Words.Where(word =>
+                word.Top > page.Height * 0.11d
+                && word.Top < page.Height * 0.20d).ToArray();
+            var invoiceHeaders = header.Where(word =>
+                NormalizeKey(word.Text) == "fatura")
+                .OrderBy(word => word.Left).ToArray();
+            var institutionHeaders = header.Where(word =>
+                NormalizeKey(word.Text) == "kurum")
+                .OrderBy(word => word.Left).ToArray();
+            double HeaderX(string name) => header.FirstOrDefault(word =>
+                NormalizeKey(word.Text) == name)?.Left ?? -1d;
+            if (invoiceHeaders.Length < 2 || institutionHeaders.Length < 2)
+                return false;
+            var institutionX = institutionHeaders[0].Left;
+            var institutionEnd = institutionHeaders[1].Left;
+            var amountX = HeaderX("gonderilen");
+            var amountEnd = HeaderX("tuketim");
+            var invoiceX = invoiceHeaders[0].Left;
+            var invoiceDateX = invoiceHeaders[1].Left;
+            var dueX = HeaderX("son");
+            var serviceX = HeaderX("abone");
+            var serviceEnd = header.Where(word =>
+                    NormalizeKey(word.Text) == "odeme" && word.Left > serviceX)
+                .OrderBy(word => word.Left).FirstOrDefault()?.Left ?? -1d;
+            if (institutionX < 0d || amountX < 0d || amountEnd < amountX
+                || invoiceX < amountEnd || invoiceDateX < invoiceX
+                || dueX < invoiceDateX || serviceX < dueX
+                || serviceEnd < serviceX)
+                return false;
+
+            // Birden fazla fatura sayfası da sıralı olarak desteklenir.
+            var allAnchors = page.Words.Where(word =>
+                    word.Left < institutionX
+                    && word.Top > page.Height * 0.15d
+                    && int.TryParse(word.Text, NumberStyles.None,
+                        CultureInfo.InvariantCulture, out var order)
+                    && order > 0 && order <= 500)
+                .OrderBy(word => word.Top).ToArray();
+            if (allAnchors.Length == 0)
+                return false;
+            for (var i = 0; i < allAnchors.Length; i++)
+            {
+                var anchor = allAnchors[i];
+                var top = anchor.Top - 2d;
+                var bottom = i + 1 < allAnchors.Length
+                    ? allAnchors[i + 1].Top - 2d
+                    : Math.Min(page.Height, anchor.Top + 35d);
+                var words = page.Words.Where(word =>
+                        word.Top >= top && word.Top < bottom)
+                    .ToArray();
+                string Cell(double left, double right) => string.Join(" ",
+                    words.Where(word =>
+                            word.Left >= left - 2d && word.Left < right - 2d)
+                        .OrderBy(word => word.Top).ThenBy(word => word.Left)
+                        .Select(word => word.Text));
+                var name = NormalizeInstitutionCell(
+                    Cell(institutionX, institutionEnd));
+                var amountText = Cell(amountX, amountEnd);
+                var invoiceNumber = Regex.Replace(
+                    Cell(invoiceX, invoiceDateX),
+                    @"[^A-Za-z0-9]", string.Empty);
+                var serviceNumber = DigitsOnly(Cell(serviceX, serviceEnd));
+                if (string.IsNullOrWhiteSpace(name)
+                    || !Regex.IsMatch(invoiceNumber, @"^[A-Z]{3}20\d{11}$",
+                        RegexOptions.CultureInvariant)
+                    || serviceNumber.Length < 6
+                    || !TryDate(Cell(invoiceDateX, dueX), out var invoiceDate)
+                    || !TryDate(Cell(dueX, serviceX), out var dueDate)
+                    || !NumberParser.TryNonNegativeDecimal(
+                        Regex.Match(amountText,
+                            @"(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}",
+                            RegexOptions.CultureInvariant).Value,
+                        out var payable)
+                    || payable <= 0m)
+                    return false;
+                entries.Add((name, invoiceNumber, serviceNumber,
+                    invoiceDate, dueDate, payable));
+            }
+        }
+
+        if (entries.Count == 0
+            || entries.Select(entry => entry.Number).Distinct(StringComparer.Ordinal)
+                .Count() != entries.Count
+            || entries.Sum(entry => entry.Payable) != totals.GrossAmount)
+            return false;
+
+        // Kaynak listesi KDV göstermiyor. Fatura başına %1, %10, %20
+        // adaylarını yalnız ödeme emrindeki damga/net hesabı tek bir
+        // oranı doğruladığında kullan; aksi halde manuel incelemeye bırak.
+        var candidates = new List<(decimal Rate, InvoiceRecord[] Invoices)>();
+        foreach (var rate in CandidateVatRates)
+        {
+            var invoices = new List<InvoiceRecord>();
+            foreach (var entry in entries)
+            {
+                var vat = decimal.Round(
+                    entry.Payable * rate / (1m + rate), 2,
+                    MidpointRounding.AwayFromZero);
+                var calculation = _taxCalculationService.Calculate(
+                    entry.Payable, vat, invoiceType);
+                if (!calculation.IsValid)
+                    break;
+                var byService = schools.Where(school =>
+                    string.Equals(
+                        DigitsOnly(school.GetServiceNumber(invoiceType))
+                            .TrimStart('0'),
+                        entry.Service.TrimStart('0'),
+                        StringComparison.Ordinal)).ToArray();
+                if (byService.Length > 1)
+                    break;
+                var school = byService.SingleOrDefault()
+                    ?? ResolveSchool(entry.Name, schools);
+                var invoice = new InvoiceRecord(
+                    Guid.NewGuid(), reportDate.Value,
+                    school?.InstitutionType ?? InferInstitutionType(entry.Name),
+                    school?.Name ?? entry.Name, school?.Vkn ?? string.Empty,
+                    invoiceType, entry.Number, entry.Service,
+                    entry.InvoiceDate, entry.DueDate, entry.Payable, vat,
+                    calculation.VatBase, calculation.StampDuty,
+                    calculation.PaymentAmount, 0m,
+                    school?.SchoolId ?? Guid.Empty);
+                if (!InvoiceValidationService.Validate(invoice).IsValid)
+                    break;
+                invoices.Add(invoice);
+            }
+            if (invoices.Count == entries.Count
+                && MatchesDocumentTotals(invoices, totals))
+                candidates.Add((rate, invoices.ToArray()));
+        }
+        if (candidates.Count != 1)
+            return false;
+
+        var selected = candidates[0];
+        var authorityProfile = ExtractAuthorityProfile(paymentPages,
+            fallbackAuthorityProfile);
+        var archive = ClosedArchiveSnapshotService.Seal(new ArchivedInvoiceList(
+            Guid.NewGuid(), "DF-PDF-" + hysNumber[4..],
+            reportDate.Value.Date, invoiceType, selected.Invoices,
+            authorityProfile, hysNumber, true, reportDate.Value.Date,
+            hysNumber + ".pdf"));
+        if (!ArchivedInvoiceListValidationService.Validate(archive).IsValid)
+            return false;
+
+        preview = new HistoricalPdfImportPreview(
+            sourcePath, fileName, true,
+            $"{reportPages.Length} ayrıntılı liste sayfasından {entries.Count} fatura "
+            + "okundu. Listede KDV yer almıyor: %" +
+            (selected.Rate * 100m).ToString("0", CultureInfo.InvariantCulture)
+            + " oranıyla hesaplanan KDV, brüt/damga/net ödeme emri toplamıyla "
+            + "eşleşti; KDV kaynaktan okunmuş değildir.",
+            hysNumber, invoiceType, selected.Invoices.Length,
+            selected.Invoices.Sum(invoice => invoice.PaymentAmount), archive);
+        return true;
+    }
+
     private bool TryReadEmbeddedInvoice(
+        IReadOnlyList<PageData> pages,
+        string invoiceType,
+        DateTime reportDate,
+        IReadOnlyList<SchoolRecord> schools,
+        out InvoiceRecord? invoice)
+    {
+        invoice = null;
+        var first = pages[0];
+        var text = string.Join(" ", pages.SelectMany(page => page.Lines)
+            .Select(line => line.Text));
+        var invoiceNumbers = Regex.Matches(
+                text, @"\b[A-Z]{3}20\d{11}\b", RegexOptions.CultureInvariant)
+            .Select(match => match.Value)
+            .Distinct(StringComparer.Ordinal).ToArray();
+        if (invoiceNumbers.Length != 1)
+            return false;
+
+        var headerLine = first.Lines.FirstOrDefault(line =>
+            NormalizeKey(line.Text).Replace(" ", string.Empty, StringComparison.Ordinal)
+                .Contains("faturatarihi", StringComparison.Ordinal)
+            && NormalizeKey(line.Text).Replace(" ", string.Empty, StringComparison.Ordinal)
+                .Contains("odenecektutar", StringComparison.Ordinal));
+        if (headerLine is null)
+            return false;
+        var headerText = string.Join(" ", first.Lines
+            .Where(line => Math.Abs(line.Top - headerLine.Top) < 18d)
+            .OrderBy(line => line.Top).Select(line => line.Text));
+        var dates = Regex.Matches(
+                headerText,
+                @"[0-3]?\d\s*[-./]\s*[01]?\d\s*[-./]\s*20\d{2}",
+                RegexOptions.CultureInvariant)
+            .Select(match => Regex.Replace(match.Value, @"\s+", string.Empty))
+            .Select(value => TryDate(value, out var parsed) ? parsed : (DateTime?)null)
+            .Where(date => date.HasValue).Select(date => date!.Value)
+            .Distinct().ToArray();
+        if (dates.Length != 2
+            || !TryEmbeddedMoney(
+                headerText.Replace(" ", string.Empty, StringComparison.Ordinal),
+                @"[öo]denecektutar", out var payable))
+            return false;
+
+        var vatLines = pages.SelectMany(page => page.Lines)
+            .Where(line => Regex.IsMatch(
+                NormalizeKey(line.Text).Replace(" ", string.Empty, StringComparison.Ordinal),
+                @"(?<!matrahi)kdv\d{1,2}", RegexOptions.CultureInvariant))
+            .ToArray();
+        if (vatLines.Length == 0)
+            return false;
+        var vat = 0m;
+        foreach (var line in vatLines)
+        {
+            var money = Regex.Match(line.Text,
+                @"(?<value>(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})",
+                RegexOptions.CultureInvariant);
+            if (!money.Success
+                || !NumberParser.TryNonNegativeDecimal(
+                    money.Groups["value"].Value, out var amount))
+                return false;
+            vat += amount;
+        }
+        if (vat <= 0m)
+            return false;
+
+        var consumerLine = first.Lines.FirstOrDefault(line =>
+            NormalizeKey(line.Text).Replace(" ", string.Empty, StringComparison.Ordinal)
+                .StartsWith("tuketicino", StringComparison.Ordinal));
+        var serviceNumber = consumerLine is null
+            ? string.Empty
+            : Regex.Match(consumerLine.Text, @"\d{7,20}(?!\d)",
+                RegexOptions.CultureInvariant).Value;
+        if (string.IsNullOrWhiteSpace(serviceNumber))
+            return false;
+
+        var recipientName = ExtractEmbeddedRecipient(first);
+        var byService = schools.Where(school =>
+            string.Equals(
+                DigitsOnly(school.GetServiceNumber(invoiceType))
+                    .TrimStart('0'),
+                serviceNumber.TrimStart('0'),
+                StringComparison.Ordinal)).ToArray();
+        if (byService.Length > 1)
+            return false;
+        var school = byService.SingleOrDefault();
+        var institutionName = school?.Name ?? recipientName;
+        if (string.IsNullOrWhiteSpace(institutionName))
+            return false;
+
+        var calculation = _taxCalculationService.Calculate(payable, vat, invoiceType);
+        if (!calculation.IsValid)
+            return false;
+        var candidate = new InvoiceRecord(
+            Guid.NewGuid(), reportDate,
+            school?.InstitutionType ?? InferInstitutionType(institutionName),
+            institutionName, school?.Vkn ?? string.Empty, invoiceType,
+            invoiceNumbers[0], serviceNumber, dates[0], dates[1],
+            payable, vat, calculation.VatBase, calculation.StampDuty,
+            calculation.PaymentAmount, 0m, school?.SchoolId ?? Guid.Empty);
+        if (!InvoiceValidationService.Validate(candidate).IsValid)
+            return false;
+
+        invoice = candidate;
+        return true;
+    }
+
+    private bool TryReadEmbeddedInvoiceSinglePage(
         PageData page,
         string invoiceType,
         DateTime reportDate,
@@ -473,7 +805,7 @@ internal sealed class LegacyHysPdfImportService
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         return match.Success && DateTime.TryParseExact(
             $"{match.Groups["day"].Value}-{match.Groups["month"].Value}-{match.Groups["year"].Value}",
-            new[] { "d-M-yyyy", "dd-MM-yyyy" },
+            "d-M-yyyy",
             Tr, DateTimeStyles.None, out date);
     }
 
@@ -1929,18 +2261,18 @@ internal sealed class LegacyHysPdfImportService
     private static OcrPageResult TryExtractOcrPages(
         string sourcePath,
         IReadOnlyList<PageData> extractedPages,
-        CancellationToken cancellationToken,
         IProgress<string>? progress,
-        Action onOcrStarted)
+        Action onOcrStarted,
+        CancellationToken cancellationToken)
     {
         try
         {
             return ExtractOcrPagesAsync(
                     sourcePath,
                     extractedPages,
-                    cancellationToken,
                     progress,
-                    onOcrStarted)
+                    onOcrStarted,
+                    cancellationToken)
                 .GetAwaiter()
                 .GetResult();
         }
@@ -1963,9 +2295,9 @@ internal sealed class LegacyHysPdfImportService
     private static async Task<OcrPageResult> ExtractOcrPagesAsync(
         string sourcePath,
         IReadOnlyList<PageData> extractedPages,
-        CancellationToken cancellationToken,
         IProgress<string>? progress,
-        Action onOcrStarted)
+        Action onOcrStarted,
+        CancellationToken cancellationToken)
     {
         var tessdataDirectory = Path.Combine(AppContext.BaseDirectory, "tessdata");
         var tessdataFile = Path.Combine(tessdataDirectory, "tur.traineddata");
