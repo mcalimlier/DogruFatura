@@ -514,3 +514,18 @@ regresyon testi son ödeme tarihi önce gelen faturanın diğer üç faturayla t
 ödeme emri altında doğrulanmasını sınar. Windows ortamında gerçek PDF'nin tek
 HYS kaydına aktarımı henüz doğrulanmamıştır; otomatik test sonucu ve kullanıcının
 önizleme/aktarım sonucu beklenir.
+## Ekran görüntüsüyle doğrulanan ilk ek fatura hatası (23.09.2026)
+
+Kullanıcının gönderdiği arşiv sonuç ekranı `8) HYS-2025-19794703.pdf` için
+**2. sayfadaki ilk faturanın** "Fatura tarihi veya ödenecek tutar başlıktan
+okunamadı" hatasını gösterdi. Kaynak PDF'de ilk fatura tarihi 28-02-2025,
+ödenecek tutar 2.638,50 TL'dir. PDF metin katmanı çıkaran farklı araçların
+satır gruplaması farklı olabildiği için okuyucu artık yalnız sıralı başlık
+metnine güvenmez: aynı başlık bandında tarihi sol sütundan, tutarı orta
+sütundan ayrı okur; her alanda yalnız tek geçerli aday varsa kabul eder.
+Vade için sağ sütun ve başlık çevresindeki diğer tekil tarih kullanılır.
+Arşiv toplamları dört ek faturadan yeniden doğrulanmaya devam eder. Sol/orta
+sütun da belirsizse çıkarılan kısa metin parçası rapora eklenir. İlgili test,
+ilk faturanın tarih ve tutar başlıklarının farklı satırlara taşındığı dokuz
+sayfalık belgeyle tek HYS kaydını sınar. Gerçek Windows aktarımı halen
+uygulamada yeniden doğrulanmalıdır.
