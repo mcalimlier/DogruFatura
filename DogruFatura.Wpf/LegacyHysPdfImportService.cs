@@ -714,7 +714,8 @@ internal sealed class LegacyHysPdfImportService
         var amountColumnText = ColumnText(first.Width * 0.30d, first.Width * 0.64d);
         var dueColumnText = ColumnText(first.Width * 0.62d, first.Width);
         static DateTime[] HeaderDates(string value) => Regex.Matches(
-                value, @"[0-3]?\d\s*[-./]\s*[01]?\d\s*[-./]\s*20\d{2}",
+                value,
+                @"(?<!\d)[0-3]?\d\s*[-./]\s*[01]?\d\s*[-./]?\s*20\d{2}(?!\d)",
                 RegexOptions.CultureInvariant)
             .Select(match => Regex.Replace(match.Value, @"\s+", string.Empty))
             .Select(value => TryDate(value, out var parsed) ? parsed : (DateTime?)null)
@@ -971,7 +972,7 @@ internal sealed class LegacyHysPdfImportService
         date = default;
         var match = Regex.Match(
             text,
-            label + @"\s*:?\s*(?<day>[0-3]?\d)\s*[-./]\s*(?<month>[01]?\d)\s*[-./]\s*(?<year>20\d{2})",
+            label + @"\s*:?\s*(?<day>[0-3]?\d)\s*[-./]\s*(?<month>[01]?\d)\s*[-./]?\s*(?<year>20\d{2})(?!\d)",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         return match.Success && DateTime.TryParseExact(
             $"{match.Groups["day"].Value}-{match.Groups["month"].Value}-{match.Groups["year"].Value}",
