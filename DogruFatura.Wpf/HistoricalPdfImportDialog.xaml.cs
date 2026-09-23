@@ -14,9 +14,10 @@ public partial class HistoricalPdfImportDialog : Window
         DataContext = this;
 
         var validCount = Items.Count(item => item.IsValid);
-        var invalidCount = Items.Count - validCount;
+        var alreadyArchivedCount = Items.Count(item => item.AlreadyArchived);
+        var invalidCount = Items.Count - validCount - alreadyArchivedCount;
         var ocrCount = Items.Count(item => item.OcrAttempted);
-        SummaryText.Text = $"{Items.Count} dosya • {validCount} eklemeye hazır • {invalidCount} eklenmeyecek • {ocrCount} OCR denendi";
+        SummaryText.Text = $"{Items.Count} dosya • {validCount} eklemeye hazır • {alreadyArchivedCount} zaten arşivde • {invalidCount} inceleme gerekiyor • {ocrCount} OCR denendi";
         ConfirmButton.IsEnabled = validCount > 0;
         ConfirmButton.Content = $"{validCount} DOSYAYI EKLE";
         PreviewGrid.SelectedItem = Items.FirstOrDefault();
