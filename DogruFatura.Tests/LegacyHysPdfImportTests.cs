@@ -217,8 +217,10 @@ public sealed class LegacyHysPdfImportTests
         Assert.Null(preview.Archive);
     }
 
-    [Fact]
-    public void FourTwoPageInvoicesStayUnderOnePaymentOrder()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void FourTwoPageInvoicesStayUnderOnePaymentOrder(bool splitHeading)
     {
         using var temp = new TempFile("8) HYS-2025-19794703.pdf");
         using (var document = new PdfDocument())
@@ -232,12 +234,20 @@ public sealed class LegacyHysPdfImportTests
                 g.DrawString("Belge Numarası HYS-2025-19794703", font, XBrushes.Black, 40, 75);
                 g.DrawString("Ödeme Emri Alt Türü Elektrik Alımı", font, XBrushes.Black, 40, 95);
                 g.DrawString("Ödeme Emri Detayı", font, XBrushes.Black, 40, 310);
-                g.DrawString("Ödeme Emri Brüt Tutar Kesinti Toplamı Net Tutar",
-                    font, XBrushes.Black, 40, 400);
-                g.DrawString("Toplam Tutarı İndirim Artırım",
-                    font, XBrushes.Black, 40, 410);
-                g.DrawString("5.430,50 43,53 0,00 5.386,97 0,00 5.386,97",
-                    font, XBrushes.Black, 40, 420);
+                if (splitHeading)
+                {
+                    g.DrawString("Ödeme Emri Brüt Tutar Kesinti Toplamı Net Tutar",
+                        font, XBrushes.Black, 40, 400);
+                    g.DrawString("Toplam Tutarı İndirim Artırım",
+                        font, XBrushes.Black, 40, 410);
+                    g.DrawString("5.430,50 43,53 0,00 5.386,97 0,00 5.386,97",
+                        font, XBrushes.Black, 40, 420);
+                }
+                else
+                {
+                    g.DrawString("ÖDEME EMRİ TOPLAM TUTARI 5.430,50 43,53 0,00 5.386,97 0,00 5.386,97",
+                        font, XBrushes.Black, 40, 400);
+                }
             }
             var items = new[]
             {
