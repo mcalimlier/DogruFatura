@@ -165,7 +165,7 @@ public partial class MainWindow
 
                 cancellation.Token.ThrowIfCancellationRequested();
                 buffer[index] = preview;
-                if (!preview.IsValid)
+                if (!preview.IsValid && !preview.OcrSkipped)
                     strongCandidateIndexes.Add(index);
 
                 SetArchiveStatus(
