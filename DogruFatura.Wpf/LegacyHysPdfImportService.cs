@@ -142,8 +142,17 @@ internal sealed class LegacyHysPdfImportService
                 usedOcr: false,
                 out var extractedPreview);
 
-            if (extractedWasParsed
-                && (extractedPreview.IsValid || scanMode == HistoricalPdfImportScanMode.Automatic))
+            if (extractedWasParsed && extractedPreview.IsValid)
+                return extractedPreview;
+
+            // Bazı HYS dosyalarında fatura listesi tablosu yerine e-Fatura eki vardır.
+            // Metin katmanı okunuyorsa gerçek ödeme emri toplamıyla ek fatura eşleştirilir.
+            if (TryParseEmbeddedInvoicePages(
+                    sourcePath, fileName, extractedPages, schools,
+                    fallbackAuthorityProfile, out var embeddedPreview))
+                return embeddedPreview;
+
+            if (extractedWasParsed && scanMode == HistoricalPdfImportScanMode.Automatic)
                 return extractedPreview;
 
             if (scanMode == HistoricalPdfImportScanMode.Fast)
@@ -159,13 +168,16 @@ internal sealed class LegacyHysPdfImportService
 
             cancellationToken.ThrowIfCancellationRequested();
             progress?.Report("Eski/bozuk PDF için OCR hazırlanıyor");
-            ocrAttempted = true;
             var ocrResult = TryExtractOcrPages(
                 sourcePath,
                 extractedPages,
                 cancellationToken,
-                progress);
+                progress,
+                () => ocrAttempted = true);
+            ocrAttempted |= ocrResult.OcrRan;
+            var ocrSkipped = !ocrAttempted && string.IsNullOrWhiteSpace(ocrResult.ErrorMessage);
             var combinedPages = MergePages(extractedPages, ocrResult.Pages);
+            HistoricalPdfImportPreview? ocrPreview = null;
             if (combinedPages.Count > 0
                 && TryParsePages(
                     sourcePath,
@@ -174,28 +186,45 @@ internal sealed class LegacyHysPdfImportService
                     schools,
                     fallbackAuthorityProfile,
                     usedOcr: true,
-                    out var ocrPreview))
-                return ocrPreview with { OcrAttempted = true };
+                    out var parsedOcrPreview))
+            {
+                ocrPreview = parsedOcrPreview;
+                if (ocrPreview.IsValid)
+                    return ocrPreview with { OcrAttempted = ocrAttempted, OcrSkipped = ocrSkipped };
+            }
+
+            if (TryParseEmbeddedInvoicePages(
+                    sourcePath, fileName, combinedPages, schools,
+                    fallbackAuthorityProfile, out var ocrEmbeddedPreview))
+                return ocrEmbeddedPreview with { OcrAttempted = ocrAttempted, OcrSkipped = ocrSkipped };
+
+            if (ocrPreview is not null)
+                return ocrPreview with { OcrAttempted = ocrAttempted, OcrSkipped = ocrSkipped };
 
             if (extractedWasParsed)
             {
                 var ocrNote = string.IsNullOrWhiteSpace(ocrResult.ErrorMessage)
-                    ? " Güçlü OCR denendi ancak sonuç doğrulanamadı."
-                    : " Güçlü OCR denendi ancak sonuç doğrulanamadı: " + ocrResult.ErrorMessage;
+                    ? ocrAttempted
+                        ? " Güçlü OCR denendi ancak sonuç doğrulanamadı."
+                        : " Güçlü taramada OCR uygulanmadı; metin sayfaları atlandı."
+                    : " Güçlü OCR yolu tamamlanamadı: " + ocrResult.ErrorMessage;
                 return extractedPreview.WithError(extractedPreview.Status + ocrNote)
-                    with { OcrAttempted = true };
+                    with { OcrAttempted = ocrAttempted, OcrSkipped = ocrSkipped };
             }
 
-            var reason = string.IsNullOrWhiteSpace(ocrResult.ErrorMessage)
-                ? "Belgede tanınan fatura tablosu bulunamadı."
-                : "Belgede tanınan fatura tablosu bulunamadı. OCR: " + ocrResult.ErrorMessage;
-            return Invalid(
-                sourcePath,
-                fileName,
-                reason
-                + " Beklenen temel alanlar: Okul/Kurum Adı, Hizmet/Abone No, Fatura No, "
-                + "Fatura Tarihi, Son Ödeme/Vade Tarihi, Tutar, KDV, Damga Vergisi ve Ödeme/Net Tutar.")
-                with { OcrAttempted = true };
+            var hasOrder = extractedPages.Any(page =>
+                NormalizeKey(string.Join(" ", page.Lines.Select(line => line.Text)))
+                    .Contains("odeme emri belgesi", StringComparison.Ordinal));
+            var reason = !hasOrder
+                ? "PDF içinde ödeme emri belgesi bulunamadı. Yalnız e-Fatura üzerinden "
+                  + "resmî HYS ödeme emri veya kapalı arşiv kaydı oluşturulamaz."
+                : "Ödeme emriyle eşleşen doğrulanabilir fatura listesi veya e-Fatura eki bulunamadı.";
+            if (!string.IsNullOrWhiteSpace(ocrResult.ErrorMessage))
+                reason += " OCR: " + ocrResult.ErrorMessage;
+            else if (!ocrAttempted)
+                reason += " Görüntü OCR'ı uygulanmadı; metin sayfaları atlandı.";
+            return Invalid(sourcePath, fileName, reason)
+                with { OcrAttempted = ocrAttempted, OcrSkipped = ocrSkipped };
         }
         catch (OperationCanceledException)
         {
@@ -206,6 +235,247 @@ internal sealed class LegacyHysPdfImportService
             return Invalid(sourcePath, fileName, "Eski ödeme emri PDF'si okunamadı: " + ex.Message)
                 with { OcrAttempted = ocrAttempted };
         }
+    }
+
+    // HYS ödeme emrinde satır tablosu yoksa, e-Fatura ekindeki her belgeyi
+    // mevcut ödeme emri toplamıyla doğrulayarak iç arşiv kaydına dönüştürür.
+    // Resmî ödeme emri olmayan yalnız faturalar bu yoldan kapalı arşive alınmaz.
+    private static bool TryFindEmbeddedOrderTotals(
+        IReadOnlyList<PageData> paymentPages,
+        out DocumentTotals totals)
+    {
+        totals = default!;
+        foreach (var page in paymentPages)
+        {
+            var heading = page.Lines.FirstOrDefault(line =>
+                line.Top > page.Height * 0.30d
+                && NormalizeKey(line.Text).Contains("odeme emri", StringComparison.Ordinal));
+            if (heading is null)
+                continue;
+
+            foreach (var line in page.Lines.Where(line =>
+                         line.Top >= heading.Top
+                         && line.Top <= heading.Top + 40d))
+            {
+                var amounts = new List<decimal>();
+                foreach (Match match in Regex.Matches(
+                             line.Text,
+                             @"(?<!\d)(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}(?!\d)",
+                             RegexOptions.CultureInvariant))
+                {
+                    if (NumberParser.TryNonNegativeDecimal(match.Value, out var amount))
+                        amounts.Add(amount);
+                }
+
+                if (amounts.Count < 4)
+                    continue;
+                var gross = amounts[0];
+                var stamp = amounts[1];
+                var payment = amounts[^1];
+                if (gross <= 0m || stamp <= 0m || stamp >= gross * 0.1m
+                    || decimal.Round(gross - stamp, 2, MidpointRounding.AwayFromZero)
+                       != payment)
+                    continue;
+
+                totals = new DocumentTotals(gross, stamp, payment);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryParseEmbeddedInvoicePages(
+        string sourcePath,
+        string fileName,
+        IReadOnlyList<PageData> pages,
+        IReadOnlyList<SchoolRecord> schools,
+        AuthorityProfile fallbackAuthorityProfile,
+        out HistoricalPdfImportPreview preview)
+    {
+        preview = Invalid(sourcePath, fileName, "Ek fatura bulunamadı.");
+        var paymentPages = pages
+            .Where(page => NormalizeKey(string.Join(" ", page.Lines.Select(line => line.Text)))
+                .Contains("odeme emri belgesi", StringComparison.Ordinal))
+            .ToArray();
+        if (paymentPages.Length == 0
+            || (!TryFindDocumentTotals(paymentPages, out var totals)
+                && !TryFindEmbeddedOrderTotals(paymentPages, out totals)))
+            return false;
+
+        var paymentText = string.Join(" ",
+            paymentPages.SelectMany(page => page.Lines).Select(line => line.Text));
+        if (!TryResolveHysNumber(sourcePath, paymentText, out var hysNumber, out _))
+            return false;
+
+        var invoiceType = FindInvoiceType(paymentText);
+        var reportDate = FindReportDate(paymentPages);
+        if (invoiceType is null || !reportDate.HasValue)
+            return false;
+
+        var invoices = new List<InvoiceRecord>();
+        foreach (var page in pages.Except(paymentPages))
+        {
+            if (!TryReadEmbeddedInvoice(
+                    page, invoiceType, reportDate.Value, schools, out var invoice))
+            {
+                // Görünen ama eksik okunan fatura sayfası sessizce atlanamaz.
+                var pageText = NormalizeKey(string.Join(" ",
+                    page.Lines.Select(line => line.Text)));
+                if (pageText.Contains("fatura no", StringComparison.Ordinal)
+                    || pageText.Contains("e fatura", StringComparison.Ordinal))
+                    return false;
+                continue;
+            }
+
+            invoices.Add(invoice!);
+        }
+
+        if (invoices.Count == 0 || !MatchesDocumentTotals(invoices, totals))
+            return false;
+
+        var authorityProfile = ExtractAuthorityProfile(paymentPages, fallbackAuthorityProfile);
+        var archive = ClosedArchiveSnapshotService.Seal(new ArchivedInvoiceList(
+            Guid.NewGuid(),
+            "DF-PDF-" + hysNumber[4..],
+            reportDate.Value.Date,
+            invoiceType,
+            invoices,
+            authorityProfile,
+            hysNumber,
+            true,
+            reportDate.Value.Date,
+            hysNumber + ".pdf"));
+        var validation = ArchivedInvoiceListValidationService.Validate(archive);
+        if (!validation.IsValid)
+            return false;
+
+        preview = new HistoricalPdfImportPreview(
+            sourcePath, fileName, true,
+            $"{paymentPages.Length} ödeme emri sayfası ve {invoices.Count} e-Fatura eki doğrulandı; "
+            + "brüt, damga vergisi ve net tutar resmî ödeme emri toplamlarıyla eşleşti.",
+            hysNumber, invoiceType, invoices.Count,
+            invoices.Sum(invoice => invoice.PaymentAmount), archive);
+        return true;
+    }
+
+    private bool TryReadEmbeddedInvoice(
+        PageData page,
+        string invoiceType,
+        DateTime reportDate,
+        IReadOnlyList<SchoolRecord> schools,
+        out InvoiceRecord? invoice)
+    {
+        invoice = null;
+        var text = string.Join(" ", page.Lines.Select(line => line.Text));
+        var invoiceNumber = Regex.Match(
+            text, @"\bfatura\s+no\s*:\s*(?<value>[A-Z0-9-]{8,50})",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)
+            .Groups["value"].Value;
+        var serviceNumber = Regex.Match(
+            text, @"s[öo]zle[şs]me\s+hesap\s+no\s*:\s*(?<value>\d{4,50})",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)
+            .Groups["value"].Value;
+        if (string.IsNullOrWhiteSpace(serviceNumber))
+        {
+            serviceNumber = Regex.Match(
+                text, @"t[üu]ket[iİı]ci\s+no\s*:\s*(?<value>\d{4,50})",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)
+                .Groups["value"].Value;
+        }
+
+        if (string.IsNullOrWhiteSpace(invoiceNumber)
+            || string.IsNullOrWhiteSpace(serviceNumber)
+            || !TryEmbeddedDate(text, @"fatura\s+tar[iİı]h[iİı]", out var invoiceDate)
+            || !TryEmbeddedDate(text, @"son\s+[öo]deme\s+tar[iİı]h[iİı]", out var dueDate)
+            || !TryEmbeddedMoney(text, @"[öo]denecek\s+tutar", out var payable)
+            || !TryEmbeddedMoney(text, @"(?:elektr[iİı]k\s+)?kdv\s*\(\s*%\s*\d{1,2}\s*\)", out var vat))
+            return false;
+
+        var recipientName = ExtractEmbeddedRecipient(page);
+        var matchedSchools = schools
+            .Where(school => string.Equals(
+                school.GetServiceNumber(invoiceType),
+                serviceNumber,
+                StringComparison.Ordinal))
+            .ToArray();
+        if (matchedSchools.Length > 1)
+            return false;
+        var school = matchedSchools.SingleOrDefault();
+        var institutionName = school?.Name ?? recipientName;
+        if (string.IsNullOrWhiteSpace(institutionName))
+            return false;
+
+        var calculation = _taxCalculationService.Calculate(payable, vat, invoiceType);
+        if (!calculation.IsValid)
+            return false;
+
+        var candidate = new InvoiceRecord(
+            Guid.NewGuid(), reportDate, school?.InstitutionType
+                ?? InferInstitutionType(institutionName),
+            institutionName, school?.Vkn ?? string.Empty, invoiceType,
+            invoiceNumber, serviceNumber, invoiceDate, dueDate,
+            payable, vat, calculation.VatBase, calculation.StampDuty,
+            calculation.PaymentAmount, 0m, school?.SchoolId ?? Guid.Empty);
+        if (!InvoiceValidationService.Validate(candidate).IsValid)
+            return false;
+
+        invoice = candidate;
+        return true;
+    }
+
+    private static string ExtractEmbeddedRecipient(PageData page)
+    {
+        var anchor = page.Words.FirstOrDefault(word =>
+            NormalizeKey(word.Text) == "sayin");
+        if (anchor is null)
+            return string.Empty;
+
+        var following = page.Words
+            .Where(word => word.Left >= anchor.Left - 2d
+                && word.Top > anchor.Top + 2d
+                && word.Top < anchor.Top + 25d)
+            .ToArray();
+        if (following.Length == 0)
+            return string.Empty;
+
+        var nameTop = following.Min(word => word.Top);
+        return string.Join(" ", following
+            .Where(word => Math.Abs(word.Top - nameTop) < 3d)
+            .OrderBy(word => word.Left)
+            .Select(word => word.Text)).Trim();
+    }
+
+    private static bool TryEmbeddedDate(
+        string text,
+        string label,
+        out DateTime date)
+    {
+        date = default;
+        var match = Regex.Match(
+            text,
+            label + @"\s*:?\s*(?<day>[0-3]?\d)\s*[-./]\s*(?<month>[01]?\d)\s*[-./]\s*(?<year>20\d{2})",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        return match.Success && DateTime.TryParseExact(
+            $"{match.Groups["day"].Value}-{match.Groups["month"].Value}-{match.Groups["year"].Value}",
+            new[] { "d-M-yyyy", "dd-MM-yyyy" },
+            Tr, DateTimeStyles.None, out date);
+    }
+
+    private static bool TryEmbeddedMoney(
+        string text,
+        string label,
+        out decimal amount)
+    {
+        amount = 0m;
+        var match = Regex.Match(
+            text,
+            label + @"\s*:?\s*(?<amount>(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        return match.Success
+            && NumberParser.TryNonNegativeDecimal(
+                match.Groups["amount"].Value, out amount)
+            && amount > 0m;
     }
 
     private static List<PageData> MergePages(
@@ -1645,7 +1915,8 @@ internal sealed class LegacyHysPdfImportService
         string sourcePath,
         IReadOnlyList<PageData> extractedPages,
         CancellationToken cancellationToken,
-        IProgress<string>? progress)
+        IProgress<string>? progress,
+        Action onOcrStarted)
     {
         try
         {
@@ -1653,7 +1924,8 @@ internal sealed class LegacyHysPdfImportService
                     sourcePath,
                     extractedPages,
                     cancellationToken,
-                    progress)
+                    progress,
+                    onOcrStarted)
                 .GetAwaiter()
                 .GetResult();
         }
@@ -1665,11 +1937,11 @@ internal sealed class LegacyHysPdfImportService
         {
             return new OcrPageResult(
                 Array.Empty<PageData>(),
-                "OCR motorunun yerel bileşenleri yüklenemedi: " + ex.Message);
+                "OCR motorunun yerel bileşenleri yüklenemedi: " + ex.Message, false);
         }
         catch (Exception ex)
         {
-            return new OcrPageResult(Array.Empty<PageData>(), ex.Message);
+            return new OcrPageResult(Array.Empty<PageData>(), ex.Message, false);
         }
     }
 
@@ -1677,7 +1949,8 @@ internal sealed class LegacyHysPdfImportService
         string sourcePath,
         IReadOnlyList<PageData> extractedPages,
         CancellationToken cancellationToken,
-        IProgress<string>? progress)
+        IProgress<string>? progress,
+        Action onOcrStarted)
     {
         var tessdataDirectory = Path.Combine(AppContext.BaseDirectory, "tessdata");
         var tessdataFile = Path.Combine(tessdataDirectory, "tur.traineddata");
@@ -1685,7 +1958,7 @@ internal sealed class LegacyHysPdfImportService
         {
             return new OcrPageResult(
                 Array.Empty<PageData>(),
-                "Türkçe OCR modeli kurulumda bulunamadı: " + tessdataFile);
+                "Türkçe OCR modeli kurulumda bulunamadı: " + tessdataFile, false);
         }
 
         using var engine = new TesseractEngine(
@@ -1696,6 +1969,7 @@ internal sealed class LegacyHysPdfImportService
         var file = await StorageFile.GetFileFromPathAsync(sourcePath);
         var document = await Windows.Data.Pdf.PdfDocument.LoadFromFileAsync(file);
         var pages = new List<PageData>((int)document.PageCount);
+        var ocrRan = false;
         var extractedByNumber = extractedPages.ToDictionary(page => page.PageNumber);
 
         for (uint pageIndex = 0; pageIndex < document.PageCount; pageIndex++)
@@ -1704,9 +1978,17 @@ internal sealed class LegacyHysPdfImportService
             var pageTimer = Stopwatch.StartNew();
             var pageNumber = checked((int)pageIndex + 1);
             extractedByNumber.TryGetValue(pageNumber, out var extractedPage);
-            if (extractedPage is not null && SemanticDocumentScore(extractedPage) >= 2)
+            // Tanıdık birkaç sözcük fatura tablosunun veya ek faturanın
+            // okunabildiğini kanıtlamaz. Yalnız toplamları okunan ödeme emri
+            // sayfasını atla; eksik fatura sayfasını hedefli OCR'a bırak.
+            if (extractedPage is not null
+                && NormalizeKey(string.Join(" ",
+                    extractedPage.Lines.Select(line => line.Text)))
+                    .Contains("odeme emri belgesi", StringComparison.Ordinal)
+                && (TryFindDocumentTotals(new[] { extractedPage }, out _)
+                    || TryFindEmbeddedOrderTotals(new[] { extractedPage }, out _)))
             {
-                progress?.Report($"OCR {pageNumber}/{document.PageCount}: okunabilir belge sayfası atlandı");
+                progress?.Report($"OCR {pageNumber}/{document.PageCount}: ödeme emri toplamları metinden doğrulandı; sayfa atlandı");
                 continue;
             }
 
@@ -1721,6 +2003,8 @@ internal sealed class LegacyHysPdfImportService
                 cancellationToken.ThrowIfCancellationRequested();
                 using var probeImage = TesseractPix.LoadFromMemory(probePngBytes);
                 using var probeGray = probeImage.ConvertRGBToGray();
+                ocrRan = true;
+                onOcrStarted();
                 probe = DetectBestOcrOrientation(
                     engine,
                     probeGray,
@@ -1790,7 +2074,7 @@ internal sealed class LegacyHysPdfImportService
             }
         }
 
-        return new OcrPageResult(pages, string.Empty);
+        return new OcrPageResult(pages, string.Empty, ocrRan);
     }
 
     private static async Task<PageData?> ProcessOcrAtWidthAsync(
@@ -2883,5 +3167,6 @@ internal sealed class LegacyHysPdfImportService
 
     private sealed record OcrPageResult(
         IReadOnlyList<PageData> Pages,
-        string ErrorMessage);
+        string ErrorMessage,
+        bool OcrRan);
 }
