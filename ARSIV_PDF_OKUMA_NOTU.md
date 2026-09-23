@@ -568,3 +568,107 @@ teyit edilmemiştir. Kaynak PDF metni bağımsız olarak dört fatura,
 olarak doğrulanmıştı. Windows CI derleme/test adımını başlatmadığından
 otomatik test sonucu ayrıca mevcut değildir. Özgün PDF'nin içindeki resmî
 ödeme emri kullanılır; yeni resmî belge düzenlenmez.
+
+
+## 23.09.2026 — 2024 HYS 9, 16 ve 23 için hedefli arşiv düzeltmesi
+
+Kullanıcı tarafından arşive eklenemediği bildirilen üç gerçek 2024 HYS PDF'si
+sayfa görüntüsü ve metin katmanı birlikte incelendi.
+
+### 9) HYS-2024-10150517
+
+- 1. sayfa resmî ödeme emri: 1.261,25 TL brüt, 10,27 TL damga,
+  1.250,98 TL net.
+- 2. sayfa görüntü tabanlı `BUDAKLAR İLKOKULU GEÇMİŞ DÖNEM ADSL FATURA
+  BİLGİLERİ` tablosu ve 30 satır içeriyor.
+- 30 satırdaki `TUTAR` toplamı 1.261,25 TL ile ödeme emri brüt toplamına
+  bire bir eşleşiyor.
+- Kaynak tabloda satır düzeyinde **fatura tarihi, KDV ve damga vergisi yok**;
+  yalnız hizmet no, fatura no, dönem, son ödeme tarihi ve tutar var.
+
+Bu nedenle eksik alanları tahmin ederek normal `InvoiceRecord` üretmek yerine
+yeni **kaynak-delil arşivi** yolu eklendi. Satırlar, resmî HYS aggregate
+brüt/damga/net toplamları ve özgün PDF SHA-256 ile mühürlenir. Bu kayıt fatura
+düzenlemeye geri açılamaz ve KDV/damga istatistiklerine sokulmaz; çünkü kaynakta
+olmayan vergisel alanlar uydurulmaz. Arşiv listesinde satır sayısı ve resmî net
+toplam görünür, aktarım raporunda her kaynak satır yazılır.
+
+Ayrıca görüntü-dominant sayfa kare/dikey olduğunda eski özel landscape OCR yolu
+boş sonuç döndürebiliyordu. Kare/dikey sayfalarda artık tüm sayfa genel OCR
+çalışır. Bu düzeltme gerçek 9 numaralı PDF'nin 2. sayfasını güçlü taramada
+okuyabilmek için gereklidir.
+
+### 16) HYS-2024-11293464
+
+2. sayfa okunabilir metin katmanlı yatay dört satırlı internet fatura
+tablosudur. Satırlar:
+
+- 410,00 / KDV 53,85 / damga 3,38 / net 406,62
+- 350,00 / KDV 53,85 / damga 2,81 / net 347,19
+- 350,00 / KDV 53,85 / damga 2,81 / net 347,19
+- 320,00 / KDV 49,23 / damga 2,57 / net 317,43
+
+Toplam 1.430,00 TL brüt, 210,78 TL KDV, 11,56 TL damga ve 1.418,44 TL
+nettir. Mevcut semantik tablo okuyucusunun bu düzeni hızlı metin taramasında
+okumasını kilitleyen gerçek-yerleşim regresyon testi eklendi. OCR
+gerekmemelidir.
+
+### 23) HYS-2024-13678296
+
+Ödeme emri 820,00 TL brüt, 6,67 TL damga ve 813,33 TL nettir. 2. ve 3.
+sayfalar iki ayrı TTNET e-Faturadır; her biri 410,00 TL ve 58,46 TL KDV
+taşır.
+
+Eski embedded-fatura okuyucusu bu TTNET sayfalarını birkaç nedenle
+tanımıyordu:
+
+- fatura numarası `EAB...` gibi üç harfle değil yalnız rakamla
+  (`2024066725124`, `2024055390697`) yazılıyor,
+- etiket `Fatura Tarih` biçiminde son `i` olmadan gelebiliyor,
+- hizmet için `HİZMET NO` yanında arşiv eşleştirmesinde kullanılacak
+  `HESAP NUMARASI` da var,
+- KDV satırı `KDV %20 (Matrah ...) 58,46` biçiminde,
+- alıcı adı `SAYIN` ile aynı satırda.
+
+Okuyucu bu varyantların tamamını destekleyecek şekilde genişletildi. Kayıtlı
+kurum hizmet numarasıyla tekil eşleşiyorsa doğru hesap numarası seçilir; iki
+fatura tek `HYS-202413678296` kapalı arşiv kaydında ödeme emri toplamıyla
+doğrulanır.
+
+### Veri modeli ve geriye uyumluluk
+
+`LegacyInvoiceEvidenceRecord` ve `ArchivedInvoiceList` içinde opsiyonel
+kaynak-delil alanları eklendi. Normal arşivlerin eski kapalı snapshot SHA-256
+şeması aynen korunur; mevcut mühürler bu değişiklik yüzünden bozulmaz.
+Kaynak-delil arşivinin özgün PDF'si kaybolursa, eksik vergisel alanlardan yapay
+PDF üretmek yerine eşitleme açık hata verir.
+
+### Regresyon testleri
+
+Üç yeni gerçek-yapı testi eklendi:
+
+1. 2024 temiz dört satırlı internet özet tablosu,
+2. sayısal TTNET fatura numaralı iki e-Faturanın tek HYS altında birleşmesi,
+3. KDV/fatura tarihi olmayan geçmiş ADSL listesinin kaynak-delil arşivi olarak
+   saklanması ve hiçbir vergi alanının uydurulmaması.
+
+Önceki 148 testlik taban korunuyorsa yeni beklenen toplam **151 test**tir.
+Bu çalışma ortamında .NET SDK/Windows OCR bulunmadığından derleme, xUnit ve
+gerçek 9/16/23 uygulama smoke sonucu henüz doğrulanmadı.
+
+İlgili commit zinciri:
+`f205fe57`, `d45a8d72`, `11332cc3`, `5f0c4088`, `f0e0129f`,
+`75c63e13`, `806481c8`, `d7902359`, `246131b9`, `ea7213e4`,
+`1607e9e3`.
+
+Sonraki Windows kapısı:
+
+1. `fix/archive-import-legacy-hys` dalını çek.
+2. `TESTLERI_CALISTIR.bat` çalıştır; hedef 151/151, 0 hata, 0 uyarı.
+3. `DERLE_CALISTIR.bat`.
+4. Önce 16 numarayı tek başına seç: hızlı taramada 4 fatura / 1.418,44 TL net.
+5. 23 numarayı seç: hızlı taramada 2 fatura / 813,33 TL net.
+6. 9 numarayı seç: güçlü tarama çalışmalı; 30 kaynak satırı /
+   1.250,98 TL net ile **kaynak-delil arşivi** hazırlanmalı.
+7. Üçünü onayladıktan sonra `Arsiv_Aktarim_Raporu_*.txt` içinde 9 numara için
+   kaynak-delil notu, 16/23 için normal fatura ayrıntıları görülmeli.
