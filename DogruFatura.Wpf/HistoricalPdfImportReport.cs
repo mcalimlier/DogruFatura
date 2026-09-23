@@ -20,16 +20,17 @@ public static class HistoricalPdfImportReport
         var importedPaths = imported.Select(item => item.SourcePath)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var addedCount = previews.Count(item => item.IsValid && importedPaths.Contains(item.SourcePath));
-        var failed = previews.Where(item => !item.IsValid).ToArray();
-        var pendingCount = previews.Count - addedCount - failed.Length;
+        var alreadyArchived = previews.Where(item => item.AlreadyArchived).ToArray();
+        var failed = previews.Where(item => !item.IsValid && !item.AlreadyArchived).ToArray();
+        var pendingCount = previews.Count - addedCount - alreadyArchived.Length - failed.Length;
         var lines = new List<string>
         {
             "DOĞRUFATURA - ARŞİV PDF AKTARIM RAPORU",
             "Tarih: " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
             "İşlem sonucu: " + Clean(outcome),
-            $"Seçilen: {previews.Count} | Eklenen: {addedCount} | Eklenemeyen: {failed.Length} | Eklenmesi bekleyen/vazgeçilen: {pendingCount}",
+            $"Seçilen: {previews.Count} | Eklenen: {addedCount} | Zaten arşivde: {alreadyArchived.Length} | İnceleme gereken: {failed.Length} | Eklenmesi bekleyen/vazgeçilen: {pendingCount}",
             "",
-            "EKLENEMEYEN DOSYALAR"
+            "İNCELEME GEREKEN DOSYALAR"
         };
 
         if (failed.Length == 0)
@@ -43,10 +44,18 @@ public static class HistoricalPdfImportReport
         }
 
         lines.Add("");
+        lines.Add("ZATEN ARŞİVDE OLAN DOSYALAR");
+        if (alreadyArchived.Length == 0)
+            lines.Add("Yok.");
+        foreach (var item in alreadyArchived)
+            lines.Add("- " + Clean(item.FileName) + " | " + Clean(item.Status));
+
+        lines.Add("");
         lines.Add("TÜM SEÇİLEN DOSYALAR");
         foreach (var item in previews)
         {
-            var result = !item.IsValid ? "EKLENEMEDİ"
+            var result = item.AlreadyArchived ? "ZATEN ARŞİVDE"
+                : !item.IsValid ? "İNCELEME GEREKİYOR"
                 : importedPaths.Contains(item.SourcePath) ? "EKLENDİ"
                 : "EKLENMEDİ (onay verilmedi veya işlem geri alındı)";
             lines.Add("- " + Clean(item.FileName) + " | " + result);
