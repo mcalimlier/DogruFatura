@@ -29,6 +29,7 @@ public sealed record HistoricalPdfImportPreview(
     ArchivedInvoiceList? Archive)
 {
     public bool OcrAttempted { get; init; }
+    public bool OcrSkipped { get; init; }
     public bool AlreadyArchived { get; init; }
     public string ScanDetail { get; init; } = "Hızlı metin taraması";
 
