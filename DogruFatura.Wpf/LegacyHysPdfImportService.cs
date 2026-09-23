@@ -317,8 +317,8 @@ internal sealed class LegacyHysPdfImportService
                 .Contains("odeme emri belgesi", StringComparison.Ordinal))
             .ToArray();
         if (paymentPages.Length == 0
-            || (!TryFindDocumentTotals(paymentPages, out var totals)
-                && !TryFindEmbeddedOrderTotals(paymentPages, out totals)))
+            || (!TryFindEmbeddedOrderTotals(paymentPages, out var totals)
+                && !TryFindDocumentTotals(paymentPages, out totals)))
             return false;
 
         var paymentText = string.Join(" ",
@@ -890,12 +890,14 @@ internal sealed class LegacyHysPdfImportService
                 if (gross <= 0m)
                     continue;
 
-                var stamp = values
-                    .Skip(1)
-                    .FirstOrDefault(value => value > 0m && value < gross * 0.1m);
                 var payment = values
                     .Where(value => value > gross * 0.5m && value <= gross)
                     .LastOrDefault();
+                var stamp = values
+                    .Skip(1)
+                    .FirstOrDefault(value => value > 0m && value < gross * 0.1m
+                        && decimal.Round(gross - value, 2, MidpointRounding.AwayFromZero)
+                           == payment);
 
                 if (stamp <= 0m || payment <= 0m)
                     continue;
