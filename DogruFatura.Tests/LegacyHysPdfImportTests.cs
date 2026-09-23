@@ -217,6 +217,164 @@ public sealed class LegacyHysPdfImportTests
         Assert.Null(preview.Archive);
     }
 
+    [Fact]
+    public void FourTwoPageInvoicesStayUnderOnePaymentOrder()
+    {
+        using var temp = new TempFile("8) HYS-2025-19794703.pdf");
+        using (var document = new PdfDocument())
+        {
+            var font = new XFont("Segoe UI", 9, XFontStyleEx.Regular);
+            var order = document.AddPage();
+            using (var g = XGraphics.FromPdfPage(order))
+            {
+                g.DrawString("ÖDEME EMRİ BELGESİ", font, XBrushes.Black, 40, 35);
+                g.DrawString("Düzenleme Tarihi 04-03-2025", font, XBrushes.Black, 40, 55);
+                g.DrawString("Belge Numarası HYS-2025-19794703", font, XBrushes.Black, 40, 75);
+                g.DrawString("Ödeme Emri Alt Türü Elektrik Alımı", font, XBrushes.Black, 40, 95);
+                g.DrawString("ÖDEME EMRİ TOPLAM TUTARI 5.430,50 43,53 0,00 5.386,97 0,00 5.386,97",
+                    font, XBrushes.Black, 40, 400);
+            }
+            var items = new[]
+            {
+                ("EAB2025000055348", "00002604070", "2.638,50", "439,75", "Eldeniz İlkokulu"),
+                ("AAB2025000996266", "00002200440", "872,20", "79,30", "Okul Lojmanı"),
+                ("AAB2025000996213", "00002201830", "1.733,70", "288,94", "Erice İlkokulu"),
+                ("AAB2025001051104", "00002700660", "186,10", "31,01", "Hanoğlu İlkokulu")
+            };
+            foreach (var item in items)
+            {
+                var first = document.AddPage();
+                using (var g = XGraphics.FromPdfPage(first))
+                {
+                    g.DrawString("SAYIN", font, XBrushes.Black, 300, 100);
+                    g.DrawString(item.Item5, font, XBrushes.Black, 300, 115);
+                    g.DrawString("Tüketici No: " + item.Item2, font, XBrushes.Black, 40, 230);
+                    g.DrawString("Fatura No: " + item.Item1, font, XBrushes.Black, 300, 280);
+                    g.DrawString("FATURA TARİHİ: 26-02-2025 ÖDENECEK TUTAR: "
+                        + item.Item3 + " TL", font, XBrushes.Black, 40, 350);
+                    g.DrawString("SON ÖDEME TARİHİ: 10-03-2025",
+                        font, XBrushes.Black, 40, 365);
+                }
+                var second = document.AddPage();
+                using var details = XGraphics.FromPdfPage(second);
+                details.DrawString("KDV (%20) " + item.Item4 + " TL",
+                    font, XBrushes.Black, 300, 600);
+            }
+            document.Save(temp.Path);
+        }
+
+        var preview = new HistoricalPdfImportService().Read(
+            temp.Path, Array.Empty<SchoolRecord>(),
+            AuthorityProfileDefaults.Create(),
+            scanMode: HistoricalPdfImportScanMode.Fast);
+        Assert.True(preview.IsValid, preview.Status);
+        Assert.Equal(4, preview.InvoiceCount);
+        Assert.Equal(4, preview.Archive!.Invoices.Select(i => i.InvoiceNumber).Distinct().Count());
+        Assert.Equal(5386.97m, decimal.Round(preview.PaymentTotal, 2,
+            MidpointRounding.AwayFromZero));
+    }
+
+    [Theory]
+    [InlineData("19) HYS-2025-20585737.pdf", "HYS-2025-20585737",
+        "6.472,10", "51,13", "6.420,97",
+        "5.819,00", "653,10", "EAC2025000042907", "EAC2025000042365")]
+    [InlineData("20) HYS-2025-20588537.pdf", "HYS-2025-20588537",
+        "661,40", "5,23", "656,17",
+        "571,20", "90,20", "AAC2025001033373", "AAC2025001033430")]
+    public void DetailedAllowanceReportReconcilesVatWithRealPaymentOrder(
+        string file, string hys, string gross, string stamp, string net,
+        string firstAmount, string secondAmount,
+        string firstNumber, string secondNumber)
+    {
+        using var temp = new TempFile(file);
+        CreateDetailedAllowancePdf(temp.Path, hys, gross, stamp, net,
+            firstAmount, secondAmount, firstNumber, secondNumber);
+        var preview = new HistoricalPdfImportService().Read(
+            temp.Path, Array.Empty<SchoolRecord>(),
+            AuthorityProfileDefaults.Create(),
+            scanMode: HistoricalPdfImportScanMode.Fast);
+        Assert.True(preview.IsValid, preview.Status);
+        Assert.Equal(2, preview.InvoiceCount);
+        Assert.Contains("KDV kaynaktan okunmuş değildir", preview.Status,
+            StringComparison.Ordinal);
+        Assert.Equal(firstNumber, preview.Archive!.Invoices[0].InvoiceNumber);
+        Assert.Equal(secondNumber, preview.Archive.Invoices[1].InvoiceNumber);
+    }
+
+    [Fact]
+    public void DetailedAllowanceWithWrongStampRemainsUnarchived()
+    {
+        using var temp = new TempFile("20) HYS-2025-20588537.pdf");
+        CreateDetailedAllowancePdf(temp.Path, "HYS-2025-20588537",
+            "661,40", "5,24", "656,16", "571,20", "90,20",
+            "AAC2025001033373", "AAC2025001033430");
+        var preview = new HistoricalPdfImportService().Read(
+            temp.Path, Array.Empty<SchoolRecord>(),
+            AuthorityProfileDefaults.Create(),
+            scanMode: HistoricalPdfImportScanMode.Fast);
+        Assert.False(preview.IsValid);
+        Assert.Null(preview.Archive);
+    }
+
+    private static void CreateDetailedAllowancePdf(
+        string path, string hys, string gross, string stamp, string net,
+        string firstAmount, string secondAmount, string firstNumber,
+        string secondNumber)
+    {
+        using var document = new PdfDocument();
+        var font = new XFont("Segoe UI", 6, XFontStyleEx.Regular);
+        var order = document.AddPage();
+        using (var g = XGraphics.FromPdfPage(order))
+        {
+            g.DrawString("ÖDEME EMRİ BELGESİ", font, XBrushes.Black, 40, 35);
+            g.DrawString("Düzenleme Tarihi 04-04-2025", font, XBrushes.Black, 40, 55);
+            g.DrawString("Belge Numarası " + hys, font, XBrushes.Black, 40, 75);
+            g.DrawString("Ödeme Emri Alt Türü Elektrik Alımı", font, XBrushes.Black, 40, 95);
+            g.DrawString($"ÖDEME EMRİ TOPLAM TUTARI {gross} {stamp} 0,00 {net} 0,00 {net}",
+                font, XBrushes.Black, 40, 400);
+        }
+        var page = document.AddPage();
+        page.Width = 1152;
+        page.Height = 576;
+        using var graphics = XGraphics.FromPdfPage(page);
+        graphics.DrawString("AYRINTILI GÖNDERİLEN ÖDENEK/FATURA LİSTESİ",
+            font, XBrushes.Black, 400, 60);
+        var headers = new[]
+        {
+            (98, "KURUM"), (121, "ADI"), (159, "KURUM"),
+            (537, "GÖNDERİLEN"), (579, "TÜKETİM"),
+            (753, "FATURA"), (794, "FATURA"),
+            (829, "SON"), (867, "ABONE"), (898, "ÖDEME")
+        };
+        foreach (var (x, label) in headers)
+            graphics.DrawString(label, font, XBrushes.Black, x, 90);
+        var rows = new[]
+        {
+            (1, "Şehit Ruhi Çetin", "Ortaokulu", firstAmount,
+                firstNumber, "00001601", "770"),
+            (2, "Samatlar İlkokulu", "", secondAmount,
+                secondNumber, "1801380", "")
+        };
+        foreach (var row in rows)
+        {
+            var y = 117 + (row.Item1 - 1) * 29;
+            graphics.DrawString(row.Item1.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                font, XBrushes.Black, 2, y);
+            graphics.DrawString(row.Item2, font, XBrushes.Black, 98, y);
+            if (row.Item3.Length > 0)
+                graphics.DrawString(row.Item3, font, XBrushes.Black, 98, y + 8);
+            graphics.DrawString(row.Item4, font, XBrushes.Black, 537, y);
+            graphics.DrawString(row.Item5[..11], font, XBrushes.Black, 753, y);
+            graphics.DrawString(row.Item5[11..], font, XBrushes.Black, 753, y + 8);
+            graphics.DrawString("24.03.2025", font, XBrushes.Black, 794, y);
+            graphics.DrawString("03.04.2025", font, XBrushes.Black, 829, y);
+            graphics.DrawString(row.Item6, font, XBrushes.Black, 867, y);
+            if (row.Item7.Length > 0)
+                graphics.DrawString(row.Item7, font, XBrushes.Black, 867, y + 8);
+        }
+        document.Save(path);
+    }
+
     private static void CreateEmbeddedInvoicePdf(
         string path, bool includePaymentOrder, string vatAmount = "818,53",
         bool omitServiceNumber = false)
