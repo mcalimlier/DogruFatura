@@ -493,3 +493,24 @@ Gerçek belgenin metin katmanından bağımsız sayısal kontrol: **4 fatura**, 
 Son kod değişikliği toplam satırını sayfa üzerinde ilk bölüm başlığına bağımlı olmadan altı para hücresinden ve `brüt − damga = net` doğrulamasıyla okur; dört faturanın `FAT URA T ARİHİ` gibi parçalanmış etiketlerini, komşu satırlara taşan tarihler ve `KDV (% 10 )` gibi yazımları tolere eder. Tam metinli iki sayfalık eklerin alanları doğrulanamazsa sekiz sayfaya gereksiz OCR uygulamak yerine dosya ve sebep hızlı aşamada gösterilir. Bu koruma, görüntü tabanlı veya eksik metinli PDF'lerin güçlü OCR yolunu kaldırmaz. Onay sonrası DoğruFatura kök klasöründe oluşan `Arsiv_Aktarim_Raporu_*.txt`, artık her fatura için kurum, abone, tarih, brüt, KDV, damga ve net tutarları ve aynı HYS toplamlarını yazar.
 
 İlgili commit'ler: `e0e4ab6ebf20a62e9259944b9925cdc739ef5528` (okuma ve doğrulama), `ac6679310f24b8ce7b3ca4284333a21f4c7a164e` (gereksiz güçlü taramayı atlama), `1725ada18fb31eec6a06263baf6bbbe5a81561b0` (PDF düzeni ve yanlış toplam regresyonu), `cd05734815ec3d26024f9e07c11ed98fa88160a1` (metin raporu), `35e2e3143368c947f140c8e6e2f744adcd0caa35` (rapor testi). Beklenen toplam test sayısı önceki 146'dan 148'e çıkar. Bu ortamda .NET SDK bulunmadığından Windows derlemesi, xUnit ve gerçek uygulama aktarımı henüz çalıştırılamadı. Son kod çekildikten sonra `TESTLERI_CALISTIR.bat` ve `DERLE_CALISTIR.bat` çalıştırılmalı; yalnız 8 numara seçilerek önizlemede tek HYS / 4 fatura / 5.386,97 TL net ve onay sonrası arşiv kaydı ile .txt raporu doğrulanmalıdır.
+
+## 8 numaralı PDF: hızlı tarama sonrası arşiv görünmemesi (23.09.2026)
+
+Kullanıcı, uygulamanın değil **tarama ilerleme penceresinin** kapandığını,
+ardından arşiv kaydının oluşmadığını bildirdi. Hızlı tarama geçersiz bir sonuç
+üretirse mevcut akış ilerleme penceresini kapatıp önizleme açıyordu; onay düğmesi
+pasif olan önizlemeden çıkıldığında hata ayrıntıları durum satırında kalabiliyordu.
+Şimdi eklenebilecek hiç PDF yoksa sonuç ve neden ayrı bir bildirimde gösterilip
+`Arsiv_Aktarim_Raporu_*.txt` dosyasına kaydedilir. Tarama sırasında beklenmedik
+bir hata olursa işlenen dosya ve hata aynı rapora yazılır.
+
+Dokuz sayfalık gerçek 8 numaralı PDF'nin metninden dört fatura numarası, abone,
+brüt ve KDV tekrar okundu: 5.430,50 TL brüt − 43,53 TL damga = 5.386,97 TL net;
+resmî HYS toplamıyla uyumlu. Ek fatura okuyucusunda tarihler PDF'deki görünme
+sırasına göre atanıyordu. Şimdi fatura tarihi kendi etiketinden okunur; son ödeme
+tarihi etikete göre veya başlık yakınındaki tekil diğer tarihten alınır. Her
+faturadaki eksik alan ve doğrulama hatası sayfa numarasıyla gösterilir. İlgili
+regresyon testi son ödeme tarihi önce gelen faturanın diğer üç faturayla tek
+ödeme emri altında doğrulanmasını sınar. Windows ortamında gerçek PDF'nin tek
+HYS kaydına aktarımı henüz doğrulanmamıştır; otomatik test sonucu ve kullanıcının
+önizleme/aktarım sonucu beklenir.
