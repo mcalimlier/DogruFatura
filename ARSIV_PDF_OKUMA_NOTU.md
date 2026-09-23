@@ -434,7 +434,8 @@ raporu gerçek OCR çalıştı / sayfalar atlandı / OCR başlamadı ayrımını
 üretmez. Yalnız e-Fatura içeren ayrı bir PDF resmî HYS belgesi olarak kapalı
 arşive alınmaz; bunun için ayrı taslak iş akışı ve gerçek örnek gerekir.
 
-Üç regresyon testi eklendi: ödeme emri + ek fatura başarılı, toplamlar
-uyuşmayınca ret, yalnız fatura varken resmî ödeme emri üretmeme. Önceki 137
-testle beklenen toplam 140'tır. Windows .NET derleme/test ve gerçek örnekle
+Dört regresyon testi eklendi: ödeme emri + ek fatura başarılı, eksik hizmet
+numarasını tekil kurum kaydından tamamlama, toplamlar uyuşmayınca ret ve
+yalnız fatura varken resmî ödeme emri üretmeme. Önceki 137 testle beklenen
+toplam 141'dir. Windows .NET derleme/test ve gerçek örnekle
 çalıştırma bu ortamda henüz yapılamadı.
