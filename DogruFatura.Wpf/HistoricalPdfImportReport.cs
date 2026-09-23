@@ -64,27 +64,49 @@ public static class HistoricalPdfImportReport
             lines.Add("  Kaynak: " + Clean(item.SourcePath));
             lines.Add("  Tarama: " + Clean(item.ScanDetail));
             lines.Add("  Açıklama: " + Clean(item.Status));
-            if (item.Archive is { Invoices.Count: > 0 } archive)
+            if (item.Archive is { } archive)
             {
                 lines.Add("  Ödeme emri: " + Clean(item.HysNumber));
-                for (var index = 0; index < archive.Invoices.Count; index++)
+                if (archive.Invoices.Count > 0)
                 {
-                    var invoice = archive.Invoices[index];
-                    lines.Add($"    {index + 1}. Fatura: {Clean(invoice.InvoiceNumber)} | Kurum: {Clean(invoice.InstitutionName)}"
-                        + $" | Abone: {Clean(invoice.ServiceNumber)}"
-                        + $" | Fatura tarihi: {invoice.InvoiceDate.ToString("dd.MM.yyyy", CultureInfo.GetCultureInfo("tr-TR"))}"
-                        + $" | Vade: {invoice.DueDate.ToString("dd.MM.yyyy", CultureInfo.GetCultureInfo("tr-TR"))}"
-                        + $" | Brüt: {MoneyRounded(invoice.PayableAmount)}"
-                        + $" | KDV: {MoneyRounded(invoice.VatAmount)}"
-                        + $" | Damga: {MoneyRounded(invoice.StampDuty)}"
-                        + $" | Net: {MoneyRounded(invoice.PaymentAmount)}");
-                }
+                    for (var index = 0; index < archive.Invoices.Count; index++)
+                    {
+                        var invoice = archive.Invoices[index];
+                        lines.Add($"    {index + 1}. Fatura: {Clean(invoice.InvoiceNumber)} | Kurum: {Clean(invoice.InstitutionName)}"
+                            + $" | Abone: {Clean(invoice.ServiceNumber)}"
+                            + $" | Fatura tarihi: {invoice.InvoiceDate.ToString("dd.MM.yyyy", CultureInfo.GetCultureInfo("tr-TR"))}"
+                            + $" | Vade: {invoice.DueDate.ToString("dd.MM.yyyy", CultureInfo.GetCultureInfo("tr-TR"))}"
+                            + $" | Brüt: {MoneyRounded(invoice.PayableAmount)}"
+                            + $" | KDV: {MoneyRounded(invoice.VatAmount)}"
+                            + $" | Damga: {MoneyRounded(invoice.StampDuty)}"
+                            + $" | Net: {MoneyRounded(invoice.PaymentAmount)}");
+                    }
 
-                lines.Add("  Doğrulanan toplam: "
-                    + $"Brüt {MoneyRounded(archive.Invoices.Sum(invoice => invoice.PayableAmount))} | "
-                    + $"KDV {MoneyRounded(archive.Invoices.Sum(invoice => invoice.VatAmount))} | "
-                    + $"Damga {MoneyRounded(archive.Invoices.Sum(invoice => invoice.StampDuty))} | "
-                    + $"Net {MoneyRounded(archive.Invoices.Sum(invoice => invoice.PaymentAmount))}");
+                    lines.Add("  Doğrulanan toplam: "
+                        + $"Brüt {MoneyRounded(archive.Invoices.Sum(invoice => invoice.PayableAmount))} | "
+                        + $"KDV {MoneyRounded(archive.Invoices.Sum(invoice => invoice.VatAmount))} | "
+                        + $"Damga {MoneyRounded(archive.Invoices.Sum(invoice => invoice.StampDuty))} | "
+                        + $"Net {MoneyRounded(archive.Invoices.Sum(invoice => invoice.PaymentAmount))}");
+                }
+                else if (archive.IsLegacyEvidenceOnly)
+                {
+                    lines.Add("  Kaynak-delil modu: satır düzeyinde olmayan vergi/fatura tarihi alanları üretilmedi.");
+                    foreach (var evidence in archive.LegacyEvidenceItems ?? new List<DogruFatura.Core.Models.LegacyInvoiceEvidenceRecord>())
+                    {
+                        lines.Add($"    Kaynak satır: {Clean(evidence.InvoiceNumber)} | Kurum: {Clean(evidence.InstitutionName)}"
+                            + $" | Hizmet: {Clean(evidence.ServiceNumber)}"
+                            + $" | Dönem: {evidence.PeriodStart.ToString("dd.MM.yyyy", CultureInfo.GetCultureInfo("tr-TR"))}"
+                            + $"-{evidence.PeriodEnd.ToString("dd.MM.yyyy", CultureInfo.GetCultureInfo("tr-TR"))}"
+                            + $" | Vade: {evidence.DueDate.ToString("dd.MM.yyyy", CultureInfo.GetCultureInfo("tr-TR"))}"
+                            + $" | Brüt: {MoneyRounded(evidence.GrossAmount)}");
+                    }
+
+                    lines.Add("  Resmî HYS toplamı: "
+                        + $"Brüt {MoneyRounded(archive.LegacyGrossTotal)} | "
+                        + $"Damga {MoneyRounded(archive.LegacyStampDutyTotal)} | "
+                        + $"Net {MoneyRounded(archive.LegacyPaymentTotal)}");
+                    lines.Add("  Not: " + Clean(archive.LegacyEvidenceNote));
+                }
             }
         }
 
