@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -26,7 +27,7 @@ public static class HistoricalPdfImportReport
         var lines = new List<string>
         {
             "DOĞRUFATURA - ARŞİV PDF AKTARIM RAPORU",
-            "Tarih: " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
+            "Tarih: " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss", CultureInfo.GetCultureInfo("tr-TR")),
             "İşlem sonucu: " + Clean(outcome),
             $"Seçilen: {previews.Count} | Eklenen: {addedCount} | Zaten arşivde: {alreadyArchived.Length} | İnceleme gereken: {failed.Length} | Eklenmesi bekleyen/vazgeçilen: {pendingCount}",
             "",
@@ -64,7 +65,7 @@ public static class HistoricalPdfImportReport
             lines.Add("  Açıklama: " + Clean(item.Status));
         }
 
-        var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
+        var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff", CultureInfo.InvariantCulture);
         var path = Path.Combine(rootDirectory,
             $"Arsiv_Aktarim_Raporu_{stamp}_{Guid.NewGuid():N}.txt");
         var tempPath = path + ".tmp";
