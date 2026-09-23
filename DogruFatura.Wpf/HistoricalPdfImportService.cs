@@ -28,6 +28,9 @@ public sealed record HistoricalPdfImportPreview(
     decimal PaymentTotal,
     ArchivedInvoiceList? Archive)
 {
+    public bool OcrAttempted { get; init; }
+    public string ScanDetail { get; init; } = "Hızlı metin taraması";
+
     public string InvoiceCountText => IsValid ? $"{InvoiceCount} fatura" : "—";
     public string PaymentTotalText => IsValid ? NumberParser.Money(PaymentTotal) : "—";
     public string ResultText => IsValid ? "EKLEMEYE HAZIR" : "HATALI";
