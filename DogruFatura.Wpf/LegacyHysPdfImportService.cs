@@ -153,6 +153,17 @@ internal sealed class LegacyHysPdfImportService
                     fallbackAuthorityProfile, out var embeddedPreview))
                 return embeddedPreview;
 
+            // Tam metinli, çok sayfalı fatura eklerinde yeniden görüntü OCR'ı
+            // aynı bilgileri okumaya çalışıp süreyi doldurur. Somut doğrulama
+            // hatasını hızlı aşamada göster; eksik metinli ekler OCR'a kalır.
+            if (scanMode == HistoricalPdfImportScanMode.Fast
+                && HasCompleteTextualMultiPageInvoices(extractedPages))
+                return embeddedPreview with
+                {
+                    OcrSkipped = true,
+                    ScanDetail = "Hızlı metin taraması • ekler okunuyor; tutar/alan doğrulaması başarısız"
+                };
+
             if (TryParseDetailedAllowancePages(
                     sourcePath, fileName, extractedPages, schools,
                     fallbackAuthorityProfile, out var detailedPreview))
@@ -258,49 +269,74 @@ internal sealed class LegacyHysPdfImportService
         totals = default!;
         foreach (var page in paymentPages)
         {
-            // "Ödeme Emri Detayı" toplam tutar başlığı değildir.
-            // Gerçek toplam satırını bulana dek ilgili başlıkları tara.
-            var headings = page.Lines.Where(line =>
+            // Resmî ödeme emri sayfasında aynı toplam satırı başlık yerleşimi
+            // değişse de altı para hücresini taşır. Başlığı ipucu say; tutarları
+            // yalnız brüt - damga = net eşitliğiyle kabul et.
+            foreach (var line in page.Lines.Where(line =>
+                         line.Top > page.Height * 0.30d))
             {
-                var normalized = NormalizeKey(line.Text);
-                return line.Top > page.Height * 0.30d
-                    && normalized.Contains("odeme emri", StringComparison.Ordinal)
-                    && (normalized.Contains("brut tutar", StringComparison.Ordinal)
-                        || normalized.Contains("toplam tutari", StringComparison.Ordinal));
-            });
-            foreach (var heading in headings)
-            {
-                foreach (var line in page.Lines.Where(line =>
-                             line.Top >= heading.Top
-                             && line.Top <= heading.Top + 40d))
+                var amounts = new List<decimal>();
+                foreach (Match match in Regex.Matches(
+                             line.Text,
+                             @"(?<!\d)(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}(?!\d)",
+                             RegexOptions.CultureInvariant))
                 {
-                    var amounts = new List<decimal>();
-                    foreach (Match match in Regex.Matches(
-                                 line.Text,
-                                 @"(?<!\d)(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}(?!\d)",
-                                 RegexOptions.CultureInvariant))
-                    {
-                        if (NumberParser.TryNonNegativeDecimal(match.Value, out var amount))
-                            amounts.Add(amount);
-                    }
-
-                    if (amounts.Count < 4)
-                        continue;
-                    var gross = amounts[0];
-                    var stamp = amounts[1];
-                    var payment = amounts[^1];
-                    if (gross <= 0m || stamp <= 0m || stamp >= gross * 0.1m
-                        || decimal.Round(gross - stamp, 2, MidpointRounding.AwayFromZero)
-                           != payment)
-                        continue;
-
-                    totals = new DocumentTotals(gross, stamp, payment);
-                    return true;
+                    if (NumberParser.TryNonNegativeDecimal(match.Value, out var amount))
+                        amounts.Add(amount);
                 }
+
+                if (amounts.Count < 5)
+                    continue;
+                var gross = amounts[0];
+                var stamp = amounts[1];
+                var payment = amounts[^1];
+                if (gross <= 0m || stamp <= 0m || stamp >= gross * 0.1m
+                    || decimal.Round(gross - stamp, 2, MidpointRounding.AwayFromZero)
+                       != payment
+                    || (amounts.Count > 5 && amounts[^2] != 0m))
+                    continue;
+
+                totals = new DocumentTotals(gross, stamp, payment);
+                return true;
             }
         }
 
         return false;
+    }
+
+    private static bool HasCompleteTextualMultiPageInvoices(
+        IReadOnlyList<PageData> pages)
+    {
+        var paymentPages = pages.Where(page =>
+            NormalizeKey(string.Join(" ", page.Lines.Select(line => line.Text)))
+                .Contains("odeme emri belgesi", StringComparison.Ordinal)).ToArray();
+        if (paymentPages.Length == 0)
+            return false;
+        var attachments = pages.Except(paymentPages)
+            .OrderBy(page => page.PageNumber).ToArray();
+        if (attachments.Length < 4 || attachments.Length % 2 != 0)
+            return false;
+
+        for (var index = 0; index < attachments.Length; index += 2)
+        {
+            var first = string.Join(" ",
+                attachments[index].Lines.Select(line => line.Text));
+            var compact = NormalizeKey(first)
+                .Replace(" ", string.Empty, StringComparison.Ordinal);
+            var detail = string.Join(" ",
+                attachments[index + 1].Lines.Select(line => line.Text));
+            if (!Regex.IsMatch(first, @"\b[A-Z]{3}20\d{11}\b",
+                    RegexOptions.CultureInvariant)
+                || !compact.Contains("faturatarihi", StringComparison.Ordinal)
+                || !compact.Contains("odenecektutar", StringComparison.Ordinal)
+                || !compact.Contains("tuketicino", StringComparison.Ordinal)
+                || !Regex.IsMatch(detail,
+                    @"\bKDV\s*\(\s*%\s*\d{1,2}\s*\)\s*(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}",
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+                return false;
+        }
+
+        return true;
     }
 
     private bool TryParseEmbeddedInvoicePages(
@@ -316,20 +352,32 @@ internal sealed class LegacyHysPdfImportService
             .Where(page => NormalizeKey(string.Join(" ", page.Lines.Select(line => line.Text)))
                 .Contains("odeme emri belgesi", StringComparison.Ordinal))
             .ToArray();
-        if (paymentPages.Length == 0
-            || (!TryFindEmbeddedOrderTotals(paymentPages, out var totals)
-                && !TryFindDocumentTotals(paymentPages, out totals)))
+        if (paymentPages.Length == 0)
             return false;
+        if (!TryFindEmbeddedOrderTotals(paymentPages, out var totals)
+            && !TryFindDocumentTotals(paymentPages, out totals))
+        {
+            preview = Invalid(sourcePath, fileName,
+                "Ödeme emrinin brüt, damga ve net toplamı doğrulanamadı.");
+            return false;
+        }
 
         var paymentText = string.Join(" ",
             paymentPages.SelectMany(page => page.Lines).Select(line => line.Text));
-        if (!TryResolveHysNumber(sourcePath, paymentText, out var hysNumber, out _))
+        if (!TryResolveHysNumber(sourcePath, paymentText, out var hysNumber, out var hysError))
+        {
+            preview = Invalid(sourcePath, fileName, hysError);
             return false;
+        }
 
         var invoiceType = FindInvoiceType(paymentText);
         var reportDate = FindReportDate(paymentPages);
         if (invoiceType is null || !reportDate.HasValue)
+        {
+            preview = Invalid(sourcePath, fileName,
+                "Ödeme emrinin fatura türü veya düzenleme tarihi okunamadı.", hysNumber);
             return false;
+        }
 
         var invoices = new List<InvoiceRecord>();
         var attachmentPages = pages.Except(paymentPages)
@@ -342,7 +390,12 @@ internal sealed class LegacyHysPdfImportService
                 pageText, @"\b[A-Z]{3}20\d{11}\b",
                 RegexOptions.CultureInvariant);
             if (!hasInvoice)
+            {
+                preview = Invalid(sourcePath, fileName,
+                    $"{page.PageNumber}. sayfada fatura numarası okunamadı.",
+                    hysNumber, invoiceType);
                 return false;
+            }
 
             // Elektrik faturasında KDV dökümü çoğu kez sonraki sayfadadır.
             var group = new List<PageData> { page };
@@ -364,16 +417,33 @@ internal sealed class LegacyHysPdfImportService
                     || !TryReadEmbeddedInvoiceSinglePage(
                         group[0], invoiceType, reportDate.Value, schools,
                         out invoice)))
+            {
+                preview = Invalid(sourcePath, fileName,
+                    $"{page.PageNumber}. sayfadan başlayan faturanın numara, hizmet, tarih, tutar veya KDV bilgisi doğrulanamadı.",
+                    hysNumber, invoiceType);
                 return false;
+            }
             invoices.Add(invoice!);
         }
 
         if (invoices.Select(invoice => invoice.InvoiceNumber)
             .Distinct(StringComparer.Ordinal).Count() != invoices.Count)
+        {
+            preview = Invalid(sourcePath, fileName,
+                "Eklerde yinelenen fatura numarası var.", hysNumber, invoiceType);
             return false;
+        }
 
         if (invoices.Count == 0 || !MatchesDocumentTotals(invoices, totals))
+        {
+            preview = Invalid(sourcePath, fileName,
+                $"Ek fatura toplamları ödeme emriyle eşleşmiyor: "
+                + $"brüt {NumberParser.Money(invoices.Sum(item => item.PayableAmount))} / {NumberParser.Money(totals.GrossAmount)}, "
+                + $"damga {NumberParser.Money(decimal.Round(invoices.Sum(item => item.StampDuty), 2, MidpointRounding.AwayFromZero))} / {NumberParser.Money(totals.StampDutyAmount)}, "
+                + $"net {NumberParser.Money(decimal.Round(invoices.Sum(item => item.PaymentAmount), 2, MidpointRounding.AwayFromZero))} / {NumberParser.Money(totals.PaymentAmount)}.",
+                hysNumber, invoiceType);
             return false;
+        }
 
         var authorityProfile = ExtractAuthorityProfile(paymentPages, fallbackAuthorityProfile);
         var archive = ClosedArchiveSnapshotService.Seal(new ArchivedInvoiceList(
@@ -389,7 +459,12 @@ internal sealed class LegacyHysPdfImportService
             hysNumber + ".pdf"));
         var validation = ArchivedInvoiceListValidationService.Validate(archive);
         if (!validation.IsValid)
+        {
+            preview = Invalid(sourcePath, fileName,
+                "Arşiv doğrulaması: " + validation.Message,
+                hysNumber, invoiceType);
             return false;
+        }
 
         preview = new HistoricalPdfImportPreview(
             sourcePath, fileName, true,
@@ -602,10 +677,9 @@ internal sealed class LegacyHysPdfImportService
     {
         invoice = null;
         var first = pages[0];
-        var text = string.Join(" ", pages.SelectMany(page => page.Lines)
-            .Select(line => line.Text));
         var invoiceNumbers = Regex.Matches(
-                text, @"\b[A-Z]{3}20\d{11}\b", RegexOptions.CultureInvariant)
+                string.Join(" ", first.Lines.Select(line => line.Text)),
+                @"\b[A-Z]{3}20\d{11}\b", RegexOptions.CultureInvariant)
             .Select(match => match.Value)
             .Distinct(StringComparer.Ordinal).ToArray();
         if (invoiceNumbers.Length != 1)
@@ -613,13 +687,11 @@ internal sealed class LegacyHysPdfImportService
 
         var headerLine = first.Lines.FirstOrDefault(line =>
             NormalizeKey(line.Text).Replace(" ", string.Empty, StringComparison.Ordinal)
-                .Contains("faturatarihi", StringComparison.Ordinal)
-            && NormalizeKey(line.Text).Replace(" ", string.Empty, StringComparison.Ordinal)
-                .Contains("odenecektutar", StringComparison.Ordinal));
+                .Contains("faturatarihi", StringComparison.Ordinal));
         if (headerLine is null)
             return false;
         var headerText = string.Join(" ", first.Lines
-            .Where(line => Math.Abs(line.Top - headerLine.Top) < 18d)
+            .Where(line => Math.Abs(line.Top - headerLine.Top) < 26d)
             .OrderBy(line => line.Top).Select(line => line.Text));
         var dates = Regex.Matches(
                 headerText,
@@ -629,7 +701,7 @@ internal sealed class LegacyHysPdfImportService
             .Select(value => TryDate(value, out var parsed) ? parsed : (DateTime?)null)
             .Where(date => date.HasValue).Select(date => date!.Value)
             .Distinct().ToArray();
-        if (dates.Length != 2
+        if (dates.Length < 2
             || !TryEmbeddedMoney(
                 headerText.Replace(" ", string.Empty, StringComparison.Ordinal),
                 @"[öo]denecektutar", out var payable))
@@ -637,15 +709,18 @@ internal sealed class LegacyHysPdfImportService
 
         var vatLines = pages.SelectMany(page => page.Lines)
             .Where(line => Regex.IsMatch(
-                NormalizeKey(line.Text).Replace(" ", string.Empty, StringComparison.Ordinal),
-                @"(?<!matrahi)kdv\d{1,2}", RegexOptions.CultureInvariant))
+                line.Text, @"\bKDV\s*\(\s*%\s*\d{1,2}\s*\)",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
             .ToArray();
         if (vatLines.Length == 0)
             return false;
         var vat = 0m;
         foreach (var line in vatLines)
         {
-            var money = Regex.Match(line.Text,
+            var label = Regex.Match(
+                line.Text, @"\bKDV\s*\(\s*%\s*\d{1,2}\s*\)",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var money = Regex.Match(line.Text[(label.Index + label.Length)..],
                 @"(?<value>(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})",
                 RegexOptions.CultureInvariant);
             if (!money.Success
@@ -659,11 +734,11 @@ internal sealed class LegacyHysPdfImportService
 
         var consumerLine = first.Lines.FirstOrDefault(line =>
             NormalizeKey(line.Text).Replace(" ", string.Empty, StringComparison.Ordinal)
-                .StartsWith("tuketicino", StringComparison.Ordinal));
+                .Contains("tuketicino", StringComparison.Ordinal));
         var serviceNumber = consumerLine is null
             ? string.Empty
-            : Regex.Match(consumerLine.Text, @"\d{7,20}(?!\d)",
-                RegexOptions.CultureInvariant).Value;
+            : Regex.Matches(consumerLine.Text, @"\d{7,20}(?!\d)",
+                RegexOptions.CultureInvariant).LastOrDefault()?.Value ?? string.Empty;
         if (string.IsNullOrWhiteSpace(serviceNumber))
             return false;
 
