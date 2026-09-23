@@ -6767,3 +6767,26 @@ Sıradaki kalite kapısı:
 - FastScanReusesExtractedPagesWithinBatch regresyon testi eklendi.
 - Hedef: 136/136 test, 0 hata, 0 uyarı.
 - Windows doğrulaması bekleniyor.
+
+
+---
+
+## 23.09.2026 — 2024 HYS 9 / 16 / 23 Arşiv Paketi
+
+- `HYS-2024-11293464`: temiz dört satırlı internet tablosu için hızlı metin
+  okuma regresyonu eklendi; hedef 4 fatura ve 1.418,44 TL net.
+- `HYS-2024-13678296`: TTNET sayısal fatura numarası, `Fatura Tarih`,
+  `HESAP NUMARASI`, `KDV %20 (Matrah...)` ve aynı satırdaki `SAYIN`
+  varyantları desteklendi; hedef 2 fatura ve 813,33 TL net.
+- `HYS-2024-10150517`: görüntü tabanlı 30 satırlık geçmiş ADSL listesinde
+  kaynakta bulunmayan KDV/fatura tarihi uydurulmadan yeni kaynak-delil arşivi
+  oluşturuluyor. Satır brüt toplamı 1.261,25 TL ile resmî HYS brüt toplamına
+  doğrulanıyor; 10,27 TL damga ve 1.250,98 TL net yalnız resmî ödeme emri
+  aggregate değerleri olarak korunuyor.
+- Kare/dikey image-dominant legacy eklerde özel landscape OCR boş dönmek yerine
+  tam sayfa genel OCR'a düşüyor.
+- Kaynak-delil kayıtlar fatura düzenlemeye ve vergi istatistiklerine alınmıyor;
+  özgün PDF zorunlu tutuluyor.
+- Normal kapalı arşivlerin eski SHA-256 snapshot şeması değiştirilmedi.
+- Üç yeni regresyon testi eklendi; önceki 148 taban doğruysa yeni hedef 151/151.
+- Windows .NET derleme, xUnit ve gerçek 9/16/23 smoke testi bekleniyor.
