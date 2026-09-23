@@ -367,3 +367,29 @@ Beklenen test hedefi: **136/136 test, 0 hata, 0 uyarı**.
 
 Not: Bu paket kaynak PDF'yi döndürmez veya yeniden yazmaz. Arşiv PDF'sinin
 SHA-256 değeri ve kanıt niteliği korunur.
+
+---
+
+## 23.09.2026 — Toplu aktarım sonucu ve dosya bazlı rapor
+
+Kullanıcı gerçek denemede 2025 yılına ait 24 PDF'den 20'sinin hızlı biçimde
+arşive eklendiğini bildirdi. Kalan dört PDF'nin adları ve hata nedenleri önceki
+oturumun yalnız sayısal sonucundan çıkarılamıyor.
+
+Yeni akış, seçilen her PDF için hızlı metin taraması veya güçlü tarama durumunu
+önizlemede gösterir. Legacy güçlü taramada OCR yoluna girildiyse bunu ayrı
+işaretler; süre aşımında OCR başlangıcı kesinleşmemişse durumu belirsiz olarak
+yazar. Başarısız dosyalar, gerçek doğrulama/çakışma nedenleri ve kaynak yolları
+ile aktarım sonunda kullanıcıya gösterilir.
+
+Her tamamlanan önizleme işlemi (onay, vazgeçme, geri alma) için masaüstündeki
+`DoğruFatura` klasörüne `Arsiv_Aktarim_Raporu_*.txt` yazılır. Raporda
+seçilen/eklenen/eklenemeyen sayıları, başarısız dosyalar ve bütün seçilen
+dosyaların sonuçları yer alır. Rapor oluşturulurken arşiv yeniden taranmaz.
+Rapor yazılamazsa uygulama bunu açıkça bildirir.
+
+Kod değişikliği ve 24/20/4 senaryolu regresyon testi eklendi. Bu çalışma
+ortamında .NET SDK olmadığı için derleme ve Windows gerçek PDF testi henüz
+çalıştırılmadı. Kullanıcı Windows'ta `TESTLERI_CALISTIR.bat` ve
+`DERLE_CALISTIR.bat` ile doğrulamalı; ardından 24 PDF'yi yeniden seçerek dört
+dosyanın adını, OCR aşamasını ve metin raporunu kontrol etmelidir.
