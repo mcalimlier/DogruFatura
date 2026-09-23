@@ -715,7 +715,7 @@ internal sealed class LegacyHysPdfImportService
         var dueColumnText = ColumnText(first.Width * 0.62d, first.Width);
         static DateTime[] HeaderDates(string value) => Regex.Matches(
                 value,
-                @"(?<!\d)[0-3]?\d\s*[-./]\s*[01]?\d\s*[-./]?\s*20\d{2}(?!\d)",
+                @"(?<!\d)[0-3]?\d\s*[-./]\s*[01]?\d\s*[-./]?\s*20\d{2}(?=\D|$|[0-3]?\d\s*[-./])",
                 RegexOptions.CultureInvariant)
             .Select(match => Regex.Replace(match.Value, @"\s+", string.Empty))
             .Select(value => TryDate(value, out var parsed) ? parsed : (DateTime?)null)
@@ -765,7 +765,9 @@ internal sealed class LegacyHysPdfImportService
                 .Where(date => date != invoiceDate).Distinct().ToArray();
             if (otherDates.Length != 1)
             {
-                error = "Son ödeme tarihi başlık yakınında tekil olarak okunamadı.";
+                error = "Son ödeme tarihi başlık yakınında tekil olarak okunamadı. Sağ alan: "
+                    + dueColumnText[..Math.Min(dueColumnText.Length, 120)]
+                    + "; başlık: " + headerText[..Math.Min(headerText.Length, 180)];
                 return false;
             }
             dueDate = otherDates[0];
@@ -972,7 +974,7 @@ internal sealed class LegacyHysPdfImportService
         date = default;
         var match = Regex.Match(
             text,
-            label + @"\s*:?\s*(?<day>[0-3]?\d)\s*[-./]\s*(?<month>[01]?\d)\s*[-./]?\s*(?<year>20\d{2})(?!\d)",
+            label + @"\s*:?\s*(?<day>[0-3]?\d)\s*[-./]\s*(?<month>[01]?\d)\s*[-./]?\s*(?<year>20\d{2})(?=\D|$|[0-3]?\d\s*[-./])",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         return match.Success && DateTime.TryParseExact(
             $"{match.Groups["day"].Value}-{match.Groups["month"].Value}-{match.Groups["year"].Value}",
