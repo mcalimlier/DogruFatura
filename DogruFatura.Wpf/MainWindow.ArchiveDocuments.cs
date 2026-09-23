@@ -228,7 +228,8 @@ public partial class MainWindow
 
                 if (preview.IsValid && knownHysNumbers.Contains(preview.HysNumber))
                 {
-                    preview = preview.WithError($"{preview.HysNumber} işlem arşivinde zaten kayıtlı.");
+                    preview = preview.WithError($"{preview.HysNumber} işlem arşivinde zaten kayıtlı.")
+                        with { AlreadyArchived = true };
                 }
                 else if (preview.IsValid && !selectedHysNumbers.Add(preview.HysNumber))
                 {
@@ -387,7 +388,8 @@ public partial class MainWindow
         string summary,
         bool showFailures)
     {
-        var failures = previews.Where(item => !item.IsValid).ToArray();
+        var failures = previews.Where(item => !item.IsValid && !item.AlreadyArchived).ToArray();
+        var alreadyArchivedCount = previews.Count(item => item.AlreadyArchived);
         try
         {
             var reportPath = HistoricalPdfImportReport.Write(
@@ -396,7 +398,7 @@ public partial class MainWindow
                 imported,
                 outcome);
             SetArchiveStatus(
-                $"{summary} {failures.Length} dosya eklenemedi. Rapor: {reportPath}",
+                $"{summary} {alreadyArchivedCount} dosya zaten arşivde; {failures.Length} dosya inceleme gerektiriyor. Rapor: {reportPath}",
                 failures.Length > 0,
                 true);
             if (showFailures && failures.Length > 0)
@@ -409,7 +411,7 @@ public partial class MainWindow
                     : string.Empty;
                 MessageBox.Show(
                     this,
-                    $"{summary}\n\nEklenemeyen dosyalar:\n{string.Join("\n", failureLines)}{more}\n\nTam rapor:\n{reportPath}",
+                    $"{summary}\n\nİnceleme gereken dosyalar:\n{string.Join("\n", failureLines)}{more}\n\nTam rapor:\n{reportPath}",
                     "DoğruFatura - Arşiv Aktarım Sonucu",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -418,7 +420,7 @@ public partial class MainWindow
         catch (Exception ex)
         {
             SetArchiveStatus(
-                $"{summary} {failures.Length} dosya eklenemedi. Aktarım raporu kaydedilemedi: {ex.Message}",
+                $"{summary} {alreadyArchivedCount} dosya zaten arşivde; {failures.Length} dosya inceleme gerektiriyor. Aktarım raporu kaydedilemedi: {ex.Message}",
                 true);
             MessageBox.Show(
                 this,
