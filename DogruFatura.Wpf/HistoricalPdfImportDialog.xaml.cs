@@ -15,7 +15,8 @@ public partial class HistoricalPdfImportDialog : Window
 
         var validCount = Items.Count(item => item.IsValid);
         var invalidCount = Items.Count - validCount;
-        SummaryText.Text = $"{Items.Count} dosya • {validCount} arşive eklemeye hazır • {invalidCount} hatalı";
+        var ocrCount = Items.Count(item => item.OcrAttempted);
+        SummaryText.Text = $"{Items.Count} dosya • {validCount} eklemeye hazır • {invalidCount} eklenmeyecek • {ocrCount} OCR denendi";
         ConfirmButton.IsEnabled = validCount > 0;
         ConfirmButton.Content = $"{validCount} DOSYAYI EKLE";
         PreviewGrid.SelectedItem = Items.FirstOrDefault();
@@ -32,7 +33,7 @@ public partial class HistoricalPdfImportDialog : Window
     private void UpdateSelectedDetail()
     {
         SelectedDetailText.Text = PreviewGrid.SelectedItem is HistoricalPdfImportPreview selected
-            ? $"{selected.FileName}: {selected.Status}"
+            ? $"{selected.FileName} • {selected.ScanDetail}: {selected.Status}"
             : "Ayrıntı için bir dosya seçin.";
     }
 
