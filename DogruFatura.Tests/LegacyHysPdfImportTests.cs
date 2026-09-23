@@ -140,6 +140,97 @@ public sealed class LegacyHysPdfImportTests
             decimal.Round(third.PaymentAmount, 2, MidpointRounding.AwayFromZero));
     }
 
+    [Fact]
+    public void PaymentOrderWithEmbeddedInvoiceIsImportedWithoutOcr()
+    {
+        using var temp = new TempFile("24) HYS-2025-21213030.pdf");
+        CreateEmbeddedInvoicePdf(temp.Path, includePaymentOrder: true);
+        var school = new SchoolRecord(
+            "Kurum", "Sivaslı İlçe Milli Eğitim Müdürlüğü", "4710101139",
+            "1063715995", "", "", "", Guid.NewGuid());
+        var preview = new HistoricalPdfImportService().Read(
+            temp.Path, new[] { school },
+            AuthorityProfileDefaults.Create(),
+            scanMode: HistoricalPdfImportScanMode.Fast);
+
+        Assert.True(preview.IsValid, preview.Status);
+        Assert.False(preview.OcrAttempted);
+        Assert.Equal("HYS-202521213030", preview.HysNumber);
+        var invoice = Assert.Single(preview.Archive!.Invoices);
+        Assert.Equal(school.SchoolId, invoice.SchoolId);
+        Assert.Equal("EAD2025000026862", invoice.InvoiceNumber);
+        Assert.Equal("1063715995", invoice.ServiceNumber);
+        Assert.Equal(new DateTime(2025, 4, 15), invoice.InvoiceDate);
+        Assert.Equal(new DateTime(2025, 4, 25), invoice.DueDate);
+        Assert.Equal(4911.20m, invoice.PayableAmount);
+        Assert.Equal(818.53m, invoice.VatAmount);
+        Assert.Equal(38.80m, decimal.Round(invoice.StampDuty, 2, MidpointRounding.AwayFromZero));
+        Assert.Equal(4872.40m, decimal.Round(invoice.PaymentAmount, 2, MidpointRounding.AwayFromZero));
+    }
+
+    [Fact]
+    public void EmbeddedInvoiceMustMatchPaymentOrderTotals()
+    {
+        using var temp = new TempFile("24) HYS-2025-21213030.pdf");
+        CreateEmbeddedInvoicePdf(temp.Path, includePaymentOrder: true, vatAmount: "800,00");
+
+        var preview = new HistoricalPdfImportService().Read(
+            temp.Path, Array.Empty<SchoolRecord>(),
+            AuthorityProfileDefaults.Create(),
+            scanMode: HistoricalPdfImportScanMode.Fast);
+
+        Assert.False(preview.IsValid);
+        Assert.Null(preview.Archive);
+    }
+
+    [Fact]
+    public void InvoiceOnlyPdfDoesNotInventOfficialPaymentOrder()
+    {
+        using var temp = new TempFile("24) HYS-2025-21213030.pdf");
+        CreateEmbeddedInvoicePdf(temp.Path, includePaymentOrder: false);
+
+        var preview = new HistoricalPdfImportService().Read(
+            temp.Path, Array.Empty<SchoolRecord>(),
+            AuthorityProfileDefaults.Create(),
+            scanMode: HistoricalPdfImportScanMode.Fast);
+
+        Assert.False(preview.IsValid);
+        Assert.Null(preview.Archive);
+    }
+
+    private static void CreateEmbeddedInvoicePdf(
+        string path, bool includePaymentOrder, string vatAmount = "818,53")
+    {
+        using var document = new PdfDocument();
+        var font = new XFont("Segoe UI", 9, XFontStyleEx.Regular);
+        if (includePaymentOrder)
+        {
+            var orderPage = document.AddPage();
+            orderPage.Size = PageSize.A4;
+            using var order = XGraphics.FromPdfPage(orderPage);
+            order.DrawString("ÖDEME EMRİ BELGESİ", font, XBrushes.Black, 40, 35);
+            order.DrawString("Düzenleme Tarihi 24-04-2025", font, XBrushes.Black, 40, 55);
+            order.DrawString("Belge Numarası HYS-2025-21213030", font, XBrushes.Black, 40, 75);
+            order.DrawString("Ödeme Emri Alt Türü Elektrik Alımı", font, XBrushes.Black, 40, 95);
+            order.DrawString("ÖDEME EMRİ TOPLAM TUTARI 4.911,20 38,80 0,00 4.872,40 0,00 4.872,40",
+                font, XBrushes.Black, 40, 400);
+        }
+
+        var invoicePage = document.AddPage();
+        invoicePage.Size = PageSize.A4;
+        using var graphics = XGraphics.FromPdfPage(invoicePage);
+        graphics.DrawString("SAYIN", font, XBrushes.Black, 300, 140);
+        graphics.DrawString("SİVASLI İLÇE MİLLİ EĞİTİM MÜDÜRLÜĞÜ",
+            font, XBrushes.Black, 300, 155);
+        graphics.DrawString("Sözleşme Hesap No: 1063715995", font, XBrushes.Black, 40, 240);
+        graphics.DrawString("Fatura No: EAD2025000026862", font, XBrushes.Black, 300, 300);
+        graphics.DrawString("FATURA TARİHİ: 15-04-2025", font, XBrushes.Black, 40, 350);
+        graphics.DrawString("ÖDENECEK TUTAR: 4.911,20 TL", font, XBrushes.Black, 200, 370);
+        graphics.DrawString("SON ÖDEME TARİHİ: 25-04-2025", font, XBrushes.Black, 300, 390);
+        graphics.DrawString($"Elektrik KDV (%20) {vatAmount} TL", font, XBrushes.Black, 300, 650);
+        document.Save(path);
+    }
+
     private static void CreateLegacyMysPdf(
         string path,
         bool useOcrLikeMoney,
