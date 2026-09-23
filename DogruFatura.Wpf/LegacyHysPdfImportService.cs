@@ -153,6 +153,11 @@ internal sealed class LegacyHysPdfImportService
                     fallbackAuthorityProfile, out var embeddedPreview))
                 return embeddedPreview;
 
+            if (TryParseLegacyGrossEvidencePages(
+                    sourcePath, fileName, extractedPages, schools,
+                    fallbackAuthorityProfile, out var evidencePreview))
+                return evidencePreview;
+
             // Tam metinli, çok sayfalı fatura eklerinde yeniden görüntü OCR'ı
             // aynı bilgileri okumaya çalışıp süreyi doldurur. Somut doğrulama
             // hatasını hızlı aşamada göster; eksik metinli ekler OCR'a kalır.
@@ -214,6 +219,11 @@ internal sealed class LegacyHysPdfImportService
                     sourcePath, fileName, combinedPages, schools,
                     fallbackAuthorityProfile, out var ocrEmbeddedPreview))
                 return ocrEmbeddedPreview with { OcrAttempted = ocrAttempted, OcrSkipped = ocrSkipped };
+
+            if (TryParseLegacyGrossEvidencePages(
+                    sourcePath, fileName, combinedPages, schools,
+                    fallbackAuthorityProfile, out var ocrEvidencePreview))
+                return ocrEvidencePreview with { OcrAttempted = ocrAttempted, OcrSkipped = ocrSkipped };
 
             if (TryParseDetailedAllowancePages(
                     sourcePath, fileName, combinedPages, schools,
@@ -471,6 +481,363 @@ internal sealed class LegacyHysPdfImportService
             hysNumber, invoiceType, invoices.Count,
             invoices.Sum(invoice => invoice.PaymentAmount), archive);
         return true;
+    }
+
+    // Bazı eski internet HYS'lerinde ek, vergi sütunları olmayan görüntü-tabanlı
+    // "Geçmiş Dönem ADSL Fatura Bilgileri" tablosudur. Satır düzeyinde KDV veya
+    // damga vergisi üretmeyiz; yalnız kaynakta gerçekten bulunan dönem/vade/brüt
+    // satırlarını ve resmî ödeme emrindeki aggregate toplamları mühürlü kanıt
+    // arşivi olarak saklarız. Böylece eksik tarih/vergi alanları uydurulmaz.
+    private bool TryParseLegacyGrossEvidencePages(
+        string sourcePath,
+        string fileName,
+        IReadOnlyList<PageData> pages,
+        IReadOnlyList<SchoolRecord> schools,
+        AuthorityProfile fallbackAuthorityProfile,
+        out HistoricalPdfImportPreview preview)
+    {
+        preview = Invalid(sourcePath, fileName, "Geçmiş dönem ADSL kaynak listesi bulunamadı.");
+
+        var paymentPages = pages.Where(page =>
+            NormalizeKey(string.Join(" ", page.Lines.Select(line => line.Text)))
+                .Contains("odeme emri belgesi", StringComparison.Ordinal)).ToArray();
+        if (paymentPages.Length == 0
+            || (!TryFindEmbeddedOrderTotals(paymentPages, out var totals)
+                && !TryFindDocumentTotals(paymentPages, out totals)))
+            return false;
+
+        var evidencePages = pages.Except(paymentPages)
+            .Select(page => (Page: page, Header: TryFindLegacyEvidenceHeader(page, out var header)
+                ? header : null))
+            .Where(item => item.Header is not null)
+            .ToArray();
+        if (evidencePages.Length == 0)
+            return false;
+
+        var paymentText = string.Join(" ",
+            paymentPages.SelectMany(page => page.Lines).Select(line => line.Text));
+        if (!TryResolveHysNumber(sourcePath, paymentText, out var hysNumber, out var hysError))
+        {
+            preview = Invalid(sourcePath, fileName, hysError);
+            return true;
+        }
+
+        var invoiceType = FindInvoiceType(paymentText);
+        var reportDate = FindReportDate(paymentPages);
+        if (!string.Equals(invoiceType, "İnternet", StringComparison.Ordinal)
+            || !reportDate.HasValue)
+        {
+            preview = Invalid(
+                sourcePath,
+                fileName,
+                "Geçmiş dönem ADSL listesi yalnız İnternet ödeme emri ve okunabilir düzenleme tarihiyle arşivlenebilir.",
+                hysNumber,
+                invoiceType ?? "—");
+            return true;
+        }
+
+        var evidence = new List<(int Sequence, LegacyInvoiceEvidenceRecord Item)>();
+        foreach (var item in evidencePages)
+        {
+            var page = item.Page;
+            var header = item.Header!;
+            var anchors = page.Words
+                .Where(word =>
+                    word.Top > header.Bottom + 1d
+                    && word.CenterX >= header.Sequence.Left
+                    && word.CenterX < header.Sequence.Right)
+                .Select(word => (Word: word, Digits: DigitsOnly(word.Text)))
+                .Where(item => item.Digits.Length is > 0 and <= 3
+                    && int.TryParse(
+                        item.Digits,
+                        NumberStyles.None,
+                        CultureInfo.InvariantCulture,
+                        out var sequence)
+                    && sequence > 0
+                    && sequence <= 500)
+                .Select(item => (item.Word, Sequence: int.Parse(
+                    item.Digits,
+                    CultureInfo.InvariantCulture)))
+                .OrderBy(item => item.Word.CenterY)
+                .ToArray();
+
+            if (anchors.Length == 0)
+            {
+                preview = Invalid(
+                    sourcePath,
+                    fileName,
+                    $"{page.PageNumber}. sayfadaki ADSL tablosunda satır numaraları okunamadı.",
+                    hysNumber,
+                    invoiceType);
+                return true;
+            }
+
+            var titleInstitution = ExtractLegacyEvidenceInstitution(page);
+            for (var index = 0; index < anchors.Length; index++)
+            {
+                var anchorWord = anchors[index].Word;
+                var upper = index == 0
+                    ? header.Bottom
+                    : (anchors[index - 1].Word.CenterY + anchorWord.CenterY) / 2d;
+                var lower = index + 1 < anchors.Length
+                    ? (anchorWord.CenterY + anchors[index + 1].Word.CenterY) / 2d
+                    : Math.Min(page.Height, anchorWord.CenterY + Math.Max(18d, anchorWord.Height * 2.2d));
+                var words = page.Words
+                    .Where(word => word.CenterY > upper && word.CenterY < lower)
+                    .ToArray();
+
+                string Cell(ColumnRange range) => string.Join(
+                    " ",
+                    words.Where(word =>
+                            word.CenterX >= range.Left && word.CenterX < range.Right)
+                        .OrderBy(word => word.Top)
+                        .ThenBy(word => word.Left)
+                        .Select(word => word.Text));
+
+                var service = DigitsOnly(Cell(header.Service));
+                var invoiceNumber = Regex.Replace(
+                    Cell(header.Invoice),
+                    @"[^A-Za-z0-9]",
+                    string.Empty,
+                    RegexOptions.CultureInvariant);
+                var periodDates = ExtractDates(Cell(header.Period))
+                    .Distinct()
+                    .OrderBy(date => date)
+                    .ToArray();
+                if (!TryDate(Cell(header.DueDate), out var dueDate))
+                {
+                    preview = Invalid(
+                        sourcePath,
+                        fileName,
+                        $"{page.PageNumber}. sayfa {anchors[index].Sequence}. satır: son ödeme tarihi okunamadı.",
+                        hysNumber,
+                        invoiceType);
+                    return true;
+                }
+
+                var amountMatch = Regex.Match(
+                    NormalizeOcrMoneyText(Cell(header.Amount)),
+                    @"(?<!\d)(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}(?!\d)",
+                    RegexOptions.CultureInvariant);
+                if (service.Length < 4
+                    || invoiceNumber.Length < 6
+                    || periodDates.Length != 2
+                    || !amountMatch.Success
+                    || !NumberParser.TryNonNegativeDecimal(amountMatch.Value, out var gross)
+                    || gross <= 0m)
+                {
+                    preview = Invalid(
+                        sourcePath,
+                        fileName,
+                        $"{page.PageNumber}. sayfa {anchors[index].Sequence}. satır: hizmet/fatura/dönem/tutar alanları güvenilir biçimde okunamadı.",
+                        hysNumber,
+                        invoiceType);
+                    return true;
+                }
+
+                var byService = schools.Where(school =>
+                    string.Equals(
+                        DigitsOnly(school.GetServiceNumber(invoiceType)).TrimStart('0'),
+                        service.TrimStart('0'),
+                        StringComparison.Ordinal)).ToArray();
+                if (byService.Length > 1)
+                {
+                    preview = Invalid(
+                        sourcePath,
+                        fileName,
+                        $"{page.PageNumber}. sayfa {anchors[index].Sequence}. satır: hizmet numarası birden fazla kurumla eşleşti.",
+                        hysNumber,
+                        invoiceType);
+                    return true;
+                }
+
+                var institutionName = byService.SingleOrDefault()?.Name
+                    ?? titleInstitution;
+                if (string.IsNullOrWhiteSpace(institutionName))
+                {
+                    preview = Invalid(
+                        sourcePath,
+                        fileName,
+                        $"{page.PageNumber}. sayfa {anchors[index].Sequence}. satır: kurum adı kaynak başlıktan veya kayıtlı hizmet numarasından bulunamadı.",
+                        hysNumber,
+                        invoiceType);
+                    return true;
+                }
+
+                evidence.Add((
+                    anchors[index].Sequence,
+                    new LegacyInvoiceEvidenceRecord(
+                        institutionName,
+                        service,
+                        invoiceNumber,
+                        periodDates[0],
+                        periodDates[1],
+                        dueDate,
+                        gross)));
+            }
+        }
+
+        var ordered = evidence.OrderBy(item => item.Sequence).ToArray();
+        var expected = Enumerable.Range(1, ordered.Length).ToArray();
+        if (ordered.Length == 0
+            || !ordered.Select(item => item.Sequence).SequenceEqual(expected))
+        {
+            preview = Invalid(
+                sourcePath,
+                fileName,
+                "Geçmiş dönem ADSL listesi sıra numaraları kesintisiz okunamadı.",
+                hysNumber,
+                invoiceType);
+            return true;
+        }
+
+        var evidenceItems = ordered.Select(item => item.Item).ToList();
+        if (evidenceItems.Select(item => item.InvoiceNumber)
+                .Distinct(StringComparer.OrdinalIgnoreCase).Count() != evidenceItems.Count)
+        {
+            preview = Invalid(
+                sourcePath,
+                fileName,
+                "Geçmiş dönem ADSL listesinde yinelenen fatura numarası var.",
+                hysNumber,
+                invoiceType);
+            return true;
+        }
+
+        var evidenceGross = decimal.Round(
+            evidenceItems.Sum(item => item.GrossAmount),
+            2,
+            MidpointRounding.AwayFromZero);
+        if (evidenceGross != decimal.Round(
+                totals.GrossAmount,
+                2,
+                MidpointRounding.AwayFromZero))
+        {
+            preview = Invalid(
+                sourcePath,
+                fileName,
+                $"ADSL satır toplamı ödeme emri brüt tutarıyla eşleşmiyor: "
+                + $"{NumberParser.Money(evidenceGross)} / {NumberParser.Money(totals.GrossAmount)}.",
+                hysNumber,
+                invoiceType);
+            return true;
+        }
+
+        var authorityProfile = ExtractAuthorityProfile(paymentPages, fallbackAuthorityProfile);
+        const string evidenceNote =
+            "Kaynak tabloda satır düzeyinde fatura tarihi, KDV ve damga vergisi yoktur. "
+            + "Bu alanlar tahmin edilmemiştir; dönem/vade/brüt satırları ile resmî HYS aggregate toplamları korunur.";
+        var archive = ClosedArchiveSnapshotService.Seal(new ArchivedInvoiceList(
+            Guid.NewGuid(),
+            "DF-PDF-" + hysNumber[4..],
+            reportDate.Value.Date,
+            invoiceType,
+            new List<InvoiceRecord>(),
+            authorityProfile,
+            hysNumber,
+            true,
+            reportDate.Value.Date,
+            hysNumber + ".pdf",
+            LegacyEvidenceItems: evidenceItems,
+            LegacyGrossTotal: totals.GrossAmount,
+            LegacyStampDutyTotal: totals.StampDutyAmount,
+            LegacyPaymentTotal: totals.PaymentAmount,
+            LegacyEvidenceNote: evidenceNote));
+
+        var validation = ArchivedInvoiceListValidationService.Validate(archive);
+        if (!validation.IsValid)
+        {
+            preview = Invalid(
+                sourcePath,
+                fileName,
+                "Kaynak-delil arşiv doğrulaması: " + validation.Message,
+                hysNumber,
+                invoiceType);
+            return true;
+        }
+
+        preview = new HistoricalPdfImportPreview(
+            sourcePath,
+            fileName,
+            true,
+            $"{evidenceItems.Count} satırlık geçmiş dönem ADSL kaynak listesi doğrulandı; "
+            + $"satır brüt toplamı {NumberParser.Money(totals.GrossAmount)}, "
+            + $"resmî HYS damga/net toplamı {NumberParser.Money(totals.StampDutyAmount)} / "
+            + $"{NumberParser.Money(totals.PaymentAmount)}. "
+            + "Satır düzeyinde bulunmayan fatura tarihi ve vergi alanları uydurulmadan kaynak-delil arşivi hazırlanacak.",
+            hysNumber,
+            invoiceType,
+            evidenceItems.Count,
+            totals.PaymentAmount,
+            archive);
+        return true;
+    }
+
+    private static bool TryFindLegacyEvidenceHeader(
+        PageData page,
+        out LegacyEvidenceHeader header)
+    {
+        header = default!;
+        for (var index = 0; index < page.Lines.Count; index++)
+        {
+            var words = new List<WordData>(page.Lines[index].Words);
+            var bottom = page.Lines[index].Bottom;
+            if (index + 1 < page.Lines.Count
+                && page.Lines[index + 1].Top - page.Lines[index].Top < 30d)
+            {
+                words.AddRange(page.Lines[index + 1].Words);
+                bottom = Math.Max(bottom, page.Lines[index + 1].Bottom);
+            }
+
+            if (!TryFindAliasCenter(words, new[] { "sira no", "sıra no" }, out var sequence)
+                || !TryFindAliasCenter(words, new[] { "hizmet no", "hizmet numarasi", "hizmet numarası" }, out var service)
+                || !TryFindAliasCenter(words, new[] { "fatura no", "fatura numarasi", "fatura numarası" }, out var invoice)
+                || !TryFindAliasCenter(words, new[] { "donemi", "dönemi", "donem", "dönem" }, out var period)
+                || !TryFindAliasCenter(words, new[] { "son odeme tarihi", "son ödeme tarihi" }, out var dueDate)
+                || !TryFindAliasCenter(words, new[] { "tutar" }, out var amount))
+                continue;
+
+            var centers = new[] { sequence, service, invoice, period, dueDate, amount };
+            if (!centers.Zip(centers.Skip(1), (left, right) => left < right).All(value => value))
+                continue;
+
+            static ColumnRange Range(double leftCenter, double center, double rightCenter) =>
+                new((leftCenter + center) / 2d, (center + rightCenter) / 2d);
+
+            header = new LegacyEvidenceHeader(
+                new ColumnRange(0d, (sequence + service) / 2d),
+                Range(sequence, service, invoice),
+                Range(service, invoice, period),
+                Range(invoice, period, dueDate),
+                Range(period, dueDate, amount),
+                new ColumnRange((dueDate + amount) / 2d, page.Width),
+                bottom);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static string ExtractLegacyEvidenceInstitution(PageData page)
+    {
+        foreach (var line in page.Lines)
+        {
+            var normalized = NormalizeKey(line.Text);
+            if (!normalized.Contains("gecmis", StringComparison.Ordinal)
+                || !normalized.Contains("adsl", StringComparison.Ordinal)
+                || !normalized.Contains("fatura", StringComparison.Ordinal))
+                continue;
+
+            var words = line.Words.OrderBy(word => word.Left).ToArray();
+            var marker = Array.FindIndex(words, word =>
+                NormalizeKey(word.Text).Contains("gecmis", StringComparison.Ordinal));
+            if (marker <= 0)
+                continue;
+
+            return string.Join(" ", words.Take(marker).Select(word => word.Text)).Trim();
+        }
+
+        return string.Empty;
     }
 
     // Bakanlık ödenek/fatura listesindeki satırlar iki fiziksel satıra taşabilir.
@@ -3762,6 +4129,15 @@ internal sealed class LegacyHysPdfImportService
         IReadOnlyDictionary<ColumnKind, ColumnRange> Ranges,
         double Bottom,
         int DetectedRequiredCount);
+
+    private sealed record LegacyEvidenceHeader(
+        ColumnRange Sequence,
+        ColumnRange Service,
+        ColumnRange Invoice,
+        ColumnRange Period,
+        ColumnRange DueDate,
+        ColumnRange Amount,
+        double Bottom);
 
     private sealed record RowMoneyWord(
         List<decimal> Candidates);
