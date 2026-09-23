@@ -568,7 +568,7 @@ internal sealed class LegacyHysPdfImportService
             fallbackAuthorityProfile);
         var archive = ClosedArchiveSnapshotService.Seal(new ArchivedInvoiceList(
             Guid.NewGuid(), "DF-PDF-" + hysNumber[4..],
-            reportDate.Value.Date, invoiceType, selected.Invoices,
+            reportDate.Value.Date, invoiceType, selected.Invoices.ToList(),
             authorityProfile, hysNumber, true, reportDate.Value.Date,
             hysNumber + ".pdf"));
         if (!ArchivedInvoiceListValidationService.Validate(archive).IsValid)
