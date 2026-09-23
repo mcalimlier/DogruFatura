@@ -546,7 +546,7 @@ internal sealed class LegacyHysPdfImportService
                     word.Top > header.Bottom + 1d
                     && word.CenterX >= header.Sequence.Left
                     && word.CenterX < header.Sequence.Right)
-                .Select(word => (Word: word, Digits: DigitsOnly(word.Text)))
+                .Select(word => (Word: word, Digits: OcrDigitsOnly(word.Text)))
                 .Where(item => item.Digits.Length is > 0 and <= 3
                     && int.TryParse(
                         item.Digits,
@@ -594,12 +594,8 @@ internal sealed class LegacyHysPdfImportService
                         .ThenBy(word => word.Left)
                         .Select(word => word.Text));
 
-                var service = DigitsOnly(Cell(header.Service));
-                var invoiceNumber = Regex.Replace(
-                    Cell(header.Invoice),
-                    @"[^A-Za-z0-9]",
-                    string.Empty,
-                    RegexOptions.CultureInvariant);
+                var service = OcrDigitsOnly(Cell(header.Service));
+                var invoiceNumber = OcrDigitsOnly(Cell(header.Invoice));
                 var periodDates = ExtractDates(Cell(header.Period))
                     .Distinct()
                     .OrderBy(date => date)
@@ -4017,6 +4013,9 @@ internal sealed class LegacyHysPdfImportService
 
     private static string DigitsOnly(string text) =>
         string.Concat((text ?? string.Empty).Where(char.IsDigit));
+
+    private static string OcrDigitsOnly(string text) =>
+        string.Concat(NormalizeOcrMoneyText(text).Where(char.IsDigit));
 
     private static string InferInstitutionType(string institutionName)
     {
