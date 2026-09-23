@@ -529,3 +529,14 @@ sütun da belirsizse çıkarılan kısa metin parçası rapora eklenir. İlgili 
 ilk faturanın tarih ve tutar başlıklarının farklı satırlara taşındığı dokuz
 sayfalık belgeyle tek HYS kaydını sınar. Gerçek Windows aktarımı halen
 uygulamada yeniden doğrulanmalıdır.
+## İkinci ekran görüntüsü: eksilen tarih ayıracı (23.09.2026)
+
+Yeni sonuç ekranının "sol alan" tanısı ilk faturanın tarihini
+`FATURA TARİHİ:28-022025` olarak gösterdi. PDF metin katmanı çıkarımında ay
+ile yıl arasındaki ayraç düşüyor; önceki desen hem etiketli hem sütunlu
+okumada bu tarihi reddediyordu. Bu alana özgü tarih okuyucu artık
+`28-022025` ve `28-02 2025` biçimlerini de takvim doğrulamasından sonra
+28.02.2025 olarak kabul eder. Tarih `31-022025` gibi geçersizse veya sol
+sütunda birden fazla aday varsa kayıt yine reddedilir. Dokuz sayfalık fatura
+testi ilk ekin hem çok satırlı başlık hem eksik tarih ayracı varyantlarını
+kapsar. Gerçek Windows aktarımının sonucu henüz görülmedi.
