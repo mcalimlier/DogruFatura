@@ -439,3 +439,18 @@ numarasını tekil kurum kaydından tamamlama, toplamlar uyuşmayınca ret ve
 yalnız fatura varken resmî ödeme emri üretmeme. Önceki 137 testle beklenen
 toplam 141'dir. Windows .NET derleme/test ve gerçek örnekle
 çalıştırma bu ortamda henüz yapılamadı.
+
+
+## 2025 toplu aktarımda 8, 19 ve 20 numaralı PDF'ler (23.09.2026)
+
+Kullanıcı Windows üzerinde .NET SDK 10.0.400 ile derledi; önceki sürümde 24 numaralı PDF başarıyla arşive alındı. Derlemede CA1305 (2), CA1861 (1), CA1068 (2) olmak üzere beş uyarı vardı. Bu uyarıların kaynakları düzeltildi. Bu değişikliklerin Windows derlemesi ve testleri kullanıcı ortamında yeniden doğrulanmalıdır; burada .NET SDK bulunmuyor.
+
+Gerçek belgelerin sayfa düzeni incelendi:
+
+- `8) HYS-2025-19794703.pdf`: 1 resmî ödeme emri + dört faturanın ikişer sayfası (toplam 9 sayfa). Fatura tutarları 2.638,50 + 872,20 + 1.733,70 + 186,10 = 5.430,50 TL; faturalardaki KDV toplamı 439,75 + 79,30 + 288,94 + 31,01 = 839,00 TL. Ödeme emrinde 43,53 TL damga ve 5.386,97 TL net var. Fatura kimliği, alıcı, hizmet/abone, fatura ve vade tarihi ile ödenecek tutar ilk sayfadan; KDV sonraki sayfadan eşleştirilir. Dört fatura **tek** HYS kapalı arşiv kaydında tutulur.
+- `19) HYS-2025-20585737.pdf`: 1 resmî ödeme emri + yatay `AYRINTILI GÖNDERİLEN ÖDENEK/FATURA LİSTESİ`. İki fatura 5.819,00 ve 653,10 TL; ödeme emri 6.472,10 TL brüt, 51,13 TL damga, 6.420,97 TL net. Fatura numaraları ve birinci abone numarası listede alt satıra bölünmüştür. İki fatura tek HYS kaydına girer.
+- `20) HYS-2025-20588537.pdf`: benzer yatay liste, 571,20 ve 90,20 TL tutarlı iki fatura; 661,40 TL brüt, 5,23 TL damga ve 656,17 TL net. İki fatura tek HYS kaydına girer.
+
+Yatay listeler KDV göstermiyor. İthalat yolu yalnız %1, %10 ve %20 KDV adaylarının her birini fatura tutarından hesaplar; sadece **tek** oran ödeme emrindeki brüt, damga ve net toplamları bire bir tutturduğunda kayıt hazırlar. Bu iki gerçek örnekte %20 adayı eşleşir. Önizleme ve işlem raporu KDV'nin belgeden okunmadığını, ödeme emriyle doğrulanarak hesaplandığını açıkça yazar. Bu işlem KDV'nin fatura üzerinde kanıtlandığı anlamına gelmez; ayrıntılı vergi kontrolü için özgün faturalar gerektiğinde ayrıca incelenmelidir. Hiçbir resmî ödeme emri PDF'si üretilmez veya değiştirilmez.
+
+Kod: `DogruFatura.Wpf/LegacyHysPdfImportService.cs` çok sayfalı fatura grupları ve liste satırları için genişletildi. `DogruFatura.Wpf/HistoricalPdfImportReport.cs` tarih kültürü açık belirtildi. `DogruFatura.Tests/LegacyHysPdfImportTests.cs` dört faturayı tek ödeme emrine bağlama, 19/20 düzenindeki listeler ve tutarsız kesintiyi reddetme durumlarını sınar. Gerçek PDF'ler depoya eklenmedi. Bu ortamda .NET SDK olmadığından derleme veya xUnit çalıştırılmadı; yeni Windows çalıştırmasında beklenen durum her üç dosya için tek HYS altında sırasıyla 4, 2, 2 fatura ve sıfır analiz uyarısıdır.
