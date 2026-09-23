@@ -169,6 +169,25 @@ public sealed class LegacyHysPdfImportTests
     }
 
     [Fact]
+    public void MissingServiceNumberUsesOnlyUniqueMatchingInstitution()
+    {
+        using var temp = new TempFile("24) HYS-2025-21213030.pdf");
+        CreateEmbeddedInvoicePdf(
+            temp.Path, includePaymentOrder: true, omitServiceNumber: true);
+        var school = new SchoolRecord(
+            "Kurum", "Sivaslı İlçe Milli Eğitim Müdürlüğü", "4710101139",
+            "1063715995", "", "", "", Guid.NewGuid());
+
+        var preview = new HistoricalPdfImportService().Read(
+            temp.Path, new[] { school },
+            AuthorityProfileDefaults.Create(),
+            scanMode: HistoricalPdfImportScanMode.Fast);
+
+        Assert.True(preview.IsValid, preview.Status);
+        Assert.Equal("1063715995", Assert.Single(preview.Archive!.Invoices).ServiceNumber);
+    }
+
+    [Fact]
     public void EmbeddedInvoiceMustMatchPaymentOrderTotals()
     {
         using var temp = new TempFile("24) HYS-2025-21213030.pdf");
@@ -199,7 +218,8 @@ public sealed class LegacyHysPdfImportTests
     }
 
     private static void CreateEmbeddedInvoicePdf(
-        string path, bool includePaymentOrder, string vatAmount = "818,53")
+        string path, bool includePaymentOrder, string vatAmount = "818,53",
+        bool omitServiceNumber = false)
     {
         using var document = new PdfDocument();
         var font = new XFont("Segoe UI", 9, XFontStyleEx.Regular);
@@ -222,7 +242,8 @@ public sealed class LegacyHysPdfImportTests
         graphics.DrawString("SAYIN", font, XBrushes.Black, 300, 140);
         graphics.DrawString("SİVASLI İLÇE MİLLİ EĞİTİM MÜDÜRLÜĞÜ",
             font, XBrushes.Black, 300, 155);
-        graphics.DrawString("Sözleşme Hesap No: 1063715995", font, XBrushes.Black, 40, 240);
+        if (!omitServiceNumber)
+            graphics.DrawString("Sözleşme Hesap No: 1063715995", font, XBrushes.Black, 40, 240);
         graphics.DrawString("Fatura No: EAD2025000026862", font, XBrushes.Black, 300, 300);
         graphics.DrawString("FATURA TARİHİ: 15-04-2025", font, XBrushes.Black, 40, 350);
         graphics.DrawString("ÖDENECEK TUTAR: 4.911,20 TL", font, XBrushes.Black, 200, 370);
