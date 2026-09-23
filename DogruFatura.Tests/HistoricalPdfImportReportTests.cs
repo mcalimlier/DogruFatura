@@ -1,3 +1,4 @@
+using DogruFatura.Core.Models;
 using DogruFatura.Wpf;
 
 namespace DogruFatura.Tests;
@@ -52,6 +53,47 @@ public sealed class HistoricalPdfImportReportTests
             Assert.Contains("Eklenen: 0 | Zaten arşivde: 20 | İnceleme gereken: 4", rerunReport);
             Assert.Contains("MYS-2025-1.pdf | ZATEN ARŞİVDE", rerunReport);
             Assert.Contains("MYS-2025-21.pdf | İNCELEME GEREKİYOR", rerunReport);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+    [Fact]
+    public void ReportListsInvoicesAndReconciledPaymentOrderTotals()
+    {
+        var root = Path.Combine(Path.GetTempPath(),
+            "DogruFatura_Report_" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var invoice = new InvoiceRecord(
+                Guid.NewGuid(), new DateTime(2025, 3, 4),
+                "İlkokul", "Hanoğlu İlkokulu", "",
+                "Elektrik", "AAB2025001051104", "00002700660",
+                new DateTime(2025, 2, 27), new DateTime(2025, 3, 10),
+                186.10m, 31.01m, 155.09m, 1.4702532m, 184.6297468m);
+            var archive = new ArchivedInvoiceList(
+                Guid.NewGuid(), "DF-PDF-202519794703",
+                new DateTime(2025, 3, 4), "Elektrik",
+                new List<InvoiceRecord> { invoice },
+                AuthorityProfileDefaults.Create(),
+                "HYS-202519794703", true,
+                new DateTime(2025, 3, 4), "HYS-202519794703.pdf");
+            var preview = new HistoricalPdfImportPreview(
+                Path.Combine(root, "8) HYS-2025-19794703.pdf"),
+                "8) HYS-2025-19794703.pdf", true, "Doğrulandı.",
+                "HYS-202519794703", "Elektrik", 1,
+                invoice.PaymentAmount, archive);
+
+            var path = HistoricalPdfImportReport.Write(
+                root, new[] { preview }, new[] { preview }, "Aktarım tamamlandı");
+            var report = File.ReadAllText(path);
+            Assert.Contains("Fatura: AAB2025001051104", report);
+            Assert.Contains("Abone: 00002700660", report);
+            Assert.Contains("KDV: 31,01 TL", report);
+            Assert.Contains("Damga: 1,47 TL", report);
+            Assert.Contains("Doğrulanan toplam: Brüt 186,10 TL", report);
         }
         finally
         {
