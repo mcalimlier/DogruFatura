@@ -14,7 +14,12 @@ public sealed record ArchivedInvoiceList(
     DateTime? ClosedAt = null,
     string PdfFileName = "",
     string PdfSha256 = "",
-    string ClosedSnapshotSha256 = "")
+    string ClosedSnapshotSha256 = "",
+    List<LegacyInvoiceEvidenceRecord>? LegacyEvidenceItems = null,
+    decimal LegacyGrossTotal = 0m,
+    decimal LegacyStampDutyTotal = 0m,
+    decimal LegacyPaymentTotal = 0m,
+    string LegacyEvidenceNote = "")
 {
     [JsonIgnore]
     public InvoiceKind Kind => DomainValueText.ParseInvoiceKind(InvoiceType);
@@ -23,10 +28,18 @@ public sealed record ArchivedInvoiceList(
     public ArchiveState State => IsClosed ? ArchiveState.Closed : ArchiveState.Open;
 
     [JsonIgnore]
-    public int InvoiceCount => Invoices.Count;
+    public bool IsLegacyEvidenceOnly =>
+        Invoices.Count == 0 && LegacyEvidenceItems is { Count: > 0 };
 
     [JsonIgnore]
-    public decimal PaymentTotal => Invoices.Sum(invoice => invoice.PaymentAmount);
+    public int InvoiceCount => Invoices.Count > 0
+        ? Invoices.Count
+        : LegacyEvidenceItems?.Count ?? 0;
+
+    [JsonIgnore]
+    public decimal PaymentTotal => Invoices.Count > 0
+        ? Invoices.Sum(invoice => invoice.PaymentAmount)
+        : LegacyPaymentTotal;
 
     [JsonIgnore]
     public string HysDisplay => string.IsNullOrWhiteSpace(HysPaymentOrderDocumentNumber)
@@ -37,7 +50,10 @@ public sealed record ArchivedInvoiceList(
     public string ClosureStatus => DomainValueText.ToStorageValue(State);
 
     [JsonIgnore]
-    public bool IsStatisticsEligible => IsClosed && !string.IsNullOrWhiteSpace(HysPaymentOrderDocumentNumber);
+    public bool IsStatisticsEligible =>
+        IsClosed
+        && !string.IsNullOrWhiteSpace(HysPaymentOrderDocumentNumber)
+        && !IsLegacyEvidenceOnly;
 
     [JsonIgnore]
     public bool HasClosedSnapshot => !string.IsNullOrWhiteSpace(ClosedSnapshotSha256);
@@ -47,8 +63,10 @@ public sealed record ArchivedInvoiceList(
     {
         get
         {
-            var institutions = Invoices
-                .Select(invoice => invoice.InstitutionName)
+            var institutions = (Invoices.Count > 0
+                    ? Invoices.Select(invoice => invoice.InstitutionName)
+                    : LegacyEvidenceItems?.Select(item => item.InstitutionName)
+                      ?? Enumerable.Empty<string>())
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .Distinct(StringComparer.CurrentCultureIgnoreCase)
                 .ToArray();
@@ -59,10 +77,18 @@ public sealed record ArchivedInvoiceList(
     }
 
     [JsonIgnore]
-    public DateTime FirstInvoiceDate => Invoices.Min(invoice => invoice.InvoiceDate);
+    public DateTime FirstInvoiceDate => Invoices.Count > 0
+        ? Invoices.Min(invoice => invoice.InvoiceDate)
+        : LegacyEvidenceItems is { Count: > 0 }
+            ? LegacyEvidenceItems.Min(item => item.PeriodStart)
+            : ArchivedAt;
 
     [JsonIgnore]
-    public DateTime LastInvoiceDate => Invoices.Max(invoice => invoice.InvoiceDate);
+    public DateTime LastInvoiceDate => Invoices.Count > 0
+        ? Invoices.Max(invoice => invoice.InvoiceDate)
+        : LegacyEvidenceItems is { Count: > 0 }
+            ? LegacyEvidenceItems.Max(item => item.PeriodEnd)
+            : ArchivedAt;
 
     public ArchivedInvoiceList Normalize() => this with
     {
@@ -72,7 +98,11 @@ public sealed record ArchivedInvoiceList(
         PdfFileName = (PdfFileName ?? string.Empty).Trim(),
         PdfSha256 = (PdfSha256 ?? string.Empty).Trim().ToUpperInvariant(),
         ClosedSnapshotSha256 = (ClosedSnapshotSha256 ?? string.Empty).Trim().ToUpperInvariant(),
+        LegacyEvidenceNote = (LegacyEvidenceNote ?? string.Empty).Trim(),
         Invoices = Invoices?.ToList() ?? new List<InvoiceRecord>(),
+        LegacyEvidenceItems = LegacyEvidenceItems?
+            .Select(item => item.Normalize())
+            .ToList() ?? new List<LegacyInvoiceEvidenceRecord>(),
         AuthorityProfile = (AuthorityProfile ?? AuthorityProfileDefaults.Create()).Normalize()
     };
 }
