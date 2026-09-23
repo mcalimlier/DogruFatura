@@ -387,6 +387,11 @@ Her tamamlanan önizleme işlemi (onay, vazgeçme, geri alma) için masaüstünd
 seçilen/eklenen/eklenemeyen sayıları, başarısız dosyalar ve bütün seçilen
 dosyaların sonuçları yer alır. Rapor oluşturulurken arşiv yeniden taranmaz.
 Rapor yazılamazsa uygulama bunu açıkça bildirir.
+Aynı 24 PDF daha önce 20'si eklenmişken yeniden seçilirse, bu 20 dosya
+`ZATEN ARŞİVDE` olarak ayrılır; dört gerçek inceleme adayı ayrı listelenir.
+Bu tekrar koşusunda beklenen sayılar: 24 seçilen, 0 yeni eklenen, 20 zaten
+arşivde, 4 inceleme gereken. Böylece önceden eklenenler hata listesinde
+sorunlu dört PDF'yi gizlemez.
 
 Kod değişikliği ve 24/20/4 senaryolu regresyon testi eklendi. Bu çalışma
 ortamında .NET SDK olmadığı için derleme ve Windows gerçek PDF testi henüz
