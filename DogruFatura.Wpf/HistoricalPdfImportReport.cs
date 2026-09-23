@@ -1,3 +1,4 @@
+using DogruFatura.Core.Services;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -63,6 +64,28 @@ public static class HistoricalPdfImportReport
             lines.Add("  Kaynak: " + Clean(item.SourcePath));
             lines.Add("  Tarama: " + Clean(item.ScanDetail));
             lines.Add("  Açıklama: " + Clean(item.Status));
+            if (item.Archive is { Invoices.Count: > 0 } archive)
+            {
+                lines.Add("  Ödeme emri: " + Clean(item.HysNumber));
+                for (var index = 0; index < archive.Invoices.Count; index++)
+                {
+                    var invoice = archive.Invoices[index];
+                    lines.Add($"    {index + 1}. Fatura: {Clean(invoice.InvoiceNumber)} | Kurum: {Clean(invoice.InstitutionName)}"
+                        + $" | Abone: {Clean(invoice.ServiceNumber)}"
+                        + $" | Fatura tarihi: {invoice.InvoiceDate.ToString("dd.MM.yyyy", CultureInfo.GetCultureInfo("tr-TR"))}"
+                        + $" | Vade: {invoice.DueDate.ToString("dd.MM.yyyy", CultureInfo.GetCultureInfo("tr-TR"))}"
+                        + $" | Brüt: {MoneyRounded(invoice.PayableAmount)}"
+                        + $" | KDV: {MoneyRounded(invoice.VatAmount)}"
+                        + $" | Damga: {MoneyRounded(invoice.StampDuty)}"
+                        + $" | Net: {MoneyRounded(invoice.PaymentAmount)}");
+                }
+
+                lines.Add("  Doğrulanan toplam: "
+                    + $"Brüt {MoneyRounded(archive.Invoices.Sum(invoice => invoice.PayableAmount))} | "
+                    + $"KDV {MoneyRounded(archive.Invoices.Sum(invoice => invoice.VatAmount))} | "
+                    + $"Damga {MoneyRounded(archive.Invoices.Sum(invoice => invoice.StampDuty))} | "
+                    + $"Net {MoneyRounded(archive.Invoices.Sum(invoice => invoice.PaymentAmount))}");
+            }
         }
 
         var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff", CultureInfo.InvariantCulture);
@@ -82,6 +105,9 @@ public static class HistoricalPdfImportReport
 
         return path;
     }
+
+    private static string MoneyRounded(decimal value) => NumberParser.Money(
+        decimal.Round(value, 2, MidpointRounding.AwayFromZero));
 
     private static string Clean(string? value) =>
         string.IsNullOrWhiteSpace(value)
