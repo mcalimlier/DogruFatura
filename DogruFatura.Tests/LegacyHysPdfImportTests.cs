@@ -258,12 +258,16 @@ public sealed class LegacyHysPdfImportTests
             MidpointRounding.AwayFromZero));
     }
 
-    [Fact]
-    public void FirstInvoiceHeaderSplitAcrossRowsStillMatchesPaymentOrder()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FirstInvoiceHeaderSplitAcrossRowsStillMatchesPaymentOrder(
+        bool missingMonthYearSeparator)
     {
         using var temp = new TempFile("8) HYS-2025-19794703.pdf");
         CreateFourTwoPageInvoicesPdf(temp.Path, splitHeading: true,
-            wrongStamp: false, splitFirstHeader: true);
+            wrongStamp: false, splitFirstHeader: true,
+            dropFirstInvoiceDateSeparator: missingMonthYearSeparator);
 
         var preview = new HistoricalPdfImportService().Read(
             temp.Path, Array.Empty<SchoolRecord>(),
@@ -395,7 +399,8 @@ public sealed class LegacyHysPdfImportTests
 
     private static void CreateFourTwoPageInvoicesPdf(
         string path, bool splitHeading, bool wrongStamp,
-        bool dueDateBeforeInvoiceDate = false, bool splitFirstHeader = false)
+        bool dueDateBeforeInvoiceDate = false, bool splitFirstHeader = false,
+        bool dropFirstInvoiceDateSeparator = false)
     {
         using (var document = new PdfDocument())
         {
@@ -446,7 +451,9 @@ public sealed class LegacyHysPdfImportTests
                     var isFirst = item.Item1 == "EAB2025000055348";
                     if (splitFirstHeader && isFirst)
                     {
-                        g.DrawString("28-02-2025", font, XBrushes.Black, 120, 337);
+                        g.DrawString(dropFirstInvoiceDateSeparator
+                                ? "28-022025" : "28-02-2025",
+                            font, XBrushes.Black, 120, 337);
                         g.DrawString("ÖDENECEK", font, XBrushes.Black, 210, 337);
                         g.DrawString("FAT URA T ARİHİ:", font, XBrushes.Black, 40, 350);
                         g.DrawString("SON ÖDEME TARİHİ: 10-03-2025",
