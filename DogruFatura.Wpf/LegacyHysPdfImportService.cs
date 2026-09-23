@@ -121,6 +121,7 @@ internal sealed class LegacyHysPdfImportService
         IReadOnlyList<HistoricalPdfImportService.PdfPageData>? sharedExtractedPages = null)
     {
         var fileName = Path.GetFileName(sourcePath);
+        var ocrAttempted = false;
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -158,6 +159,7 @@ internal sealed class LegacyHysPdfImportService
 
             cancellationToken.ThrowIfCancellationRequested();
             progress?.Report("Eski/bozuk PDF için OCR hazırlanıyor");
+            ocrAttempted = true;
             var ocrResult = TryExtractOcrPages(
                 sourcePath,
                 extractedPages,
@@ -173,10 +175,10 @@ internal sealed class LegacyHysPdfImportService
                     fallbackAuthorityProfile,
                     usedOcr: true,
                     out var ocrPreview))
-                return ocrPreview;
+                return ocrPreview with { OcrAttempted = true };
 
             if (extractedWasParsed)
-                return extractedPreview;
+                return extractedPreview with { OcrAttempted = true };
 
             var reason = string.IsNullOrWhiteSpace(ocrResult.ErrorMessage)
                 ? "Belgede tanınan fatura tablosu bulunamadı."
@@ -186,7 +188,8 @@ internal sealed class LegacyHysPdfImportService
                 fileName,
                 reason
                 + " Beklenen temel alanlar: Okul/Kurum Adı, Hizmet/Abone No, Fatura No, "
-                + "Fatura Tarihi, Son Ödeme/Vade Tarihi, Tutar, KDV, Damga Vergisi ve Ödeme/Net Tutar.");
+                + "Fatura Tarihi, Son Ödeme/Vade Tarihi, Tutar, KDV, Damga Vergisi ve Ödeme/Net Tutar.")
+                with { OcrAttempted = true };
         }
         catch (OperationCanceledException)
         {
@@ -194,7 +197,8 @@ internal sealed class LegacyHysPdfImportService
         }
         catch (Exception ex)
         {
-            return Invalid(sourcePath, fileName, "Eski ödeme emri PDF'si okunamadı: " + ex.Message);
+            return Invalid(sourcePath, fileName, "Eski ödeme emri PDF'si okunamadı: " + ex.Message)
+                with { OcrAttempted = ocrAttempted };
         }
     }
 
