@@ -703,29 +703,65 @@ internal sealed class LegacyHysPdfImportService
             .Where(line => Math.Abs(line.Top - headerLine.Top) < 26d)
             .OrderBy(line => line.Top).Select(line => line.Text));
         var compactHeader = Regex.Replace(headerText, @"\s+", string.Empty);
-        var dates = Regex.Matches(
-                headerText,
-                @"[0-3]?\d\s*[-./]\s*[01]?\d\s*[-./]\s*20\d{2}",
+        var headerWords = first.Words
+            .Where(word => Math.Abs(word.Top - headerLine.Top) < 30d).ToArray();
+        string ColumnText(double left, double right) => Regex.Replace(
+            string.Join("", headerWords
+                .Where(word => word.CenterX >= left && word.CenterX < right)
+                .OrderBy(word => word.Top).ThenBy(word => word.Left)
+                .Select(word => word.Text)), @"\s+", string.Empty);
+        var invoiceColumnText = ColumnText(0d, first.Width * 0.34d);
+        var amountColumnText = ColumnText(first.Width * 0.30d, first.Width * 0.64d);
+        var dueColumnText = ColumnText(first.Width * 0.62d, first.Width);
+        static DateTime[] HeaderDates(string value) => Regex.Matches(
+                value, @"[0-3]?\d\s*[-./]\s*[01]?\d\s*[-./]\s*20\d{2}",
                 RegexOptions.CultureInvariant)
             .Select(match => Regex.Replace(match.Value, @"\s+", string.Empty))
             .Select(value => TryDate(value, out var parsed) ? parsed : (DateTime?)null)
             .Where(date => date.HasValue).Select(date => date!.Value)
             .Distinct().ToArray();
+        var dates = HeaderDates(headerText);
         // Tarihler PDF koordinatlarında ayrı satırlara bölünebilir. Örneğin
         // son ödeme tarihi faturanın tarihinden önce çıkarılır; dizi sırası
         // bu iki alanın anlamını belirlemez.
         if (!TryEmbeddedDate(compactHeader,
-                @"faturatar[iİı]h[iİı]", out var invoiceDate)
-            || !TryEmbeddedMoney(compactHeader,
+                @"faturatar[iİı]h[iİı]", out var invoiceDate))
+        {
+            var columnDates = HeaderDates(invoiceColumnText);
+            if (columnDates.Length != 1)
+            {
+                error = "Fatura tarihi başlığın sol sütunundan okunamadı. Sol alan: "
+                    + invoiceColumnText[..Math.Min(invoiceColumnText.Length, 120)]
+                    + "; başlık: " + headerText[..Math.Min(headerText.Length, 180)];
+                return false;
+            }
+            invoiceDate = columnDates[0];
+        }
+        if (!TryEmbeddedMoney(compactHeader,
                 @"[öo]denecektutar", out var payable))
         {
-            error = "Fatura tarihi veya ödenecek tutar başlıktan okunamadı.";
-            return false;
+            var columnAmounts = Regex.Matches(amountColumnText,
+                    @"(?<!\d)(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}(?!\d)",
+                    RegexOptions.CultureInvariant)
+                .Select(match => NumberParser.TryNonNegativeDecimal(
+                    match.Value, out var amount) ? amount : (decimal?)null)
+                .Where(amount => amount.HasValue && amount.Value > 0m)
+                .Select(amount => amount!.Value).Distinct().ToArray();
+            if (columnAmounts.Length != 1)
+            {
+                error = "Ödenecek tutar başlığın orta sütunundan okunamadı. Orta alan: "
+                    + amountColumnText[..Math.Min(amountColumnText.Length, 120)]
+                    + "; başlık: " + headerText[..Math.Min(headerText.Length, 180)];
+                return false;
+            }
+            payable = columnAmounts[0];
         }
         if (!TryEmbeddedDate(compactHeader,
                 @"son[öo]demetar[iİı]h[iİı]", out var dueDate))
         {
-            var otherDates = dates.Where(date => date != invoiceDate).ToArray();
+            var otherDates = HeaderDates(dueColumnText)
+                .Concat(dates.Where(date => date != invoiceDate))
+                .Where(date => date != invoiceDate).Distinct().ToArray();
             if (otherDates.Length != 1)
             {
                 error = "Son ödeme tarihi başlık yakınında tekil olarak okunamadı.";
