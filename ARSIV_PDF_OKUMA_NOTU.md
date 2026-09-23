@@ -475,3 +475,21 @@ Son Windows geri bildiriminde 19 ve 20 başarılı; 8 numarada `Güçlü tarama 
 Önceki düzeltme gerçek toplam başlığının bulunmasını sağladı. Ancak ikinci bir hata vardı: genel toplam okuyucusu bir para değeri için tam ve ilk rakamı atılmış adayları üretiyordu. `5.430,50` değerinden türetilen `430,50`, 5.430,50 TL brütün %10'undan küçük olduğu için yanlışlıkla damga vergisi kabul edilebiliyordu. Metin çıkarma sırası bu genel yolu seçerse resmî 43,53 TL yerine 430,50 TL kullanılıp dört fatura gerçek toplamla eşleşmiyor, gereksiz sekiz sayfalık OCR devreye giriyordu.
 
 Çözüm: Ek faturaları okuyan yol önce ödeme emrinin doğrudan brüt/damga/net tutar satırını kullanıyor; genel okuyucu da yalnız `brüt − damga = net` eşitliğini sağlayan adayı kabul ediyor. Böylece 430,50 adayı reddedilir. İki sayfalık dört faturanın tek ödeme emrine bağlanmasını sınayan test hem gerçek PDF'deki bölünmüş toplam başlığı hem tek satırlık başlık için çalışacak biçimde genişletildi. Beklenen test sayısı önceki 145'ten 146'ya yükseldi. Kod commit'i `c223a2cb46e5866af76815c3a1f09b691bf1a9af`, test commit'i `7ecad36f1d08ef4e790bd8fdc3a5bcc447a174d5`. Gerçek PDF'nin brüt 5.430,50, kesinti 43,53, net 5.386,97 ve faturalardaki KDV toplamı 839,00 TL metinden çapraz doğrulandı. Windows .NET derlemesi ve gerçek içe alma henüz yeniden doğrulanmadı; sonuç hızlı aşamada 4 fatura olarak beklenir. Eğer hâlâ başarısızsa hızlı tarama sonucundaki ilk hata metni ve uygulamanın gösterdiği son çalışma adımı kaydedilmelidir; süreyi uzatmak ilk tercih değildir.
+
+
+## 8 numaralı belge için dört faturanın tek HYS arşivine aktarımı (23.09.2026)
+
+Gerçek `8) HYS-2025-19794703.pdf` PDF'si 9 sayfadır: sayfa 1 resmî HYS ödeme emri; sayfa 2–3, 4–5, 6–7 ve 8–9 dört faturadır. Ödeme emri PDF'nin içinde **zaten vardır**; uygulama yeni resmî belge imal etmez. Aktarım onayında aynı özgün PDF, `Arşivlenenler` içine kopyalanır ve fatura kayıtları tek kapalı `HYS-202519794703` arşiv kaydına bağlanır.
+
+| Fatura no | Abone / tüketici no | Brüt (TL) | KDV (TL) |
+| --- | --- | ---: | ---: |
+| EAB2025000055348 | 00002604070 | 2.638,50 | 439,75 |
+| AAB2025000996266 | 00002200440 | 872,20 | 79,30 |
+| AAB2025000996213 | 00002201830 | 1.733,70 | 288,94 |
+| AAB2025001051104 | 00002700660 | 186,10 | 31,01 |
+
+Gerçek belgenin metin katmanından bağımsız sayısal kontrol: **4 fatura**, toplam **5.430,50 TL brüt**, **839,00 TL KDV**. Mevcut vergi kuralıyla (KDV hariç matrah × 0,00948, toplamda kuruşa yuvarlama) **43,53 TL damga**, **5.386,97 TL net** bulunur; ödeme emrindeki 5.430,50 / 43,53 / 5.386,97 toplamlarıyla bire bir eşleşir. Tarih, okul/alıcı adı ve abone alanları faturaların ilk sayfalarından, KDV ikinci sayfalardan okunur. Bir fatura eksikse, yineleniyorsa, hesaplanmış tutarlar resmî toplamla eşleşmiyorsa veya arşiv geçerli değilse kapalı kayıt hazırlanmaz.
+
+Son kod değişikliği toplam satırını sayfa üzerinde ilk bölüm başlığına bağımlı olmadan altı para hücresinden ve `brüt − damga = net` doğrulamasıyla okur; dört faturanın `FAT URA T ARİHİ` gibi parçalanmış etiketlerini, komşu satırlara taşan tarihler ve `KDV (% 10 )` gibi yazımları tolere eder. Tam metinli iki sayfalık eklerin alanları doğrulanamazsa sekiz sayfaya gereksiz OCR uygulamak yerine dosya ve sebep hızlı aşamada gösterilir. Bu koruma, görüntü tabanlı veya eksik metinli PDF'lerin güçlü OCR yolunu kaldırmaz. Onay sonrası DoğruFatura kök klasöründe oluşan `Arsiv_Aktarim_Raporu_*.txt`, artık her fatura için kurum, abone, tarih, brüt, KDV, damga ve net tutarları ve aynı HYS toplamlarını yazar.
+
+İlgili commit'ler: `e0e4ab6ebf20a62e9259944b9925cdc739ef5528` (okuma ve doğrulama), `ac6679310f24b8ce7b3ca4284333a21f4c7a164e` (gereksiz güçlü taramayı atlama), `1725ada18fb31eec6a06263baf6bbbe5a81561b0` (PDF düzeni ve yanlış toplam regresyonu), `cd05734815ec3d26024f9e07c11ed98fa88160a1` (metin raporu), `35e2e3143368c947f140c8e6e2f744adcd0caa35` (rapor testi). Beklenen toplam test sayısı önceki 146'dan 148'e çıkar. Bu ortamda .NET SDK bulunmadığından Windows derlemesi, xUnit ve gerçek uygulama aktarımı henüz çalıştırılamadı. Son kod çekildikten sonra `TESTLERI_CALISTIR.bat` ve `DERLE_CALISTIR.bat` çalıştırılmalı; yalnız 8 numara seçilerek önizlemede tek HYS / 4 fatura / 5.386,97 TL net ve onay sonrası arşiv kaydı ile .txt raporu doğrulanmalıdır.
