@@ -672,3 +672,42 @@ Sonraki Windows kapısı:
    1.250,98 TL net ile **kaynak-delil arşivi** hazırlanmalı.
 7. Üçünü onayladıktan sonra `Arsiv_Aktarim_Raporu_*.txt` içinde 9 numara için
    kaynak-delil notu, 16/23 için normal fatura ayrıntıları görülmeli.
+
+
+## 24.09.2026 — Yalnız 9 numaralı PDF için boşluksuz OCR başlık düzeltmesi
+
+Gerçek 2024 tarihli `9) HYS-2024-10150517.pdf` dosyasında diğer arşiv
+PDF'lerinden farklı olarak ikinci sayfa görüntü tabanlı geçmiş dönem ADSL
+tablosudur. Tesseract OCR başlıkları boşlukları kaldırarak şu biçimde
+üretebiliyor:
+
+- `SIRANO`
+- `HİZMETNO`
+- `FATURANO`
+- `DÖNEMİ`
+- `SONÖDEMETARİHİ`
+- `TUTAR`
+
+Önceki başlık eşleştiricisi yalnız `SIRA NO`, `HİZMET NO`,
+`FATURA NO` ve `SON ÖDEME TARİHİ` gibi boşluklu biçimleri aradığı için
+tablo başlığı bulunamıyor ve kaynak-delil arşiv yolu hiç başlayamıyordu.
+
+Düzeltme, aynı semantik alanların boşluksuz OCR varyantlarını da kabul eder.
+Normal metin katmanı ve daha önce çalışan diğer PDF yolları değiştirilmedi.
+
+Gerçek 9 numaralı PDF'de 30 kaynak satırı bulunuyor. Kaynak satırlarındaki
+TUTAR toplamı resmî HYS ödeme emrindeki **1.261,25 TL brüt** ile eşleşiyor;
+resmî kesinti **10,27 TL**, net **1.250,98 TL**. Satır tablosunda fatura
+tarihi ve KDV bulunmadığından bu alanlar uydurulmaz; belge kaynak-delil arşivi
+olarak saklanır.
+
+Regresyon testi artık OCR'ın boşluksuz başlık biçimini doğrudan kullanır.
+
+Durum: kod ve regresyon fixture'ı `fix/archive-import-legacy-hys` dalına
+uygulandı. İlgili son commit: `8ac455cc99ca9f97b46b787c18c72f891851c850`.
+
+Bu çalışma ortamında Windows/.NET SDK bulunmadığı için **151/151 xUnit ve
+gerçek Windows arşiv aktarımı burada çalıştırılmış değildir**. Windows
+doğrulamasında önce `TESTLERI_CALISTIR.bat`, sonra `DERLE_CALISTIR.bat`
+çalıştırılmalı; ardından yalnız 9 numaralı PDF seçilerek 30 kaynak satırının
+tek kaynak-delil HYS arşiv kaydına dönüşmesi kontrol edilmelidir.
