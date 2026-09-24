@@ -785,11 +785,28 @@ internal sealed class LegacyHysPdfImportService
                 bottom = Math.Max(bottom, page.Lines[index + 1].Bottom);
             }
 
-            if (!TryFindAliasCenter(words, new[] { "sira no", "sıra no" }, out var sequence)
-                || !TryFindAliasCenter(words, new[] { "hizmet no", "hizmet numarasi", "hizmet numarası" }, out var service)
-                || !TryFindAliasCenter(words, new[] { "fatura no", "fatura numarasi", "fatura numarası" }, out var invoice)
-                || !TryFindAliasCenter(words, new[] { "donemi", "dönemi", "donem", "dönem" }, out var period)
-                || !TryFindAliasCenter(words, new[] { "son odeme tarihi", "son ödeme tarihi" }, out var dueDate)
+            if (!TryFindAliasCenter(words, new[]
+                {
+                    "sira no", "sıra no", "sirano"
+                }, out var sequence)
+                || !TryFindAliasCenter(words, new[]
+                {
+                    "hizmet no", "hizmetno", "hizmet numarasi", "hizmet numarası",
+                    "hizmetnumarasi", "hizmetnumarası"
+                }, out var service)
+                || !TryFindAliasCenter(words, new[]
+                {
+                    "fatura no", "faturano", "fatura numarasi", "fatura numarası",
+                    "faturanumarasi", "faturanumarası"
+                }, out var invoice)
+                || !TryFindAliasCenter(words, new[]
+                {
+                    "donemi", "dönemi", "donem", "dönem"
+                }, out var period)
+                || !TryFindAliasCenter(words, new[]
+                {
+                    "son odeme tarihi", "son ödeme tarihi", "sonodemetarihi", "sonödemetarihi"
+                }, out var dueDate)
                 || !TryFindAliasCenter(words, new[] { "tutar" }, out var amount))
                 continue;
 
