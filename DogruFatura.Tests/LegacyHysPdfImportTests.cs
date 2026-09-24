@@ -814,7 +814,7 @@ public sealed class LegacyHysPdfImportTests
             g.DrawString("BUDAKLAR İLKOKULU GEÇMİŞ DÖNEM ADSL FATURA BİLGİLERİ",
                 body, XBrushes.Black, 60, 100);
             var x = new[] { 55d, 100d, 190d, 285d, 400d, 505d };
-            var headers = new[] { "SIRA NO", "HİZMET NO", "FATURA NO", "DÖNEMİ", "SON ÖDEME TARİHİ", "TUTAR" };
+            var headers = new[] { "SIRANO", "HİZMETNO", "FATURANO", "DÖNEMİ", "SONÖDEMETARİHİ", "TUTAR" };
             for (var i = 0; i < headers.Length; i++)
                 g.DrawString(headers[i], body, XBrushes.Black, x[i], 135);
             var rows = new[]
