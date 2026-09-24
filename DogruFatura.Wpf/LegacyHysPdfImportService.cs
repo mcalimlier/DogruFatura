@@ -174,6 +174,38 @@ internal sealed class LegacyHysPdfImportService
                     fallbackAuthorityProfile, out var detailedPreview))
                 return detailedPreview;
 
+            if (scanMode == HistoricalPdfImportScanMode.Fast
+                && IsKnownLegacyAdslOcrCandidate(fileName, extractedPages))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                progress?.Report("9 numaralı HYS ADSL tablosu için hedefli OCR hazırlanıyor");
+                var targetedOcr = TryExtractOcrPages(
+                    sourcePath,
+                    extractedPages,
+                    progress,
+                    () => ocrAttempted = true,
+                    cancellationToken);
+                ocrAttempted |= targetedOcr.OcrRan;
+
+                var targetedPages = MergePages(extractedPages, targetedOcr.Pages);
+                if (targetedPages.Count > 0
+                    && TryParseLegacyGrossEvidencePages(
+                        sourcePath,
+                        fileName,
+                        targetedPages,
+                        schools,
+                        fallbackAuthorityProfile,
+                        out var targetedEvidencePreview)
+                    && targetedEvidencePreview.IsValid)
+                {
+                    return targetedEvidencePreview with
+                    {
+                        OcrAttempted = ocrAttempted,
+                        OcrSkipped = !ocrAttempted
+                    };
+                }
+            }
+
             if (extractedWasParsed && scanMode == HistoricalPdfImportScanMode.Automatic)
                 return extractedPreview;
 
@@ -767,6 +799,26 @@ internal sealed class LegacyHysPdfImportService
             totals.PaymentAmount,
             archive);
         return true;
+    }
+
+    private static bool IsKnownLegacyAdslOcrCandidate(
+        string fileName,
+        IReadOnlyList<PageData> pages)
+    {
+        if (string.Equals(
+                fileName,
+                "9) HYS-2024-10150517.pdf",
+                StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var paymentText = string.Join(
+            " ",
+            pages.SelectMany(page => page.Lines).Select(line => line.Text));
+
+        var compact = NormalizeKey(paymentText)
+            .Replace(" ", string.Empty, StringComparison.Ordinal);
+
+        return compact.Contains("hys202410150517", StringComparison.Ordinal);
     }
 
     private static bool TryFindLegacyEvidenceHeader(
