@@ -91,9 +91,9 @@ public sealed class HistoricalPdfImportReportTests
             var report = File.ReadAllText(path);
             Assert.Contains("Fatura: AAB2025001051104", report, StringComparison.Ordinal);
             Assert.Contains("Abone: 00002700660", report, StringComparison.Ordinal);
-            Assert.Contains("KDV: 31,01 TL", report);
-            Assert.Contains("Damga: 1,47 TL", report);
-            Assert.Contains("Doğrulanan toplam: Brüt 186,10 TL", report);
+            Assert.Contains("KDV: 31,01 TL", report, StringComparison.Ordinal);
+            Assert.Contains("Damga: 1,47 TL", report, StringComparison.Ordinal);
+            Assert.Contains("Doğrulanan toplam: Brüt 186,10 TL", report, StringComparison.Ordinal);
         }
         finally
         {
