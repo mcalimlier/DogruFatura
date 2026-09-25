@@ -151,6 +151,44 @@ public partial class MainWindow
                 try
                 {
                     cancellation.Token.ThrowIfCancellationRequested();
+
+                    if (HistoricalPdfImportService.TryExtractHysNumberFromFileName(
+                            Path.GetFileNameWithoutExtension(fileName),
+                            out var knownFileHysNumber,
+                            out _)
+                        && knownHysNumbers.Contains(knownFileHysNumber))
+                    {
+                        var alreadyArchivedPreview = new HistoricalPdfImportPreview(
+                            fileName,
+                            Path.GetFileName(fileName),
+                            false,
+                            $"{knownFileHysNumber} işlem arşivinde zaten kayıtlı; PDF yeniden taranmadı.",
+                            knownFileHysNumber,
+                            "—",
+                            0,
+                            0m,
+                            null)
+                        {
+                            AlreadyArchived = true,
+                            OcrSkipped = true,
+                            ScanDetail = "Tarama atlandı • ödeme emri zaten arşivde"
+                        };
+                        buffer[index] = alreadyArchivedPreview;
+                        var skippedCompleted = Interlocked.Increment(ref fastCompleted);
+                        Dispatcher.Invoke(() =>
+                        {
+                            progressWindow.SetFileProgress(
+                                skippedCompleted,
+                                dialog.FileNames.Length,
+                                Path.GetFileName(fileName),
+                                "Ön kontrol • zaten arşivde, tarama atlandı");
+                            SetArchiveStatus(
+                                $"Hızlı tarama: {skippedCompleted}/{dialog.FileNames.Length} tamamlandı; "
+                                + $"{strongCandidateIndexes.Count} dosya güçlü taramaya ayrıldı.");
+                        });
+                        return;
+                    }
+
                     var progress = new Progress<string>(message => progressWindow.SetWorking(message));
                     using var fastCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
                     fastCancellation.CancelAfter(HistoricalPdfFastScanTimeout);
