@@ -155,7 +155,6 @@ public partial class MainWindow
                 {
                     await fastGate.WaitAsync(cancellation.Token);
                     gateEntered = true;
-                {
                     cancellation.Token.ThrowIfCancellationRequested();
 
                     if (HistoricalPdfImportService.TryExtractHysNumberFromFileName(
