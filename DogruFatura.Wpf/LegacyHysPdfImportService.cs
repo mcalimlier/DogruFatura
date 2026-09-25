@@ -781,7 +781,7 @@ internal sealed class LegacyHysPdfImportService
             + $"{NumberParser.Money(totals.PaymentAmount)}. "
             + "Satır düzeyinde bulunmayan fatura tarihi ve vergi alanları uydurulmadan kaynak-delil arşivi hazırlanacak.",
             hysNumber,
-            invoiceType,
+            invoiceType ?? "—",
             evidenceItems.Count,
             totals.PaymentAmount,
             archive);
@@ -1396,7 +1396,7 @@ internal sealed class LegacyHysPdfImportService
     }
 
     private static string ResolveEmbeddedServiceNumber(
-        IReadOnlyList<string> candidates,
+        string[] candidates,
         string invoiceType,
         string recipientName,
         IReadOnlyList<SchoolRecord> schools)
