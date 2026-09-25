@@ -721,7 +721,7 @@ internal sealed class LegacyHysPdfImportService
     private static bool TryMoney(string text, out decimal value)
     {
         var match = Regex.Match(NormalizeOcrMoneyText(text),
-            @"(?<!\\d)(?:\\d{1,3}(?:\\.\\d{3})+|\\d+),\\d{1,2}(?!\\d)",
+            @"(?<!\d)(?:\d{1,3}(?:\.\d{3})+|\d+),\d{1,2}(?!\d)",
             RegexOptions.CultureInvariant);
         return match.Success && NumberParser.TryNonNegativeDecimal(match.Value, out value);
     }
