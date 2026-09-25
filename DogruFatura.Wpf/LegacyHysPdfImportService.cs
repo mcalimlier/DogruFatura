@@ -1426,7 +1426,7 @@ internal sealed class LegacyHysPdfImportService
                 return fromSchool;
         }
 
-        return candidates.Count > 0 ? candidates[0] : string.Empty;
+        return candidates.Length > 0 ? candidates[0] : string.Empty;
     }
 
     private static bool TryEmbeddedVat(string text, out decimal amount) =>
