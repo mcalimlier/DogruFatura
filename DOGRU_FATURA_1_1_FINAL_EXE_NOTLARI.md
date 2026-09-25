@@ -32,3 +32,11 @@ GitHub Desktop'ta **Fetch origin** sonrasında `main` dalını güncelleyin ve f
 - Çözüm: Başlık satırı kendi başına tam algılanabiliyorsa sonraki satır artık başlığa eklenmiyor; yalnızca başlık parçaları eksikse yakın satır birleştiriliyor.
 - `fix/archive-import-legacy-hys` dalı `main` ile senkronlandı; dalda main'e göre ayrıca korunması gereken benzersiz değişiklik bulunmuyordu.
 - Beklenen sonuç: 155 otomatik testin tamamının geçmesi ve final EXE kalite kapısının Setup üretimine devam etmesi.
+
+
+## 2026-09-25 — Final EXE uyarı temizliği
+
+- `LegacyHysPdfImportService.cs` içindeki nullable `invoiceType` uyarıları giderildi; doğrulanmış telefon/İnternet türü için null güvenli değer kullanılıyor.
+- Eski telefon HYS başlıklarındaki tekrar oluşturulan dizi bağımsız değişkenleri `static readonly` alias dizilerine taşındı; CA1861 uyarıları giderildi.
+- `HistoricalPdfImportReportTests.cs` içindeki xUnit `StartsWith` / `Contains` çağrıları açık `StringComparison.Ordinal` kullanacak şekilde güncellendi; CA1307 uyarıları giderildi.
+- Hedef: Release derlemesinde üretim kodu ve testlerde gereksiz analyzer/nullable uyarılarının temizlenmesi; işlevsel testlerin davranışı değiştirilmedi.
