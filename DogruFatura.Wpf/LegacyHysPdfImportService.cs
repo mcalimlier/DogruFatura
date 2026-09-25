@@ -550,9 +550,9 @@ internal sealed class LegacyHysPdfImportService
             return true;
         }
 
-        var validatedInvoiceType = FindInvoiceType(paymentText);
+        var invoiceType = FindInvoiceType(paymentText);
         var reportDate = FindReportDate(paymentPages);
-        if (!string.Equals(validatedInvoiceType, "Telefon", StringComparison.Ordinal)
+        if (!string.Equals(invoiceType, "Telefon", StringComparison.Ordinal)
             || !reportDate.HasValue)
             return false;
 
