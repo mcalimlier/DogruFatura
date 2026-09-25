@@ -437,7 +437,7 @@ internal sealed class LegacyHysPdfImportService
             {
                 preview = Invalid(sourcePath, fileName,
                     $"{page.PageNumber}. sayfada fatura numarası okunamadı.",
-                    hysNumber, invoiceType);
+                    hysNumber, validatedInvoiceType);
                 return false;
             }
 
@@ -464,7 +464,7 @@ internal sealed class LegacyHysPdfImportService
             {
                 preview = Invalid(sourcePath, fileName,
                     $"{page.PageNumber}. sayfadan başlayan fatura doğrulanamadı: {invoiceError}",
-                    hysNumber, invoiceType);
+                    hysNumber, validatedInvoiceType);
                 return false;
             }
             invoices.Add(invoice!);
@@ -474,7 +474,7 @@ internal sealed class LegacyHysPdfImportService
             .Distinct(StringComparer.Ordinal).Count() != invoices.Count)
         {
             preview = Invalid(sourcePath, fileName,
-                "Eklerde yinelenen fatura numarası var.", hysNumber, invoiceType);
+                "Eklerde yinelenen fatura numarası var.", hysNumber, validatedInvoiceType);
             return false;
         }
 
@@ -485,7 +485,7 @@ internal sealed class LegacyHysPdfImportService
                 + $"brüt {NumberParser.Money(invoices.Sum(item => item.PayableAmount))} / {NumberParser.Money(totals.GrossAmount)}, "
                 + $"damga {NumberParser.Money(decimal.Round(invoices.Sum(item => item.StampDuty), 2, MidpointRounding.AwayFromZero))} / {NumberParser.Money(totals.StampDutyAmount)}, "
                 + $"net {NumberParser.Money(decimal.Round(invoices.Sum(item => item.PaymentAmount), 2, MidpointRounding.AwayFromZero))} / {NumberParser.Money(totals.PaymentAmount)}.",
-                hysNumber, invoiceType);
+                hysNumber, validatedInvoiceType);
             return false;
         }
 
@@ -506,7 +506,7 @@ internal sealed class LegacyHysPdfImportService
         {
             preview = Invalid(sourcePath, fileName,
                 "Arşiv doğrulaması: " + validation.Message,
-                hysNumber, invoiceType);
+                hysNumber, validatedInvoiceType);
             return false;
         }
 
@@ -550,9 +550,9 @@ internal sealed class LegacyHysPdfImportService
             return true;
         }
 
-        var invoiceType = FindInvoiceType(paymentText);
+        var validatedInvoiceType = FindInvoiceType(paymentText);
         var reportDate = FindReportDate(paymentPages);
-        if (!string.Equals(invoiceType, "Telefon", StringComparison.Ordinal)
+        if (!string.Equals(validatedInvoiceType, "Telefon", StringComparison.Ordinal)
             || !reportDate.HasValue)
             return false;
 
@@ -581,7 +581,7 @@ internal sealed class LegacyHysPdfImportService
             {
                 preview = Invalid(sourcePath, fileName,
                     $"{page.PageNumber}. sayfadaki telefon fatura listesinde satır numaraları okunamadı.",
-                    hysNumber, invoiceType);
+                    hysNumber, validatedInvoiceType);
                 return true;
             }
 
@@ -610,7 +610,7 @@ internal sealed class LegacyHysPdfImportService
                 {
                     preview = Invalid(sourcePath, fileName,
                         $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: fatura tarihi okunamadı.",
-                        hysNumber, invoiceType);
+                        hysNumber, validatedInvoiceType);
                     return true;
                 }
                 var invoiceDate = dates[0];
@@ -623,7 +623,7 @@ internal sealed class LegacyHysPdfImportService
                 {
                     preview = Invalid(sourcePath, fileName,
                         $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: son ödeme tarihi okunamadı veya geçersiz.",
-                        hysNumber, invoiceType);
+                        hysNumber, validatedInvoiceType);
                     return true;
                 }
 
@@ -637,18 +637,18 @@ internal sealed class LegacyHysPdfImportService
                 {
                     preview = Invalid(sourcePath, fileName,
                         $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: fatura numarası/hizmet/tutar alanları okunamadı.",
-                        hysNumber, invoiceType);
+                        hysNumber, validatedInvoiceType);
                     return true;
                 }
 
                 var byService = schools.Where(school =>
-                    string.Equals(DigitsOnly(school.GetServiceNumber(invoiceType!)).TrimStart('0'),
+                    string.Equals(DigitsOnly(school.GetServiceNumber(validatedInvoiceType!)).TrimStart('0'),
                         service.TrimStart('0'), StringComparison.Ordinal)).ToArray();
                 if (byService.Length > 1)
                 {
                     preview = Invalid(sourcePath, fileName,
                         $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: hizmet numarası birden fazla kurumla eşleşti.",
-                        hysNumber, invoiceType);
+                        hysNumber, validatedInvoiceType);
                     return true;
                 }
                 var school = byService.SingleOrDefault();
@@ -656,18 +656,18 @@ internal sealed class LegacyHysPdfImportService
                 {
                     preview = Invalid(sourcePath, fileName,
                         $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: kurum adı okunamadı.",
-                        hysNumber, invoiceType);
+                        hysNumber, validatedInvoiceType);
                     return true;
                 }
 
-                var calculation = _taxCalculationService.Calculate(gross, vat, invoiceType);
+                var calculation = _taxCalculationService.Calculate(gross, vat, validatedInvoiceType);
                 if (!calculation.IsValid
                     || calculation.StampDuty != stamp
                     || calculation.PaymentAmount != payment)
                 {
                     preview = Invalid(sourcePath, fileName,
                         $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: vergi/ödeme hesabı kaynak değerlerle uyuşmuyor.",
-                        hysNumber, invoiceType);
+                        hysNumber, validatedInvoiceType);
                     return true;
                 }
 
@@ -675,7 +675,7 @@ internal sealed class LegacyHysPdfImportService
                     Guid.NewGuid(), reportDate.Value,
                     school?.InstitutionType ?? InferInstitutionType(institutionName),
                     school?.Name ?? institutionName, school?.Vkn ?? string.Empty,
-                    invoiceType, invoiceNumber, service, invoiceDate, dueDate,
+                    validatedInvoiceType, invoiceNumber, service, invoiceDate, dueDate,
                     gross, vat, calculation.VatBase, stamp, payment, 0m,
                     school?.SchoolId ?? Guid.Empty);
                 var validation = InvoiceValidationService.Validate(invoice);
@@ -683,7 +683,7 @@ internal sealed class LegacyHysPdfImportService
                 {
                     preview = Invalid(sourcePath, fileName,
                         $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: {validation.Message}",
-                        hysNumber, invoiceType);
+                        hysNumber, validatedInvoiceType);
                     return true;
                 }
                 invoices.Add(invoice);
@@ -700,21 +700,21 @@ internal sealed class LegacyHysPdfImportService
                 + $"brüt {NumberParser.Money(invoices.Sum(item => item.PayableAmount))} / {NumberParser.Money(totals.GrossAmount)}, "
                 + $"damga {NumberParser.Money(invoices.Sum(item => item.StampDuty))} / {NumberParser.Money(totals.StampDutyAmount)}, "
                 + $"net {NumberParser.Money(invoices.Sum(item => item.PaymentAmount))} / {NumberParser.Money(totals.PaymentAmount)}.",
-                hysNumber, invoiceType);
+                hysNumber, validatedInvoiceType);
             return true;
         }
 
         var authorityProfile = ExtractAuthorityProfile(paymentPages, fallbackAuthorityProfile);
         var archive = ClosedArchiveSnapshotService.Seal(new ArchivedInvoiceList(
             Guid.NewGuid(), "DF-PDF-" + hysNumber[4..], reportDate.Value.Date,
-            invoiceType!, invoices, authorityProfile, hysNumber, true,
+            validatedInvoiceType!, invoices, authorityProfile, hysNumber, true,
             reportDate.Value.Date, hysNumber + ".pdf"));
         var validationResult = ArchivedInvoiceListValidationService.Validate(archive);
         if (!validationResult.IsValid)
         {
             preview = Invalid(sourcePath, fileName,
                 "Arşiv doğrulaması: " + validationResult.Message,
-                hysNumber, invoiceType);
+                hysNumber, validatedInvoiceType);
             return true;
         }
 
@@ -724,7 +724,7 @@ internal sealed class LegacyHysPdfImportService
         preview = new HistoricalPdfImportPreview(
             sourcePath, fileName, true,
             $"{invoices.Count} telefon faturası tablo üzerinden okundu; brüt/damga/net toplamları ödeme emriyle eşleşti." + note,
-            hysNumber, invoiceType, invoices.Count,
+            hysNumber, validatedInvoiceType, invoices.Count,
             invoices.Sum(invoice => invoice.PaymentAmount), archive);
         return true;
     }
@@ -750,16 +750,16 @@ internal sealed class LegacyHysPdfImportService
                 words.AddRange(page.Lines[index + 1].Words);
                 bottom = Math.Max(bottom, page.Lines[index + 1].Bottom);
             }
-            if (!TryFindAliasCenter(words, new[] { "sira no", "sıra no", "s no", "s.no" }, out var sequence)
-                || !TryFindAliasCenter(words, new[] { "okul adi", "okul adı" }, out var institution)
-                || !TryFindAliasCenter(words, new[] { "tel no", "telefon no", "telefon", "hizmet numarasi", "hizmet numarası", "hizmet no" }, out var service)
-                || !TryFindAliasCenter(words, new[] { "fatura id", "fatura no" }, out var invoice)
-                || !TryFindAliasCenter(words, new[] { "fatura tarihi" }, out var invoiceDate)
-                || !TryFindAliasCenter(words, new[] { "son odeme tarihi", "son ödeme tarihi" }, out var dueDate)
-                || !TryFindAliasCenter(words, new[] { "odenecek tutar", "fatura tutari", "fatura tutarı" }, out var gross)
-                || !TryFindAliasCenter(words, new[] { "kdv" }, out var vat)
-                || !TryFindAliasCenter(words, new[] { "damga vergisi" }, out var stamp)
-                || !TryFindAliasCenter(words, new[] { "odeme tutari", "ödeme tutarı" }, out var payment))
+            if (!TryFindAliasCenter(words, LegacyTelephoneSequenceAliases, out var sequence)
+                || !TryFindAliasCenter(words, LegacyTelephoneInstitutionAliases, out var institution)
+                || !TryFindAliasCenter(words, LegacyTelephoneServiceAliases, out var service)
+                || !TryFindAliasCenter(words, LegacyTelephoneInvoiceAliases, out var invoice)
+                || !TryFindAliasCenter(words, LegacyTelephoneInvoiceDateAliases, out var invoiceDate)
+                || !TryFindAliasCenter(words, LegacyTelephoneDueDateAliases, out var dueDate)
+                || !TryFindAliasCenter(words, LegacyTelephoneGrossAliases, out var gross)
+                || !TryFindAliasCenter(words, LegacyTelephoneVatAliases, out var vat)
+                || !TryFindAliasCenter(words, LegacyTelephoneStampAliases, out var stamp)
+                || !TryFindAliasCenter(words, LegacyTelephonePaymentAliases, out var payment))
                 continue;
             var centers = new[] { sequence, institution, service, invoice, invoiceDate, dueDate, gross, vat, stamp, payment };
             if (!centers.Zip(centers.Skip(1), (left, right) => left < right).All(value => value))
