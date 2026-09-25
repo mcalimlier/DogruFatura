@@ -4416,7 +4416,13 @@ internal sealed class LegacyHysPdfImportService
         double Bottom,
         int DetectedRequiredCount);
 
-    private sealed record LegacyTelephoneHeader(\n        ColumnRange Sequence, ColumnRange Institution, ColumnRange Service,\n        ColumnRange Invoice, ColumnRange InvoiceDate, ColumnRange DueDate,\n        ColumnRange Gross, ColumnRange Vat, ColumnRange StampDuty,\n        ColumnRange Payment, double Bottom);\n\n    private sealed record LegacyEvidenceHeader(
+    private sealed record LegacyTelephoneHeader(
+        ColumnRange Sequence, ColumnRange Institution, ColumnRange Service,
+        ColumnRange Invoice, ColumnRange InvoiceDate, ColumnRange DueDate,
+        ColumnRange Gross, ColumnRange Vat, ColumnRange StampDuty,
+        ColumnRange Payment, double Bottom);
+
+    private sealed record LegacyEvidenceHeader(
         ColumnRange Sequence,
         ColumnRange Service,
         ColumnRange Invoice,
