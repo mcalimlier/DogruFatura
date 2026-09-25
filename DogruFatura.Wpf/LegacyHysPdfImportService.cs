@@ -164,6 +164,13 @@ internal sealed class LegacyHysPdfImportService
             if (extractedWasParsed && extractedPreview.IsValid)
                 return extractedPreview;
 
+            // Eski MYS telefon ödeme emirlerinde fatura ekleri tek sayfalık tablo olarak gelir.
+            // Bu tablo e-Fatura eki değildir; doğrudan fatura no, tarih, KDV, damga ve ödeme tutarlarını taşır.
+            if (TryParseLegacyTelephoneListPages(
+                    sourcePath, fileName, extractedPages, schools,
+                    fallbackAuthorityProfile, out var telephonePreview))
+                return telephonePreview;
+
             // Bazı HYS dosyalarında fatura listesi tablosu yerine e-Fatura eki vardır.
             // Metin katmanı okunuyorsa gerçek ödeme emri toplamıyla ek fatura eşleştirilir.
             if (TryParseEmbeddedInvoicePages(
@@ -500,6 +507,267 @@ internal sealed class LegacyHysPdfImportService
             hysNumber, invoiceType, invoices.Count,
             invoices.Sum(invoice => invoice.PaymentAmount), archive);
         return true;
+    }
+
+    private bool TryParseLegacyTelephoneListPages(
+        string sourcePath,
+        string fileName,
+        IReadOnlyList<PageData> pages,
+        IReadOnlyList<SchoolRecord> schools,
+        AuthorityProfile fallbackAuthorityProfile,
+        out HistoricalPdfImportPreview preview)
+    {
+        preview = Invalid(sourcePath, fileName, "Eski telefon fatura listesi bulunamadı.");
+        var paymentPages = pages.Where(page =>
+            NormalizeKey(string.Join(" ", page.Lines.Select(line => line.Text)))
+                .Contains("odeme emri belgesi", StringComparison.Ordinal)).ToArray();
+        if (paymentPages.Length == 0
+            || (!TryFindEmbeddedOrderTotals(paymentPages, out var totals)
+                && !TryFindDocumentTotals(paymentPages, out totals)))
+            return false;
+
+        var reportPages = pages.Except(paymentPages)
+            .Where(page => TryFindLegacyTelephoneHeader(page, out _))
+            .ToArray();
+        if (reportPages.Length == 0)
+            return false;
+
+        var paymentText = string.Join(" ",
+            paymentPages.SelectMany(page => page.Lines).Select(line => line.Text));
+        if (!TryResolveHysNumber(sourcePath, paymentText, out var hysNumber, out var hysError))
+        {
+            preview = Invalid(sourcePath, fileName, hysError);
+            return true;
+        }
+
+        var invoiceType = FindInvoiceType(paymentText);
+        var reportDate = FindReportDate(paymentPages);
+        if (!string.Equals(invoiceType, "Telefon", StringComparison.Ordinal)
+            || !reportDate.HasValue)
+            return false;
+
+        var invoices = new List<InvoiceRecord>();
+        var missingDueDateCount = 0;
+        foreach (var page in reportPages)
+        {
+            if (!TryFindLegacyTelephoneHeader(page, out var header))
+                continue;
+
+            var anchors = page.Words
+                .Where(word => word.Top > header.Bottom + 1d
+                    && word.CenterX >= header.Sequence.Left
+                    && word.CenterX < header.Sequence.Right)
+                .Select(word => (Word: word, Digits: OcrDigitsOnly(word.Text)))
+                .Where(item => item.Digits.Length is > 0 and <= 3
+                    && int.TryParse(item.Digits, NumberStyles.None,
+                        CultureInfo.InvariantCulture, out var sequence)
+                    && sequence > 0 && sequence <= 500)
+                .Select(item => (item.Word, Sequence: int.Parse(
+                    item.Digits, CultureInfo.InvariantCulture)))
+                .OrderBy(item => item.Word.CenterY)
+                .ToArray();
+            if (anchors.Length == 0)
+            {
+                preview = Invalid(sourcePath, fileName,
+                    $"{page.PageNumber}. sayfadaki telefon fatura listesinde satır numaraları okunamadı.",
+                    hysNumber, invoiceType);
+                return true;
+            }
+
+            for (var index = 0; index < anchors.Length; index++)
+            {
+                var anchor = anchors[index];
+                var upper = index == 0 ? header.Bottom
+                    : (anchors[index - 1].Word.CenterY + anchor.Word.CenterY) / 2d;
+                var lower = index + 1 < anchors.Length
+                    ? (anchor.Word.CenterY + anchors[index + 1].Word.CenterY) / 2d
+                    : Math.Min(page.Height, anchor.Word.CenterY + Math.Max(24d, anchor.Word.Height * 2.5d));
+                var words = page.Words.Where(word =>
+                    word.CenterY > upper && word.CenterY < lower).ToArray();
+                string Cell(ColumnRange range) => string.Join(" ", words
+                    .Where(word => word.CenterX >= range.Left && word.CenterX < range.Right)
+                    .OrderBy(word => word.Top).ThenBy(word => word.Left)
+                    .Select(word => word.Text));
+
+                var institutionName = NormalizeInstitutionCell(Cell(header.Institution));
+                var service = OcrDigitsOnly(Cell(header.Service));
+                var invoiceNumber = Regex.Replace(Cell(header.Invoice),
+                    @"[^A-Za-z0-9]", string.Empty);
+                var dates = ExtractDates(Cell(header.InvoiceDate))
+                    .Distinct().OrderBy(date => date).ToArray();
+                if (dates.Length != 1)
+                {
+                    preview = Invalid(sourcePath, fileName,
+                        $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: fatura tarihi okunamadı.",
+                        hysNumber, invoiceType);
+                    return true;
+                }
+                var invoiceDate = dates[0];
+                var dueDates = ExtractDates(Cell(header.DueDate))
+                    .Distinct().OrderBy(date => date).ToArray();
+                var dueDate = dueDates.Length == 1 ? dueDates[0] : invoiceDate;
+                if (dueDates.Length == 0)
+                    missingDueDateCount++;
+                if (dueDates.Length > 1 || dueDate.Date < invoiceDate.Date)
+                {
+                    preview = Invalid(sourcePath, fileName,
+                        $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: son ödeme tarihi okunamadı veya geçersiz.",
+                        hysNumber, invoiceType);
+                    return true;
+                }
+
+                if (!TryMoney(Cell(header.Gross), out var gross)
+                    || !TryMoney(Cell(header.Vat), out var vat)
+                    || !TryMoney(Cell(header.StampDuty), out var stamp)
+                    || !TryMoney(Cell(header.Payment), out var payment)
+                    || gross <= 0m || vat < 0m || stamp < 0m || payment <= 0m
+                    || service.Length < 6
+                    || !Regex.IsMatch(invoiceNumber, @"^[A-Z]{3}20\\d{11}$", RegexOptions.CultureInvariant))
+                {
+                    preview = Invalid(sourcePath, fileName,
+                        $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: fatura numarası/hizmet/tutar alanları okunamadı.",
+                        hysNumber, invoiceType);
+                    return true;
+                }
+
+                var byService = schools.Where(school =>
+                    string.Equals(DigitsOnly(school.GetServiceNumber(invoiceType!)).TrimStart('0'),
+                        service.TrimStart('0'), StringComparison.Ordinal)).ToArray();
+                if (byService.Length > 1)
+                {
+                    preview = Invalid(sourcePath, fileName,
+                        $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: hizmet numarası birden fazla kurumla eşleşti.",
+                        hysNumber, invoiceType);
+                    return true;
+                }
+                var school = byService.SingleOrDefault();
+                if (string.IsNullOrWhiteSpace(institutionName))
+                {
+                    preview = Invalid(sourcePath, fileName,
+                        $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: kurum adı okunamadı.",
+                        hysNumber, invoiceType);
+                    return true;
+                }
+
+                var calculation = _taxCalculationService.Calculate(gross, vat, invoiceType);
+                if (!calculation.IsValid
+                    || calculation.StampDuty != stamp
+                    || calculation.PaymentAmount != payment)
+                {
+                    preview = Invalid(sourcePath, fileName,
+                        $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: vergi/ödeme hesabı kaynak değerlerle uyuşmuyor.",
+                        hysNumber, invoiceType);
+                    return true;
+                }
+
+                var invoice = new InvoiceRecord(
+                    Guid.NewGuid(), reportDate.Value,
+                    school?.InstitutionType ?? InferInstitutionType(institutionName),
+                    school?.Name ?? institutionName, school?.Vkn ?? string.Empty,
+                    invoiceType, invoiceNumber, service, invoiceDate, dueDate,
+                    gross, vat, calculation.VatBase, stamp, payment, 0m,
+                    school?.SchoolId ?? Guid.Empty);
+                var validation = InvoiceValidationService.Validate(invoice);
+                if (!validation.IsValid)
+                {
+                    preview = Invalid(sourcePath, fileName,
+                        $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: {validation.Message}",
+                        hysNumber, invoiceType);
+                    return true;
+                }
+                invoices.Add(invoice);
+            }
+        }
+
+        if (invoices.Count == 0
+            || invoices.Select(invoice => invoice.InvoiceNumber)
+                .Distinct(StringComparer.Ordinal).Count() != invoices.Count
+            || !MatchesDocumentTotals(invoices, totals))
+        {
+            preview = Invalid(sourcePath, fileName,
+                $"Telefon fatura listesi toplamları ödeme emriyle eşleşmiyor: "
+                + $"brüt {NumberParser.Money(invoices.Sum(item => item.PayableAmount))} / {NumberParser.Money(totals.GrossAmount)}, "
+                + $"damga {NumberParser.Money(invoices.Sum(item => item.StampDuty))} / {NumberParser.Money(totals.StampDutyAmount)}, "
+                + $"net {NumberParser.Money(invoices.Sum(item => item.PaymentAmount))} / {NumberParser.Money(totals.PaymentAmount)}.",
+                hysNumber, invoiceType);
+            return true;
+        }
+
+        var authorityProfile = ExtractAuthorityProfile(paymentPages, fallbackAuthorityProfile);
+        var archive = ClosedArchiveSnapshotService.Seal(new ArchivedInvoiceList(
+            Guid.NewGuid(), "DF-PDF-" + hysNumber[4..], reportDate.Value.Date,
+            invoiceType!, invoices, authorityProfile, hysNumber, true,
+            reportDate.Value.Date, hysNumber + ".pdf"));
+        var validationResult = ArchivedInvoiceListValidationService.Validate(archive);
+        if (!validationResult.IsValid)
+        {
+            preview = Invalid(sourcePath, fileName,
+                "Arşiv doğrulaması: " + validationResult.Message,
+                hysNumber, invoiceType);
+            return true;
+        }
+
+        var note = missingDueDateCount > 0
+            ? $" {missingDueDateCount} satırda kaynak tabloda son ödeme tarihi bulunmadığı için fatura tarihi tarih alanı olarak korunmuştur; tutar/KDV/damga/net değerleri kaynak ve ödeme emri toplamlarıyla doğrulanmıştır."
+            : " Tüm satırların fatura ve son ödeme tarihleri kaynak tablodan okundu. Tutar/KDV/damga/net değerleri ödeme emri toplamlarıyla doğrulandı.";
+        preview = new HistoricalPdfImportPreview(
+            sourcePath, fileName, true,
+            $"{invoices.Count} telefon faturası tablo üzerinden okundu; brüt/damga/net toplamları ödeme emriyle eşleşti." + note,
+            hysNumber, invoiceType, invoices.Count,
+            invoices.Sum(invoice => invoice.PaymentAmount), archive);
+        return true;
+    }
+
+    private static bool TryMoney(string text, out decimal value)
+    {
+        var match = Regex.Match(NormalizeOcrMoneyText(text),
+            @"(?<!\\d)(?:\\d{1,3}(?:\\.\\d{3})+|\\d+),\\d{1,2}(?!\\d)",
+            RegexOptions.CultureInvariant);
+        return match.Success && NumberParser.TryNonNegativeDecimal(match.Value, out value);
+    }
+
+    private static bool TryFindLegacyTelephoneHeader(PageData page, out LegacyTelephoneHeader header)
+    {
+        header = default!;
+        for (var index = 0; index < page.Lines.Count; index++)
+        {
+            var words = new List<WordData>(page.Lines[index].Words);
+            var bottom = page.Lines[index].Bottom;
+            if (index + 1 < page.Lines.Count && page.Lines[index + 1].Top - page.Lines[index].Top < 30d)
+            {
+                words.AddRange(page.Lines[index + 1].Words);
+                bottom = Math.Max(bottom, page.Lines[index + 1].Bottom);
+            }
+            if (!TryFindAliasCenter(words, new[] { "sira no", "sıra no", "s no", "s.no" }, out var sequence)
+                || !TryFindAliasCenter(words, new[] { "okul adi", "okul adı" }, out var institution)
+                || !TryFindAliasCenter(words, new[] { "tel no", "telefon no", "telefon" }, out var service)
+                || !TryFindAliasCenter(words, new[] { "fatura id", "fatura no" }, out var invoice)
+                || !TryFindAliasCenter(words, new[] { "fatura tarihi" }, out var invoiceDate)
+                || !TryFindAliasCenter(words, new[] { "son odeme tarihi", "son ödeme tarihi" }, out var dueDate)
+                || !TryFindAliasCenter(words, new[] { "odenecek tutar", "fatura tutari", "fatura tutarı" }, out var gross)
+                || !TryFindAliasCenter(words, new[] { "kdv" }, out var vat)
+                || !TryFindAliasCenter(words, new[] { "damga vergisi" }, out var stamp)
+                || !TryFindAliasCenter(words, new[] { "odeme tutari", "ödeme tutarı" }, out var payment))
+                continue;
+            var centers = new[] { sequence, institution, service, invoice, invoiceDate, dueDate, gross, vat, stamp, payment };
+            if (!centers.Zip(centers.Skip(1), (left, right) => left < right).All(value => value))
+                continue;
+            static ColumnRange Range(double left, double center, double right) =>
+                new((left + center) / 2d, (center + right) / 2d);
+            header = new LegacyTelephoneHeader(
+                new ColumnRange(0d, (sequence + institution) / 2d),
+                Range(sequence, institution, service),
+                Range(institution, service, invoice),
+                Range(service, invoice, invoiceDate),
+                Range(invoice, invoiceDate, dueDate),
+                Range(invoiceDate, dueDate, gross),
+                Range(dueDate, gross, vat),
+                Range(gross, vat, stamp),
+                Range(vat, stamp, payment),
+                new ColumnRange((stamp + payment) / 2d, page.Width), bottom);
+            return true;
+        }
+        return false;
     }
 
     // Bazı eski internet HYS'lerinde ek, vergi sütunları olmayan görüntü-tabanlı
@@ -4148,7 +4416,7 @@ internal sealed class LegacyHysPdfImportService
         double Bottom,
         int DetectedRequiredCount);
 
-    private sealed record LegacyEvidenceHeader(
+    private sealed record LegacyTelephoneHeader(\n        ColumnRange Sequence, ColumnRange Institution, ColumnRange Service,\n        ColumnRange Invoice, ColumnRange InvoiceDate, ColumnRange DueDate,\n        ColumnRange Gross, ColumnRange Vat, ColumnRange StampDuty,\n        ColumnRange Payment, double Bottom);\n\n    private sealed record LegacyEvidenceHeader(
         ColumnRange Sequence,
         ColumnRange Service,
         ColumnRange Invoice,
