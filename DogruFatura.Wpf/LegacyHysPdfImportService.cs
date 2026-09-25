@@ -1066,7 +1066,20 @@ internal sealed class LegacyHysPdfImportService
         {
             var words = new List<WordData>(page.Lines[index].Words);
             var bottom = page.Lines[index].Bottom;
-            if (index + 1 < page.Lines.Count
+
+            // Başlık ile ilk veri satırı fiziksel olarak birbirine yakınsa körlemesine
+            // ikinci satırı başlığa katmak ilk veri satırını "başlık yüksekliği" altında
+            // bırakabiliyordu. Önce mevcut satırı tek başına dene; yalnızca eksik başlık
+            // parçaları varsa yakın ikinci satırı başlığa ekle.
+            var hasCompleteHeader = TryFindAliasCenter(words, LegacySequenceAliases, out _)
+                && TryFindAliasCenter(words, LegacyServiceAliases, out _)
+                && TryFindAliasCenter(words, LegacyInvoiceAliases, out _)
+                && TryFindAliasCenter(words, LegacyPeriodAliases, out _)
+                && TryFindAliasCenter(words, LegacyDueDateAliases, out _)
+                && TryFindAliasCenter(words, LegacyAmountAliases, out _);
+
+            if (!hasCompleteHeader
+                && index + 1 < page.Lines.Count
                 && page.Lines[index + 1].Top - page.Lines[index].Top < 30d)
             {
                 words.AddRange(page.Lines[index + 1].Words);
