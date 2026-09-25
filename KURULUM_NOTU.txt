@@ -1,13 +1,23 @@
-DOGRU FATURA 1.0.0 - KURULUM NOTU
-================================
+DOGRU FATURA - KURULUM NOTU
+============================
 
 DoğruFatura, Windows 10/11 64-bit bilgisayarlar için self-contained hazırlanmıştır.
 Hedef bilgisayarda .NET, SDK, Visual Studio veya Excel kurulması gerekmez.
 
+PAKET SÜRÜMÜ
+Kurulum dosyası DogruFatura_Setup_<sürüm>_x64.exe biçimindedir.
+RC/test paketlerinde sürüm adında -rc1 benzeri bir ek bulunabilir. Final dağıtımda bu ek kaldırılır.
+
+
+DOGRUFATURA 1.1.0 DAGITIM IMZASI
+Bu 1.1.0 dağıtım paketi kod imzalama sertifikası bulunmadığı için bilinçli olarak imzasız dağıtılabilir.
+Windows SmartScreen / "Bilinmeyen yayıncı" uyarısı bu durumda beklenebilir.
+Kurulum dosyasını yalnız güvenilir kaynaktan alın ve paketteki SHA-256 dosyasıyla doğrulayın.
+
 WINDOWS SMARTSCREEN GÖRÜRSENİZ
-DoğruFatura ücretsiz dağıtım modelinde dijital kod imzalama sertifikası kullanılmadığı için
-Windows bazı bilgisayarlarda ilk çalıştırmada SmartScreen / "Bilinmeyen yayıncı" uyarısı gösterebilir.
-Bu uyarı, tek başına kurulum dosyasının bozuk veya zararlı olduğu anlamına gelmez.
+Dağıtım paketinde geçerli Authenticode imzası bulunmuyorsa Windows bazı bilgisayarlarda ilk çalıştırmada
+SmartScreen / "Bilinmeyen yayıncı" uyarısı gösterebilir. Bu uyarı tek başına kurulum dosyasının bozuk
+veya zararlı olduğu anlamına gelmez.
 
 Kurulum dosyasını yalnızca size verilen resmi DoğruFatura paketinden kullanın.
 Paketin yanında bulunan SHA-256 dosyasındaki değer ile kurulum EXE'sinin SHA-256 değerini
@@ -15,7 +25,7 @@ karşılaştırarak dosyanın değiştirilmediğini doğrulayabilirsiniz.
 
 SmartScreen ekranında seçenek sunuluyorsa:
   1. "Daha fazla bilgi" seçeneğine tıklayın.
-  2. Dosya adının DogruFatura_Setup_1.0.0_x64.exe olduğunu kontrol edin.
+  2. Dosya adının DogruFatura_Setup_<sürüm>_x64.exe biçiminde olduğunu kontrol edin.
   3. Dosyayı güvenilir kaynaktan aldıysanız "Yine de çalıştır" seçeneğini kullanın.
 
 "Yine de çalıştır" seçeneği yoksa bilgisayar kurum politikasıyla kısıtlanmış olabilir.
@@ -23,10 +33,10 @@ Windows güvenlik ayarlarını veya SmartScreen'i kapatmaya çalışmayın; kuru
 personeline başvurun.
 
 SHA-256 NASIL KONTROL EDİLİR? (İSTEĞE BAĞLI)
-Kurulum dosyasının bulunduğu klasörde PowerShell açıp şu komutu çalıştırabilirsiniz:
-  Get-FileHash .\DogruFatura_Setup_1.0.0_x64.exe -Algorithm SHA256
+Kurulum dosyasının bulunduğu klasörde PowerShell açıp:
+  Get-FileHash .\DogruFatura_Setup_<sürüm>_x64.exe -Algorithm SHA256
 
-Çıkan değer, paketteki DogruFatura_Setup_1.0.0_x64_SHA256.txt dosyasındaki değerle aynı olmalıdır.
+komutunu çalıştırabilirsiniz. Çıkan değer paketteki *_SHA256.txt dosyasındaki değerle aynı olmalıdır.
 Bu dağıtım paketi hazırlanırken kullanılan gerçek SHA-256 değeri ayrıca bu notun en altına otomatik eklenir.
 
 Kurulum yönetici izni isteyebilir; bu Program Files klasörüne kurulum için normaldir.

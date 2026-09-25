@@ -45,24 +45,51 @@ public sealed class ArchivePdfSynchronizationService
             try
             {
                 var targetPath = ResolveTargetPath(archive);
-                if (File.Exists(targetPath))
+                var existedBeforeSync = File.Exists(targetPath);
+                if (existedBeforeSync)
                 {
                     existingCount++;
                 }
                 else
                 {
+                    if (archive.IsLegacyEvidenceOnly)
+                        throw new InvalidOperationException(
+                            "Kaynak-delil arşivinin özgün PDF'si eksik. "
+                            + "Satır düzeyinde vergi/fatura tarihi bulunmadığı için bu PDF yapay olarak yeniden üretilemez.");
+
                     var reportData = CreateReportData(archive);
                     _savePdf(reportData, targetPath);
                     createdCount++;
                 }
 
-                var expectedFileName = Path.GetFileName(targetPath);
-                if (!string.Equals(
-                        archive.PdfFileName,
-                        expectedFileName,
-                        StringComparison.OrdinalIgnoreCase))
+                var currentHash = FileIntegrityService.ComputeSha256(targetPath);
+                if (existedBeforeSync
+                    && !string.IsNullOrWhiteSpace(archive.PdfSha256)
+                    && !string.Equals(archive.PdfSha256, currentHash, StringComparison.OrdinalIgnoreCase))
                 {
-                    updatedArchives.Add(archive with { PdfFileName = expectedFileName });
+                    errors.Add(
+                        $"{archive.ArchiveNumber}: PDF içerik bütünlüğü doğrulanamadı. "
+                        + "Dosya kayıtlı SHA-256 özetiyle eşleşmiyor; kayıtlı hash otomatik değiştirilmedi.");
+                    continue;
+                }
+
+                var expectedFileName = Path.GetFileName(targetPath);
+                var needsFileNameUpdate = !string.Equals(
+                    archive.PdfFileName,
+                    expectedFileName,
+                    StringComparison.OrdinalIgnoreCase);
+                var needsHashUpdate = !string.Equals(
+                    archive.PdfSha256,
+                    currentHash,
+                    StringComparison.OrdinalIgnoreCase);
+
+                if (needsFileNameUpdate || needsHashUpdate)
+                {
+                    updatedArchives.Add(archive with
+                    {
+                        PdfFileName = expectedFileName,
+                        PdfSha256 = currentHash
+                    });
                 }
             }
             catch (Exception ex)

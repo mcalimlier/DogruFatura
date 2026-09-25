@@ -7,7 +7,7 @@ namespace DogruFatura.Tests;
 public sealed class CoreRulesTests
 {
     [Fact]
-    public void ElectricityCalculation_UsesApprovedStampDutyFormula()
+    public void ElectricityCalculationUsesApprovedStampDutyFormula()
     {
         var service = new TaxCalculationService();
         var result = service.Calculate(4965.10m, 827.53m, "Elektrik");
@@ -16,10 +16,14 @@ public sealed class CoreRulesTests
         Assert.Equal(4137.57m, result.VatBase);
         Assert.Equal(4137.57m * TaxCalculationService.StampDutyRate, result.StampDuty);
         Assert.Equal(4965.10m - result.StampDuty, result.PaymentAmount);
+        Assert.Equal(TaxRuleCatalog.CurrentVersion, result.RuleVersion);
+        Assert.Null(result.RuleEffectiveFrom);
+        Assert.Equal(TaxCalculationService.StampDutyRate, result.AppliedStampDutyRate);
+        Assert.Equal(TaxRuleCatalog.Current, service.ActiveRule);
     }
 
     [Fact]
-    public void WaterCalculation_IsStampDutyExempt()
+    public void WaterCalculationIsStampDutyExempt()
     {
         var result = new TaxCalculationService().Calculate(1250m, 125m, "Su");
 
@@ -30,7 +34,7 @@ public sealed class CoreRulesTests
     }
 
     [Fact]
-    public void ElectricityCompensation_IsAddedToVatBaseOnly()
+    public void ElectricityCompensationIsAddedToVatBaseOnly()
     {
         var result = new TaxCalculationService().Calculate(9921.79m, 1653.63m, "Elektrik", 250m);
 
@@ -45,7 +49,9 @@ public sealed class CoreRulesTests
     [InlineData("hys202614586", "HYS-202614586")]
     [InlineData(" HYS-202614586 ", "HYS-202614586")]
     [InlineData("202614586", "HYS-202614586")]
-    public void HysNumber_IsNormalized(string input, string expected)
+    [InlineData("MYS-2023-4010364", "MYS-20234010364")]
+    [InlineData("mys20234010364", "MYS-20234010364")]
+    public void HysNumberIsNormalized(string input, string expected)
     {
         var success = HysPaymentOrderService.TryNormalize(input, out var normalized, out _);
 
@@ -57,13 +63,13 @@ public sealed class CoreRulesTests
     [InlineData("")]
     [InlineData("HYS-0123")]
     [InlineData("HYS-ABC")]
-    public void InvalidHysNumber_IsRejected(string input)
+    public void InvalidHysNumberIsRejected(string input)
     {
         Assert.False(HysPaymentOrderService.TryNormalize(input, out _, out _));
     }
 
     [Fact]
-    public void DuplicateInvoice_IsDetectedIgnoringWhitespaceAndCase()
+    public void DuplicateInvoiceIsDetectedIgnoringWhitespaceAndCase()
     {
         var existing = Invoice("Elektrik", "12345", "ABC-100");
         var candidate = Invoice("elektrik", " 12345 ", " abc-100 ");
@@ -80,7 +86,7 @@ public sealed class CoreRulesTests
     [InlineData(13, 2)]
     [InlineData(31, 2)]
     [InlineData(32, 3)]
-    public void PagePlanner_ProducesExpectedPageCount(int itemCount, int expectedPages)
+    public void PagePlannerProducesExpectedPageCount(int itemCount, int expectedPages)
     {
         var pages = FinalReportPagePlanner.Plan(itemCount);
 
@@ -92,7 +98,7 @@ public sealed class CoreRulesTests
     }
 
     [Fact]
-    public void ReportSideMargins_AreExactlyPointSeventyFiveCentimeters()
+    public void ReportSideMarginsAreExactlyPointSeventyFiveCentimeters()
     {
         var expectedPoints = 0.75 / 2.54 * 72.0;
         var expectedDips = 0.75 / 2.54 * 96.0;

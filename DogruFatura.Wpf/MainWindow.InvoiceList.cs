@@ -1,26 +1,16 @@
 using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
-using Microsoft.Win32;
 
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private int FindInvoiceIndex(Guid invoiceId)
+{
+    private int FindInvoiceIndex(Guid invoiceId)
     {
         for (var index = 0; index < ActiveInvoices.Count; index++)
             if (ActiveInvoices[index].Id == invoiceId)
@@ -71,11 +61,16 @@ public partial class MainWindow
         if (InvoicesGrid.SelectedItem is not ActiveInvoiceRow row) return;
 
         var invoice = row.Invoice;
-        var school = AllSchools.FirstOrDefault(candidate =>
-            string.Equals(candidate.InstitutionType, invoice.InstitutionType, StringComparison.Ordinal)
-            && (string.Equals(candidate.Name, invoice.InstitutionName, StringComparison.CurrentCultureIgnoreCase)
-                || (string.Equals(candidate.Vkn, invoice.Vkn, StringComparison.Ordinal)
-                    && string.Equals(candidate.GetServiceNumber(invoice.InvoiceType), invoice.ServiceNumber, StringComparison.Ordinal))));
+        var school = invoice.SchoolId != Guid.Empty
+            ? AllSchools.FirstOrDefault(candidate => candidate.SchoolId == invoice.SchoolId)
+            : AllSchools.FirstOrDefault(candidate =>
+                string.Equals(candidate.InstitutionType, invoice.InstitutionType, StringComparison.Ordinal)
+                && (CultureInfo.CurrentCulture.CompareInfo.Compare(
+                        candidate.Name,
+                        invoice.InstitutionName,
+                        CompareOptions.IgnoreCase) == 0
+                    || (string.Equals(candidate.Vkn, invoice.Vkn, StringComparison.Ordinal)
+                        && string.Equals(candidate.GetServiceNumber(invoice.InvoiceType), invoice.ServiceNumber, StringComparison.Ordinal))));
 
         if (school is null)
         {
@@ -145,6 +140,12 @@ public partial class MainWindow
             return;
         }
 
+        AppendAudit(
+            AuditTrailEventType.InvoiceDeleted,
+            AuditTrailEntityType.Invoice,
+            invoice.Id.ToString("D"),
+            $"Type={invoice.InvoiceType}");
+
         if (_editedInvoice?.Id == invoice.Id)
             EndInvoiceEditMode();
         var nextSelection = ActiveInvoices.Count == 0
@@ -175,9 +176,26 @@ public partial class MainWindow
             return;
         }
 
+        AppendAudit(
+            AuditTrailEventType.InvoiceReordered,
+            AuditTrailEntityType.Invoice,
+            row.Invoice.Id.ToString("D"),
+            $"Position={targetIndex + 1}");
+
         UpdateInvoiceListSummary(row.Invoice.Id);
         SetInvoiceListStatus(
             $"{InvoiceReference(row.Invoice)} {targetIndex + 1}. sıraya taşındı.",
+            false,
+            true);
+    }
+
+    private void ArchiveActiveListFromList_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryArchiveActiveList(true))
+            return;
+
+        SetInvoiceListStatus(
+            "Aktif fatura listesi işlem arşivine kaydedildi ve aktif liste kapatıldı.",
             false,
             true);
     }

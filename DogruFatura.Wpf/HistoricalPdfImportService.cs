@@ -1,12 +1,21 @@
 using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 
 namespace DogruFatura.Wpf;
+
+public enum HistoricalPdfImportScanMode
+{
+    Automatic,
+    Fast,
+    Strong
+}
 
 public sealed record HistoricalPdfImportPreview(
     string SourcePath,
@@ -19,9 +28,14 @@ public sealed record HistoricalPdfImportPreview(
     decimal PaymentTotal,
     ArchivedInvoiceList? Archive)
 {
+    public bool OcrAttempted { get; init; }
+    public bool OcrSkipped { get; init; }
+    public bool AlreadyArchived { get; init; }
+    public string ScanDetail { get; init; } = "Hızlı metin taraması";
+
     public string InvoiceCountText => IsValid ? $"{InvoiceCount} fatura" : "—";
     public string PaymentTotalText => IsValid ? NumberParser.Money(PaymentTotal) : "—";
-    public string ResultText => IsValid ? "EKLEMEYE HAZIR" : "HATALI";
+    public string ResultText => IsValid ? "EKLEMEYE HAZIR" : AlreadyArchived ? "ZATEN ARŞİVDE" : "HATALI";
 
     public HistoricalPdfImportPreview WithError(string message) => this with
     {
@@ -37,34 +51,124 @@ public sealed class HistoricalPdfImportService
     private static readonly double[] ColumnWeights =
         { 4.43, 24.86, 22.57, 17.86, 13.29, 18.29, 16.57, 22.14, 14.86, 14.29 };
     private static readonly string[] InvoiceTypes = { "Elektrik", "Telefon", "İnternet", "Su" };
+    private static readonly string[] DateFormats = { "dd.MM.yyyy", "d.M.yyyy" };
     private static readonly CultureInfo Tr = CultureInfo.GetCultureInfo("tr-TR");
+    private readonly TaxCalculationService _taxCalculationService;
+    private readonly LegacyHysPdfImportService _legacyHysPdfImportService;
+    private readonly object _pageCacheLock = new();
+    private readonly Dictionary<string, CachedPdfPages> _pageCache =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    public HistoricalPdfImportService(TaxCalculationService? taxCalculationService = null)
+    {
+        _taxCalculationService = taxCalculationService ?? new TaxCalculationService();
+        _legacyHysPdfImportService = new LegacyHysPdfImportService(_taxCalculationService);
+    }
+
+    internal void ClearBatchCache()
+    {
+        lock (_pageCacheLock)
+            _pageCache.Clear();
+    }
+
+    private PdfPageData[] GetOrExtractPages(
+        string sourcePath,
+        CancellationToken cancellationToken,
+        out bool cacheHit)
+    {
+        var fullPath = Path.GetFullPath(sourcePath);
+        var fileInfo = new FileInfo(fullPath);
+        fileInfo.Refresh();
+
+        lock (_pageCacheLock)
+        {
+            if (_pageCache.TryGetValue(fullPath, out var cached)
+                && cached.Length == fileInfo.Length
+                && cached.LastWriteTimeUtcTicks == fileInfo.LastWriteTimeUtc.Ticks)
+            {
+                cacheHit = true;
+                return cached.Pages;
+            }
+        }
+
+        var pages = ExtractPdfPages(fullPath, cancellationToken);
+        var entry = new CachedPdfPages(
+            fileInfo.Length,
+            fileInfo.LastWriteTimeUtc.Ticks,
+            pages);
+
+        lock (_pageCacheLock)
+            _pageCache[fullPath] = entry;
+
+        cacheHit = false;
+        return pages;
+    }
+
+    private static PdfPageData[] ExtractPdfPages(
+        string sourcePath,
+        CancellationToken cancellationToken)
+    {
+        using var document = PdfDocument.Open(sourcePath);
+        var pageBuffer = new List<PdfPageData>(document.NumberOfPages);
+        foreach (var page in document.GetPages())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            pageBuffer.Add(ExtractPage(page));
+        }
+
+        return pageBuffer.ToArray();
+    }
 
     public HistoricalPdfImportPreview Read(
         string sourcePath,
         IReadOnlyList<SchoolRecord> schools,
-        AuthorityProfile fallbackAuthorityProfile)
+        AuthorityProfile fallbackAuthorityProfile,
+        IProgress<string>? progress = null,
+        HistoricalPdfImportScanMode scanMode = HistoricalPdfImportScanMode.Automatic,
+        CancellationToken cancellationToken = default)
     {
         var fileName = Path.GetFileName(sourcePath);
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (!string.Equals(Path.GetExtension(sourcePath), ".pdf", StringComparison.OrdinalIgnoreCase))
                 return Invalid(sourcePath, fileName, "Yalnız PDF dosyaları arşive eklenebilir.");
-            if (!TryExtractHysNumberFromFileName(
-                    Path.GetFileNameWithoutExtension(sourcePath),
-                    out var hysNumber,
-                    out var hysError))
-                return Invalid(sourcePath, fileName, "Dosya adında geçerli bir HYS kodu bulunamadı. " + hysError);
+            var hasFileHys = TryExtractHysNumberFromFileName(
+                Path.GetFileNameWithoutExtension(sourcePath),
+                out var hysNumber,
+                out var hysError);
 
-            using var document = PdfDocument.Open(sourcePath);
-            if (document.NumberOfPages == 0)
+            var textTimer = Stopwatch.StartNew();
+            var pages = GetOrExtractPages(
+                sourcePath,
+                cancellationToken,
+                out var pageCacheHit);
+            progress?.Report(
+                pageCacheHit
+                    ? $"PDF metin katmanı önbellekten alındı ({textTimer.ElapsedMilliseconds} ms)"
+                    : $"PDF metin katmanı bir kez çıkarıldı ({textTimer.ElapsedMilliseconds} ms)");
+            cancellationToken.ThrowIfCancellationRequested();
+            if (pages.Length == 0)
                 return Invalid(sourcePath, fileName, "PDF sayfa içermiyor.");
 
-            var pages = document.GetPages()
-                .Select(page => ExtractPage(page))
-                .ToArray();
             var allText = string.Join(" ", pages.SelectMany(page => page.Lines).Select(line => line.Text));
             if (!Contains(allText, "FATURA ÖDEME LİSTESİ"))
-                return Invalid(sourcePath, fileName, "Belge DoğruFatura ödeme listesi düzeniyle uyuşmuyor.", hysNumber);
+            {
+                return _legacyHysPdfImportService.Read(
+                    sourcePath,
+                    schools,
+                    fallbackAuthorityProfile,
+                    cancellationToken,
+                    progress,
+                    scanMode,
+                    pages);
+            }
+
+            if (!hasFileHys)
+                return Invalid(
+                    sourcePath,
+                    fileName,
+                    "Dosya adında geçerli bir HYS kodu bulunamadı. " + hysError);
 
             var invoiceType = InvoiceTypes.FirstOrDefault(type => Contains(allText, type));
             if (invoiceType is null)
@@ -78,8 +182,10 @@ public sealed class HistoricalPdfImportService
             var inferredCompensationCount = 0;
             foreach (var page in pages)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 foreach (var row in ExtractRows(page, invoiceType, schools, reportDate.Value))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (!row.IsValid || row.Invoice is null)
                         return Invalid(
                             sourcePath,
@@ -96,6 +202,7 @@ public sealed class HistoricalPdfImportService
             if (invoices.Count == 0)
                 return Invalid(sourcePath, fileName, "PDF tablosunda okunabilir fatura satırı bulunamadı.", hysNumber, invoiceType);
 
+            cancellationToken.ThrowIfCancellationRequested();
             var sequenceNumbers = pages
                 .SelectMany(page => ExtractSequenceNumbers(page))
                 .ToArray();
@@ -104,7 +211,7 @@ public sealed class HistoricalPdfImportService
                 return Invalid(sourcePath, fileName, "PDF fatura sıra numaraları kesintisiz okunamadı.", hysNumber, invoiceType);
 
             var authorityProfile = ExtractAuthorityProfile(pages[^1], fallbackAuthorityProfile);
-            var archive = new ArchivedInvoiceList(
+            var archive = ClosedArchiveSnapshotService.Seal(new ArchivedInvoiceList(
                 Guid.NewGuid(),
                 "DF-PDF-" + hysNumber[4..],
                 reportDate.Value.Date,
@@ -114,7 +221,7 @@ public sealed class HistoricalPdfImportService
                 hysNumber,
                 true,
                 reportDate.Value.Date,
-                hysNumber + ".pdf");
+                hysNumber + ".pdf"));
             var validation = ArchivedInvoiceListValidationService.Validate(archive);
             if (!validation.IsValid)
                 return Invalid(sourcePath, fileName, validation.Message, hysNumber, invoiceType);
@@ -126,12 +233,16 @@ public sealed class HistoricalPdfImportService
                 sourcePath,
                 fileName,
                 true,
-                $"{document.NumberOfPages} sayfa ve {invoices.Count} fatura doğrulandı{compensationNote}.",
+                $"{pages.Length} sayfa ve {invoices.Count} fatura doğrulandı{compensationNote}.",
                 hysNumber,
                 invoiceType,
                 invoices.Count,
                 invoices.Sum(invoice => invoice.PaymentAmount),
                 archive);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -153,21 +264,25 @@ public sealed class HistoricalPdfImportService
             return false;
         }
 
-        // Eski kullanıcı arşivlerinde "48) HYS-2026-34546180" gibi sıra numarası
-        // ve HYS sayısının içinde ayırıcı tire bulunabiliyor. Uygulamanın sakladığı
-        // standart biçim değişmez: HYS-202634546180.
+        // Eski kullanıcı arşivlerinde HYS öncesi MYS numaraları da bulunur.
+        // "48) HYS-2026-34546180" / "1) MYS-2023-4010364" gibi sıra numarası
+        // ve belge sayısının içinde ayırıcı tire bulunabilir.
         var match = Regex.Match(
             value,
-            @"(?:^|[^A-Z0-9])HYS\s*-?\s*(?<number>[0-9][0-9\s-]*)$",
+            @"(?:^|[^A-Z0-9])(?<prefix>HYS|MYS)\s*-?\s*(?<number>[0-9][0-9\s-]*)$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         if (!match.Success)
         {
-            errorMessage = "Örnek geçerli adlar: HYS-2026146253.pdf veya 48) HYS-2026-34546180.pdf.";
+            errorMessage = "Örnek geçerli adlar: HYS-2026146253.pdf, 48) HYS-2026-34546180.pdf veya 1) MYS-2023-4010364.pdf.";
             return false;
         }
 
         var numericPart = Regex.Replace(match.Groups["number"].Value, @"[\s-]", string.Empty);
-        if (!HysPaymentOrderService.TryNormalize(numericPart, out hysNumber, out var normalizeError))
+        var prefix = match.Groups["prefix"].Value.ToUpperInvariant();
+        if (!HysPaymentOrderService.TryNormalize(
+                prefix + "-" + numericPart,
+                out hysNumber,
+                out var normalizeError))
         {
             errorMessage = normalizeError;
             return false;
@@ -185,7 +300,8 @@ public sealed class HistoricalPdfImportService
                 word.Text.Trim(),
                 Convert.ToDouble(word.BoundingBox.Left, CultureInfo.InvariantCulture),
                 Convert.ToDouble(word.BoundingBox.Right, CultureInfo.InvariantCulture),
-                pageHeight - Convert.ToDouble(word.BoundingBox.Top, CultureInfo.InvariantCulture)))
+                pageHeight - Convert.ToDouble(word.BoundingBox.Top, CultureInfo.InvariantCulture),
+                pageHeight - Convert.ToDouble(word.BoundingBox.Bottom, CultureInfo.InvariantCulture)))
             .OrderBy(word => word.Top)
             .ThenBy(word => word.Left)
             .ToArray();
@@ -197,7 +313,7 @@ public sealed class HistoricalPdfImportService
             BuildLines(words));
     }
 
-    private static IReadOnlyList<PdfLineData> BuildLines(IEnumerable<PdfWordData> words)
+    private static PdfLineData[] BuildLines(IEnumerable<PdfWordData> words)
     {
         var lines = new List<List<PdfWordData>>();
         foreach (var word in words)
@@ -225,7 +341,7 @@ public sealed class HistoricalPdfImportService
             .ToArray();
     }
 
-    private static IEnumerable<ParsedInvoiceRow> ExtractRows(
+    private IEnumerable<ParsedInvoiceRow> ExtractRows(
         PdfPageData page,
         string invoiceType,
         IReadOnlyList<SchoolRecord> schools,
@@ -278,8 +394,11 @@ public sealed class HistoricalPdfImportService
             }
 
             var school = schools.FirstOrDefault(candidate =>
-                string.Equals(candidate.Name.Trim(), institutionName, StringComparison.CurrentCultureIgnoreCase));
+                TurkishTextComparison.EqualsIgnoreCase(candidate.Name.Trim(), institutionName));
             var institutionType = school?.InstitutionType ?? InferInstitutionType(institutionName);
+
+            // Tarihsel PDF güncel hesapla doğrulanabilir; ancak PDF'nin üretildiği özgün
+            // vergi kural sürümü kanıtlanamadığı için rule metadata bilinçli olarak boş bırakılır.
             var invoice = new InvoiceRecord(
                 Guid.NewGuid(),
                 reportDate,
@@ -315,7 +434,7 @@ public sealed class HistoricalPdfImportService
         }
     }
 
-    private static bool TryResolveCalculation(
+    private bool TryResolveCalculation(
         string invoiceType,
         decimal payableAmount,
         decimal vatAmount,
@@ -324,8 +443,7 @@ public sealed class HistoricalPdfImportService
         out TaxCalculationResult calculation,
         out decimal compensationAmount)
     {
-        var engine = new TaxCalculationService();
-        calculation = engine.Calculate(payableAmount, vatAmount, invoiceType);
+        calculation = _taxCalculationService.Calculate(payableAmount, vatAmount, invoiceType);
         compensationAmount = 0m;
         if (MatchesPrinted(calculation, printedStampDuty, printedPaymentAmount)) return true;
         if (!TaxCalculationService.IsInterruptionCompensationAllowed(invoiceType)) return false;
@@ -340,7 +458,8 @@ public sealed class HistoricalPdfImportService
             {
                 if (candidateInCents <= 0) continue;
                 var candidate = candidateInCents / 100m;
-                var candidateCalculation = engine.Calculate(payableAmount, vatAmount, invoiceType, candidate);
+                var candidateCalculation = _taxCalculationService.Calculate(
+                    payableAmount, vatAmount, invoiceType, candidate);
                 if (!MatchesPrinted(candidateCalculation, printedStampDuty, printedPaymentAmount)) continue;
                 calculation = candidateCalculation;
                 compensationAmount = candidate;
@@ -431,7 +550,7 @@ public sealed class HistoricalPdfImportService
     private static bool TryDate(string text, out DateTime date) =>
         DateTime.TryParseExact(
             text.Trim(),
-            new[] { "dd.MM.yyyy", "d.M.yyyy" },
+            DateFormats,
             Tr,
             DateTimeStyles.AllowWhiteSpaces,
             out date);
@@ -467,19 +586,29 @@ public sealed class HistoricalPdfImportService
         0m,
         null);
 
-    private sealed record PdfWordData(string Text, double Left, double Right, double Top)
+    internal sealed record PdfWordData(
+        string Text,
+        double Left,
+        double Right,
+        double Top,
+        double Bottom)
     {
         public double CenterX => (Left + Right) / 2d;
     }
 
-    private sealed record PdfLineData(double Top, string Text, IReadOnlyList<PdfWordData> Words);
+    internal sealed record PdfLineData(double Top, string Text, IReadOnlyList<PdfWordData> Words);
 
-    private sealed record PdfPageData(
+    internal sealed record PdfPageData(
         int PageNumber,
         double Width,
         double Height,
         IReadOnlyList<PdfWordData> Words,
         IReadOnlyList<PdfLineData> Lines);
+
+    private sealed record CachedPdfPages(
+        long Length,
+        long LastWriteTimeUtcTicks,
+        PdfPageData[] Pages);
 
     private sealed record ParsedInvoiceRow(
         int SequenceNumber,

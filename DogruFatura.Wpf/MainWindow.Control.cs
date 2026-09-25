@@ -1,33 +1,23 @@
 using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
-using Microsoft.Win32;
 
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private bool FilterControlIssue(object item)
+{
+    private bool FilterControlIssue(object item)
     {
         if (item is not ControlIssue issue) return false;
 
-        var severity = ControlSeverityFilterBox.SelectedItem as string;
-        if (!string.IsNullOrWhiteSpace(severity)
-            && severity != "Tümü"
-            && !string.Equals(issue.SeverityLabel, severity, StringComparison.Ordinal))
+        var selectedSeverity = DomainValueText.ParseControlIssueSeverity(
+            ControlSeverityFilterBox.SelectedItem as string);
+        if (selectedSeverity.HasValue && issue.Severity != selectedSeverity.Value)
             return false;
 
         var category = ControlCategoryFilterBox.SelectedItem as string;
@@ -208,7 +198,10 @@ public partial class MainWindow
         {
             var school = AllSchools.FirstOrDefault(candidate =>
                 string.Equals(candidate.InstitutionType, issue.SchoolInstitutionType, StringComparison.Ordinal)
-                && string.Equals(candidate.Name, issue.SchoolName, StringComparison.CurrentCultureIgnoreCase));
+                && CultureInfo.CurrentCulture.CompareInfo.Compare(
+                    candidate.Name,
+                    issue.SchoolName,
+                    CompareOptions.IgnoreCase) == 0);
             if (school is null)
             {
                 RefreshControlCenter();

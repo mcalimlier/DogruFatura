@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -46,8 +47,8 @@ public static class RecoverySessionService
 
             var content = new StringBuilder()
                 .AppendLine("DoğruFatura çalışma oturumu")
-                .AppendLine($"Başlangıç: {DateTimeOffset.Now:O}")
-                .AppendLine($"PID: {Environment.ProcessId}")
+                .AppendLine(CultureInfo.InvariantCulture, $"Başlangıç: {DateTimeOffset.Now:O}")
+                .AppendLine(CultureInfo.InvariantCulture, $"PID: {Environment.ProcessId}")
                 .ToString();
             File.WriteAllText(marker, content, new UTF8Encoding(false));
             _activeMarkerPath = marker;

@@ -1,6 +1,7 @@
 param(
     [switch]$AllowPrerelease,
     [switch]$AllowUnsignedFinal,
+    [switch]$AllowUnsignedDistribution,
     [string]$OutputRoot = '',
     [string]$CertificateThumbprint = $env:DOGRUFATURA_SIGN_CERT_SHA1,
     [string]$TimestampUrl = 'http://timestamp.digicert.com'
@@ -9,7 +10,14 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-function Fail([string]$Message) { Write-Host "HATA: $Message" -ForegroundColor Red; exit 1 }
+function Fail([string]$Message) {
+    if ($publish -and (Test-Path $publish)) {
+        Remove-Item $publish -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    Write-Host "HATA: $Message" -ForegroundColor Red
+    exit 1
+}
 
 function Find-SignTool {
     $command = Get-Command signtool.exe -ErrorAction SilentlyContinue
@@ -42,6 +50,11 @@ $suffix = [string]$group.VersionSuffix
 $assemblyVersion = [string]$group.AssemblyVersion
 if ([string]::IsNullOrWhiteSpace($version)) { Fail 'VersionPrefix okunamadı.' }
 $packageVersion = if ([string]::IsNullOrWhiteSpace($suffix)) { $version } else { "$version-$suffix" }
+$displayVersion = if ([string]::IsNullOrWhiteSpace($suffix)) {
+    $version
+} else {
+    "$version $($suffix.ToUpperInvariant())"
+}
 $isPrerelease = -not [string]::IsNullOrWhiteSpace($suffix)
 
 if ($isPrerelease -and -not $AllowPrerelease) {
@@ -52,11 +65,15 @@ if ($isPrerelease -and -not $AllowPrerelease) {
 if ($isPrerelease) {
     Write-Host "UYARI: $packageVersion yalnız RC/CI kurulum testi için üretilecek." -ForegroundColor Yellow
 }
-if (-not $isPrerelease -and [string]::IsNullOrWhiteSpace($CertificateThumbprint) -and -not $AllowUnsignedFinal) {
-    Fail 'Final Setup için kod imzalama sertifikası zorunludur. DOGRUFATURA_SIGN_CERT_SHA1 tanımlayın. Yalnız CI/yerel smoke testi için -AllowUnsignedFinal kullanılabilir.'
+if (-not $isPrerelease -and [string]::IsNullOrWhiteSpace($CertificateThumbprint) -and -not $AllowUnsignedFinal -and -not $AllowUnsignedDistribution) {
+    Fail 'Final Setup için kod imzası yok. Yerel smoke için -AllowUnsignedFinal, bilinçli imzasız dağıtım için -AllowUnsignedDistribution kullanın.'
 }
 if (-not $isPrerelease -and [string]::IsNullOrWhiteSpace($CertificateThumbprint) -and $AllowUnsignedFinal) {
-    Write-Host 'UYARI: Final sürüm CI/yerel smoke testi amacıyla imzasız üretilecek. Bu paket dağıtım için kullanılmamalıdır.' -ForegroundColor Yellow
+    Write-Host 'UYARI: Final sürüm yerel/CI smoke testi amacıyla imzasız üretilecek.' -ForegroundColor Yellow
+}
+if (-not $isPrerelease -and [string]::IsNullOrWhiteSpace($CertificateThumbprint) -and $AllowUnsignedDistribution) {
+    Write-Host 'UYARI: Kullanıcı kararıyla final paket IMZASIZ dağıtım için üretilecek.' -ForegroundColor Yellow
+    Write-Host 'Windows SmartScreen / Bilinmeyen yayıncı uyarısı gösterebilir. SHA-256 dosyasını paketle birlikte dağıtın.' -ForegroundColor Yellow
 }
 
 $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
@@ -104,10 +121,16 @@ if ([string]::IsNullOrWhiteSpace($CertificateThumbprint)) {
 $template = Join-Path $PSScriptRoot 'Kurulum\DogruFatura_NSIS.nsi'
 $nsi = Get-Content $template -Raw -Encoding UTF8
 $nsi = $nsi.Replace('!define APPVERSION "1.0.0"', "!define APPVERSION `"$version`"")
+$nsi = $nsi.Replace('!define APPDISPLAYVERSION "1.0.0"', "!define APPDISPLAYVERSION `"$displayVersion`"")
 $nsi = $nsi.Replace('OutFile "..\_YAYIN\Setup\DogruFatura_Setup_1.0.0_x64.exe"', "OutFile `"..\_YAYIN\Setup\DogruFatura_Setup_${packageVersion}_x64.exe`"")
 $nsi = $nsi.Replace('VIProductVersion "1.0.0.0"', "VIProductVersion `"$assemblyVersion`"")
 $nsi = $nsi.Replace('VIAddVersionKey /LANG=1055 "FileVersion" "1.0.0.0"', "VIAddVersionKey /LANG=1055 `"FileVersion`" `"$assemblyVersion`"")
 $nsi = $nsi.Replace('VIAddVersionKey /LANG=1055 "ProductVersion" "1.0.0"', "VIAddVersionKey /LANG=1055 `"ProductVersion`" `"$packageVersion`"")
+
+if ($nsi -match '(?<![\d.])1\.0\.0(?:\.0)?(?![\d.])') {
+    Fail 'NSIS şablonunda güncel sürüme çevrilmemiş eski 1.0.0 sürüm sabiti kaldı.'
+}
+
 $tempNsi = Join-Path $publish 'DogruFatura_NSIS.generated.nsi'
 [IO.File]::WriteAllText($tempNsi, $nsi, (New-Object System.Text.UTF8Encoding($true)))
 
@@ -125,7 +148,9 @@ $finalExe = Join-Path $dist "DogruFatura_Setup_${packageVersion}_x64.exe"
 Move-Item $setupExe $finalExe -Force
 if (Test-Path 'KURULUM_NOTU.txt') { Copy-Item 'KURULUM_NOTU.txt' (Join-Path $dist 'KURULUM_NOTU.txt') -Force }
 if (Test-Path 'KULLANICI_KILAVUZU.md') { Copy-Item 'KULLANICI_KILAVUZU.md' (Join-Path $dist 'KULLANICI_KILAVUZU.md') -Force }
-if (Test-Path 'RELEASE_NOTES_1.0.0.md') { Copy-Item 'RELEASE_NOTES_1.0.0.md' (Join-Path $dist 'RELEASE_NOTES_1.0.0.md') -Force }
+$releaseNotesName = "RELEASE_NOTES_$version.md"
+$releaseNotesSource = Join-Path $PSScriptRoot $releaseNotesName
+if (Test-Path $releaseNotesSource) { Copy-Item $releaseNotesSource (Join-Path $dist $releaseNotesName) -Force }
 
 $hash = (Get-FileHash $finalExe -Algorithm SHA256).Hash
 $hashFile = Join-Path $dist "DogruFatura_Setup_${packageVersion}_x64_SHA256.txt"

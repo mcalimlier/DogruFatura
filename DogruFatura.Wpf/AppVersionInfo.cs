@@ -11,7 +11,7 @@ public static class AppVersionInfo
             var value = Assembly.GetExecutingAssembly()
                 .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
                 .InformationalVersion;
-            if (string.IsNullOrWhiteSpace(value)) return "1.0.0";
+            if (string.IsNullOrWhiteSpace(value)) return "1.1.0";
             var plusIndex = value.IndexOf('+');
             return plusIndex >= 0 ? value[..plusIndex] : value;
         }

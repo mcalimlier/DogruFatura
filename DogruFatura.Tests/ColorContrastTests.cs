@@ -13,7 +13,7 @@ public sealed class ColorContrastTests
     [InlineData("#C5D7E7", "#0A3154")]
     [InlineData("#5F768B", "#FFFFFF")]
     [InlineData("#8FA8C0", "#031C38")]
-    public void CriticalNormalTextPairs_MeetMinimumContrast(string foreground, string background)
+    public void CriticalNormalTextPairsMeetMinimumContrast(string foreground, string background)
     {
         var ratio = ColorContrastService.ContrastRatio(foreground, background);
 
@@ -23,7 +23,7 @@ public sealed class ColorContrastTests
     }
 
     [Fact]
-    public void GoldOnNavy_HasStrongBrandContrast()
+    public void GoldOnNavyHasStrongBrandContrast()
     {
         Assert.True(ColorContrastService.ContrastRatio("#FFB41F", "#031C38") >= 9.0);
     }

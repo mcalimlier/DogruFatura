@@ -3,6 +3,7 @@ using DogruFatura.Core.Services;
 using PdfSharp;
 using PdfSharp.Drawing;
 using PdfSharp.Pdf;
+using System.Globalization;
 using System.IO;
 
 namespace DogruFatura.Wpf;
@@ -24,6 +25,9 @@ public sealed class FinalReportPdfService
     private static readonly XColor Muted = XColor.FromArgb(82, 98, 119);
     private static readonly XColor Light = XColor.FromArgb(216, 228, 239);
 
+    private readonly PageSize _pageSize = PageSize.A4;
+    private readonly PageOrientation _pageOrientation = PageOrientation.Landscape;
+
     public void Save(FinalReportData data, string filePath)
     {
         ArgumentNullException.ThrowIfNull(data);
@@ -35,16 +39,17 @@ public sealed class FinalReportPdfService
             throw new InvalidOperationException("Boş aktif listeden PDF oluşturulamaz.");
 
         var document = new PdfDocument();
-        document.Info.Title = $"{data.InvoiceType} Faturaları Ödeme Listesi";
-        document.Info.Author = "DoğruFatura";
-        document.Info.Subject = "Fatura ödeme ve kontrol listesi";
-        document.Info.Creator = $"DoğruFatura {AppVersionInfo.InformationalVersion}";
+        PdfMetadataContract.Apply(
+            document,
+            $"{data.InvoiceType} Faturaları Ödeme Listesi",
+            "Fatura ödeme ve kontrol listesi",
+            PdfMetadataContract.PaymentListDocumentType);
 
         for (var pageIndex = 0; pageIndex < slices.Count; pageIndex++)
         {
             var page = document.AddPage();
-            page.Size = PageSize.A4;
-            page.Orientation = PageOrientation.Landscape;
+            page.Size = _pageSize;
+            page.Orientation = _pageOrientation;
             using var graphics = XGraphics.FromPdfPage(page);
             DrawPage(graphics, page.Width.Point, page.Height.Point, data,
                 slices[pageIndex], pageIndex + 1, slices.Count);
@@ -161,7 +166,7 @@ public sealed class FinalReportPdfService
     private static string[] RowValues(InvoiceRecord invoice, int sequenceNumber) =>
         new[]
         {
-            sequenceNumber.ToString(),
+            sequenceNumber.ToString(CultureInfo.CurrentCulture),
             invoice.InstitutionName,
             invoice.ServiceNumber,
             invoice.InvoiceNumber,

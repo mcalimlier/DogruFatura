@@ -1,21 +1,4 @@
-using DogruFatura.Core.Models;
-using DogruFatura.Core.Services;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Interop;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
-using Microsoft.Win32;
 
 namespace DogruFatura.Wpf;
 
@@ -23,6 +6,7 @@ public partial class MainWindow
 {    private void ShowView(string view)
     {
         if (view == "Home") RefreshDashboard();
+        if (view == "Statistics") RefreshStatistics();
         if (view == "About") RefreshSafetyInformation();
         _currentView = view;
         HomeView.Visibility = view == "Home" ? Visibility.Visible : Visibility.Collapsed;
@@ -33,6 +17,7 @@ public partial class MainWindow
         ReportsView.Visibility = view == "Reports" ? Visibility.Visible : Visibility.Collapsed;
         ArchiveView.Visibility = view == "Archive" ? Visibility.Visible : Visibility.Collapsed;
         ControlView.Visibility = view == "Control" ? Visibility.Visible : Visibility.Collapsed;
+        StatisticsView.Visibility = view == "Statistics" ? Visibility.Visible : Visibility.Collapsed;
         AboutView.Visibility = view == "About" ? Visibility.Visible : Visibility.Collapsed;
 
         NavHome.Tag = view == "Home" ? "Active" : null;
@@ -43,6 +28,7 @@ public partial class MainWindow
         NavReports.Tag = view == "Reports" ? "Active" : null;
         NavArchive.Tag = view == "Archive" ? "Active" : null;
         NavControl.Tag = view == "Control" ? "Active" : null;
+        NavStatistics.Tag = view == "Statistics" ? "Active" : null;
         NavAbout.Tag = view == "About" ? "Active" : null;
     }
 
@@ -67,5 +53,6 @@ public partial class MainWindow
         RefreshControlCenter();
         ShowView("Control");
     }
+    private void NavStatistics_Click(object sender, RoutedEventArgs e) => ShowView("Statistics");
     private void NavAbout_Click(object sender, RoutedEventArgs e) => ShowView("About");
 }

@@ -17,11 +17,14 @@ public static class ResponsiveLayoutService
     public const double DesignHeight = 945.0;
     private const double WorkAreaWidthUsage = 0.96;
     private const double WorkAreaHeightUsage = 0.94;
+    private const double PreferredNormalScale = 0.90;
+    private const double StartupWorkAreaWidthUsage = 0.94;
+    private const double StartupWorkAreaHeightUsage = 0.92;
 
     public static WindowLayoutProfile Calculate(double workWidthDip, double workHeightDip)
     {
-        if (workWidthDip <= 0) throw new ArgumentOutOfRangeException(nameof(workWidthDip));
-        if (workHeightDip <= 0) throw new ArgumentOutOfRangeException(nameof(workHeightDip));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(workWidthDip);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(workHeightDip);
 
         var availableWidth = workWidthDip * WorkAreaWidthUsage;
         var availableHeight = workHeightDip * WorkAreaHeightUsage;
@@ -39,9 +42,27 @@ public static class ResponsiveLayoutService
 
     public static WindowLayoutProfile CalculateForPixels(double pixelWidth, double pixelHeight, double dpiPercent)
     {
-        if (dpiPercent <= 0) throw new ArgumentOutOfRangeException(nameof(dpiPercent));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(dpiPercent);
         var dpiScale = dpiPercent / 100.0;
         return Calculate(pixelWidth / dpiScale, pixelHeight / dpiScale);
+    }
+
+    public static WindowLayoutProfile CalculateStartup(double workWidthDip, double workHeightDip)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(workWidthDip);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(workHeightDip);
+
+        var maxWidth = Math.Min(DesignWidth * PreferredNormalScale, workWidthDip * StartupWorkAreaWidthUsage);
+        var maxHeight = Math.Min(DesignHeight * PreferredNormalScale, workHeightDip * StartupWorkAreaHeightUsage);
+        var scale = Math.Min(maxWidth / DesignWidth, maxHeight / DesignHeight);
+
+        return new WindowLayoutProfile(
+            workWidthDip,
+            workHeightDip,
+            Math.Round(DesignWidth * scale),
+            Math.Round(DesignHeight * scale),
+            scale,
+            scale < 0.999);
     }
 
     public static void Apply(MainWindow window)
@@ -62,7 +83,7 @@ public static class ResponsiveLayoutService
             viewbox.UseLayoutRounding = true;
         }
 
-        FitToCurrentWorkArea(window, onlyWhenOversized: true);
+        FitStartupWindowToCurrentWorkArea(window);
         window.SizeChanged += (_, _) =>
         {
             if (window.FindName("AppScaleViewbox") is FrameworkElement content)
@@ -73,12 +94,10 @@ public static class ResponsiveLayoutService
         };
     }
 
-    private static void FitToCurrentWorkArea(Window window, bool onlyWhenOversized)
+    private static void FitStartupWindowToCurrentWorkArea(Window window)
     {
         var workArea = SystemParameters.WorkArea;
-        var profile = Calculate(workArea.Width, workArea.Height);
-        if (onlyWhenOversized && window.Width <= profile.WindowWidthDip && window.Height <= profile.WindowHeightDip)
-            return;
+        var profile = CalculateStartup(workArea.Width, workArea.Height);
 
         window.Width = profile.WindowWidthDip;
         window.Height = profile.WindowHeightDip;

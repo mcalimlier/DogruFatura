@@ -1,20 +1,37 @@
-# DoğruFatura 1.0.0
+# DoğruFatura 1.1.0
 
-DoğruFatura; fatura ödeme listelerinin hazırlanması, hesap kontrolü, PDF çıktısı, HYS arşiv yönetimi ve kullanıcı verisi güvenliği için geliştirilmiş .NET 8 / WPF Windows masaüstü uygulamasıdır.
+DoğruFatura; fatura ödeme listelerinin hazırlanması, mali hesap kontrolü, PDF/çıktı üretimi, HYS arşiv yönetimi, istatistik analizi ve kullanıcı verisi güvenliği için geliştirilmiş .NET 8 / WPF Windows masaüstü uygulamasıdır.
 
-## 1.0.0 Final
+## 1.1.0 Final
 
-- Elektrik, telefon, internet ve su faturaları için merkezi hesaplama ve doğrulama kuralları
-- Kurum/hizmet numarası yönetimi, mükerrer fatura engelleme ve Kontrol Merkezi
-- A4 yatay PDF önizleme, kaydetme ve yazdırma
-- Aktif PDF → HYS arşivi → kapanışı geri alma belge akışı
-- Eski DoğruFatura PDF'lerini güvenli arşiv içe aktarma
-- Masaüstü `DoğruFatura` altında merkezi Veri, Yedekler, Loglar, Aktif Çıktılar ve Arşivlenenler yapısı
-- Bütünlük kontrolü, manuel güvenlik yedeği, güncelleme öncesi yedek ve doğrulanmış geri yükleme
-- Beklenmeyen kapanma algılama ve sonraki açılışta koruyucu güvenlik yedeği
-- Fatura/PDF içermeyen gizlilik odaklı Tanılama Paketi
-- Klavye erişilebilirliği, yüksek kontrast, responsive/DPI koruması ve liste sanallaştırma
+RC1 kullanıcı doğrulaması tamamlandı ve sürüm numarası 1.1.0 final durumuna geçirildi. Dağıtım paketi yalnız son final build/test/setup kapısı yeşil olduğunda yayınlanmalıdır.
+
+### 1.1 öne çıkanlar
+
+- Tarihsel DoğruFatura PDF arşiv içe aktarmada ilerleme ve iptal desteği
+- Arşiv tabanlı İstatistik ekranı; kurum, yıl, tarih ve fatura türü filtreleri
+- Fatura türü dağılım grafiği ve PDF / yazdır / CSV / Excel / PNG çıktıları
+- Düzenli Türkçe Excel uyumlu CSV biçimi
+- Boş fatura numaralarında olası mükerrer kayıt uyarısı
+- Güçlendirilmiş Tanılama Paketi kişisel veri maskelemesi
+- DoğruFatura PDF'leri için ortak `DogruFaturaPdf/1` metadata sözleşmesi
+- Veri güvenliği ekranında sadeleştirilmiş yedek / geri yükleme / bütünlük akışı
+- Veri şema migrasyonu, vergi kural metadata'sı ve arşiv bütünlük sertleştirmeleri
+
+## Temel güvenlik yaklaşımı
+
+- Kullanıcı verileri Program Files altında tutulmaz.
+- Kalıcı Veri, Yedekler, Loglar ve PDF arşivi Masaüstü `DoğruFatura` kökü altında korunur.
+- Güncelleme ve kaldırma işlemleri kullanıcı veri klasörünü bilinçli olarak silmez.
+- Tanılama ZIP'i fatura JSON/PDF içeriklerini taşımaz; loglardaki yaygın kişisel veri örüntülerini maskeler.
+- Yedekten geri yüklemeden önce mevcut durum için koruyucu yedek alınır.
 
 ## Kalite ve dağıtım
 
-GitHub Actions; Release build, otomatik testler, PDF regresyon kontrolleri, NuGet güvenlik taraması, coverage çıktısı ve Windows Setup smoke testini yürütür. Final dağıtım paketinde Authenticode kod imzası zorunludur; ayrıca SHA-256 doğrulama dosyası üretilir. Ayrıntılar `CODE_SIGNING.md` ve `RELEASE_NOTES_1.0.0.md` dosyalarındadır.
+GitHub Actions; Release build, otomatik testler, NuGet güvenlik taraması, PDF regresyon kontrolleri ve Windows Setup smoke testini yürütür. Final dağıtım paketi sürüm eki olmadan `1.1.0` olarak üretilir ve SHA-256 ile doğrulanır.
+
+Ayrıntılar:
+- `RELEASE_NOTES_1.1.0.md`
+- `QUALITY_CHECKLIST_1.1_FINAL.md`
+- `KULLANICI_KILAVUZU.md`
+- `CODE_SIGNING.md`

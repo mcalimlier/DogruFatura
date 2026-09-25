@@ -1,32 +1,20 @@
 using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
-using Microsoft.Win32;
 
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private bool FilterSchool(object item)
+{
+    private bool FilterSchool(object item)
     {
         if (item is not SchoolRecord school) return false;
 
-        var selectedType = SchoolFilterTypeBox.SelectedItem as string;
-        if (!string.IsNullOrWhiteSpace(selectedType) && selectedType != "Tümü"
-            && school.InstitutionType != selectedType)
+        var selectedKind = DomainValueText.ParseInstitutionKind(
+            SchoolFilterTypeBox.SelectedItem as string);
+        if (selectedKind != InstitutionKind.Unknown && school.Kind != selectedKind)
             return false;
 
         var search = SchoolSearchBox.Text.Trim();
@@ -94,9 +82,10 @@ public partial class MainWindow
         _suppressSchoolEvents = false;
 
         SchoolEditorModeText.Text = "Yeni kayıt";
-        var filteredType = SchoolFilterTypeBox.SelectedItem as string;
-        SchoolTypeEditorBox.SelectedItem = !string.IsNullOrWhiteSpace(filteredType) && filteredType != "Tümü"
-            ? filteredType
+        var filteredKind = DomainValueText.ParseInstitutionKind(
+            SchoolFilterTypeBox.SelectedItem as string);
+        SchoolTypeEditorBox.SelectedItem = filteredKind != InstitutionKind.Unknown
+            ? DomainValueText.ToStorageValue(filteredKind)
             : InstitutionTypes[0];
         SchoolNameEditorBox.Clear();
         SchoolVknEditorBox.Clear();
@@ -115,7 +104,8 @@ public partial class MainWindow
         SchoolElectricityEditorBox.Text,
         SchoolTelephoneEditorBox.Text,
         SchoolInternetEditorBox.Text,
-        SchoolWaterEditorBox.Text));
+        SchoolWaterEditorBox.Text,
+        _editedSchool?.SchoolId ?? Guid.NewGuid()));
 
     private void SaveSchool_Click(object sender, RoutedEventArgs e)
     {
@@ -128,6 +118,7 @@ public partial class MainWindow
         }
 
         var invoiceSelection = InstitutionBox.SelectedItem as SchoolRecord;
+        var wasNewSchool = _editedSchool is null;
         var editingInvoiceSelection = _editedSchool is not null && ReferenceEquals(invoiceSelection, _editedSchool);
 
         if (_editedSchool is null)
@@ -161,6 +152,12 @@ public partial class MainWindow
                 return;
             }
         }
+
+        AppendAudit(
+            wasNewSchool ? AuditTrailEventType.SchoolCreated : AuditTrailEventType.SchoolUpdated,
+            AuditTrailEntityType.School,
+            candidate.SchoolId.ToString("D"),
+            $"Kind={candidate.Kind}");
 
         RefreshSchoolView();
         if (_schoolView.Contains(candidate))
@@ -219,6 +216,12 @@ public partial class MainWindow
             RefreshSchoolView();
             return;
         }
+
+        AppendAudit(
+            AuditTrailEventType.SchoolDeleted,
+            AuditTrailEntityType.School,
+            schoolToDelete.SchoolId.ToString("D"),
+            $"Kind={schoolToDelete.Kind}");
 
         RefreshSchoolView();
         StartNewSchool();
@@ -300,6 +303,10 @@ public partial class MainWindow
         try
         {
             _authorityProfileDataStore.Save(profile);
+            AppendAudit(
+                AuditTrailEventType.AuthorityProfileUpdated,
+                AuditTrailEntityType.AuthorityProfile,
+                "authority-profile");
             _authorityProfile = profile;
             LoadAuthorityProfileToForm(profile);
             InvalidateFinalReportPreview();
@@ -327,6 +334,10 @@ public partial class MainWindow
         try
         {
             _authorityProfileDataStore.Save(defaultProfile);
+            AppendAudit(
+                AuditTrailEventType.AuthorityProfileDefaultsRestored,
+                AuditTrailEntityType.AuthorityProfile,
+                "authority-profile");
             _authorityProfile = defaultProfile;
             LoadAuthorityProfileToForm(defaultProfile);
             InvalidateFinalReportPreview();

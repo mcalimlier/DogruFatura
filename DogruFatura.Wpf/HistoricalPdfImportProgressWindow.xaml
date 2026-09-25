@@ -1,0 +1,84 @@
+<Window x:Class="DogruFatura.Wpf.HistoricalPdfImportProgressWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Arşiv PDF Taranıyor"
+        Width="430"
+        Height="220"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        AllowsTransparency="True"
+        Background="Transparent">
+    <Border Background="#FFF8FBFE"
+            BorderBrush="#FFFFB41F"
+            BorderThickness="2"
+            CornerRadius="12"
+            Padding="22">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0"
+                       Text="ARŞİV PDF TARANIYOR"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       Foreground="#FF031C38"
+                       HorizontalAlignment="Center"/>
+
+            <StackPanel Grid.Row="1" Margin="0,14,0,0">
+                <TextBlock x:Name="MessageText"
+                           Text="Arşiv PDF taranıyor, lütfen bekleyiniz..."
+                           FontSize="14"
+                           Foreground="#FF0A3154"
+                           HorizontalAlignment="Center"/>
+                <TextBlock x:Name="FileText"
+                           Text="Dosya hazırlanıyor..."
+                           Margin="0,5,0,0"
+                           FontSize="12"
+                           Foreground="#FF5F768B"
+                           TextTrimming="CharacterEllipsis"
+                           HorizontalAlignment="Center"
+                           MaxWidth="370"/>
+            </StackPanel>
+
+            <ProgressBar Grid.Row="2"
+                         x:Name="ProgressBar"
+                         Height="10"
+                         Margin="0,18,0,0"
+                         IsIndeterminate="True"/>
+
+            <Button Grid.Row="3"
+                    x:Name="CancelButton"
+                    Content="İPTAL"
+                    Width="110"
+                    Height="38"
+                    Margin="0,18,0,0"
+                    Padding="0"
+                    HorizontalAlignment="Center"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Background="#FF365D7D"
+                    Foreground="White"
+                    BorderThickness="0"
+                    FontSize="14"
+                    FontWeight="SemiBold"
+                    IsCancel="True"
+                    Click="Cancel_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </Grid>
+    </Border>
+</Window>

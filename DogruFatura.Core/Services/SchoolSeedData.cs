@@ -33,5 +33,5 @@ public static class SchoolSeedData
         new("Anasınıfı/Anaokulu", "Ağaçbeyli Anasınıfı", "", "00004001720", "", "", ""),
         new("Anasınıfı/Anaokulu", "Budaklar Ana Okulu", "1880503884", "00002500840", "", "", ""),
         new("Kurum", "Sivaslı İlçe Milli Eğitim Müdürlüğü", "4710101139", "", "2766181007", "8821991202", "")
-    };
+    }.Select(SchoolValidationService.Normalize).ToArray();
 }

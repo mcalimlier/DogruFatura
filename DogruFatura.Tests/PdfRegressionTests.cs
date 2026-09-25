@@ -9,7 +9,7 @@ namespace DogruFatura.Tests;
 public sealed class PdfRegressionTests
 {
     [Fact]
-    public void ThirtyTwoInvoices_CreateThreeLandscapeA4Pages_InsideSideMargins()
+    public void ThirtyTwoInvoicesCreateThreeLandscapeA4PagesInsideSideMargins()
     {
         using var temp = new TempFile("report.pdf");
         var data = ReportData(32);
@@ -38,7 +38,28 @@ public sealed class PdfRegressionTests
     }
 
     [Fact]
-    public void GeneratedPdf_CanBeReadBackByHistoricalArchiveImporter()
+    public void PdfMetadataContractUsesStableMachineReadableKeywords()
+    {
+        using var document = new PdfSharp.Pdf.PdfDocument();
+
+        PdfMetadataContract.Apply(
+            document,
+            "DoğruFatura Test Belgesi",
+            "Teknik metadata regresyon testi",
+            PdfMetadataContract.PaymentListDocumentType);
+
+        Assert.Equal("DoğruFatura Test Belgesi", document.Info.Title);
+        Assert.Equal("DoğruFatura", document.Info.Author);
+        Assert.Equal("Teknik metadata regresyon testi", document.Info.Subject);
+        Assert.StartsWith("DoğruFatura ", document.Info.Creator, StringComparison.Ordinal);
+        Assert.Contains("DogruFatura", document.Info.Keywords, StringComparison.Ordinal);
+        Assert.Contains("Schema=DogruFaturaPdf/1", document.Info.Keywords, StringComparison.Ordinal);
+        Assert.Contains("DocumentType=PaymentList", document.Info.Keywords, StringComparison.Ordinal);
+        Assert.Contains("AppVersion=", document.Info.Keywords, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GeneratedPdfCanBeReadBackByHistoricalArchiveImporter()
     {
         using var temp = new TempFile("48) HYS-2026-34546180.pdf");
         var data = ReportData(3);
@@ -66,7 +87,7 @@ public sealed class PdfRegressionTests
     [InlineData(31, 2)]
     [InlineData(32, 3)]
     [InlineData(100, 6)]
-    public void ActualPdfPageCount_MatchesPlanner(int invoiceCount, int expectedPages)
+    public void ActualPdfPageCountMatchesPlanner(int invoiceCount, int expectedPages)
     {
         using var temp = new TempFile($"page-{invoiceCount}.pdf");
         new FinalReportPdfService().Save(ReportData(invoiceCount), temp.Path);

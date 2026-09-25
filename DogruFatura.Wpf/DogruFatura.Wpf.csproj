@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.19041</TargetFramework>
     <UseWPF>true</UseWPF>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
@@ -22,7 +22,25 @@
     <ProjectReference Include="..\DogruFatura.Core\DogruFatura.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.1" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.5" />
     <PackageReference Include="PDFsharp-WPF" Version="6.2.4" />
     <PackageReference Include="PdfPig" Version="0.1.12" />
+    <PackageReference Include="TesseractOCR" Version="5.5.2" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\Ocr\tur.traineddata"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest"
+             TargetPath="tessdata\tur.traineddata" />
+  </ItemGroup>
+
+  <Target Name="EnsureTurkishOcrModel" BeforeTargets="PrepareForBuild"
+          Condition="!Exists('$(MSBuildProjectDirectory)\Assets\Ocr\tur.traineddata')">
+    <MakeDir Directories="$(MSBuildProjectDirectory)\Assets\Ocr" />
+    <DownloadFile SourceUrl="https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/923915d4ced2a7235221788285785a29c4a42d4a/tur.traineddata"
+                  DestinationFolder="$(MSBuildProjectDirectory)\Assets\Ocr"
+                  SkipUnchangedFiles="true" />
+  </Target>
 </Project>

@@ -1,21 +1,9 @@
 using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
-using Microsoft.Win32;
 
 namespace DogruFatura.Wpf;
 
@@ -426,7 +414,11 @@ public partial class MainWindow
             calculation.VatBase,
             calculation.StampDuty,
             calculation.PaymentAmount,
-            compensation);
+            compensation,
+            school.SchoolId,
+            calculation.RuleVersion,
+            calculation.RuleEffectiveFrom,
+            calculation.AppliedStampDutyRate);
 
         var validation = InvoiceValidationService.Validate(invoice);
         if (!validation.IsValid)
@@ -440,6 +432,31 @@ public partial class MainWindow
         {
             SetInvoiceSaveStatus("Mükerrer fatura engellendi: " + duplicate.Message, true);
             return;
+        }
+
+        var possibleDuplicate = InvoiceDuplicateService.CheckPossibleWhenNumberMissing(
+            ActiveInvoices,
+            invoice,
+            editingInvoice?.Id);
+        if (possibleDuplicate.IsPossibleDuplicate)
+        {
+            var confirmation = MessageBox.Show(
+                this,
+                "Fatura numarası boş. Aynı kurum/hizmet, fatura türü, tarihler ve tutarlarla aktif listede benzer bir kayıt bulundu.\n\n"
+                + possibleDuplicate.Message
+                + "\n\nBu faturayı yine de kaydetmek istiyor musunuz?",
+                "DoğruFatura - Olası Mükerrer Fatura",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+
+            if (confirmation != MessageBoxResult.Yes)
+            {
+                SetInvoiceSaveStatus(
+                    "Olası mükerrer fatura uyarısı nedeniyle kayıt kullanıcı tarafından iptal edildi.",
+                    true);
+                return;
+            }
         }
 
         if (editingInvoice is null)
@@ -471,6 +488,12 @@ public partial class MainWindow
                 return;
             }
         }
+
+        AppendAudit(
+            editingInvoice is null ? AuditTrailEventType.InvoiceCreated : AuditTrailEventType.InvoiceUpdated,
+            AuditTrailEntityType.Invoice,
+            invoice.Id.ToString("D"),
+            $"Type={invoice.InvoiceType};Rule={invoice.TaxRuleVersion}");
 
         var invoiceReference = InvoiceReference(invoice);
         var successMessage = editingInvoice is null
@@ -535,6 +558,7 @@ public partial class MainWindow
         ActiveStampTotalText.Text = NumberParser.Money(ActiveInvoices.Sum(x => x.StampDuty));
         ActivePaymentTotalText.Text = NumberParser.Money(ActiveInvoices.Sum(x => x.PaymentAmount));
         InvoiceListEmptyState.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        ArchiveFromListButton.IsEnabled = count > 0;
 
         ReportInvoiceCountText.Text = $"{count} kayıt";
         ReportInvoiceTypeText.Text = listTypeLabel;

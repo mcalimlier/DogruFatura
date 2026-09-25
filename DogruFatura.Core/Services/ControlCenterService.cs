@@ -4,8 +4,6 @@ namespace DogruFatura.Core.Services;
 
 public static class ControlCenterService
 {
-    private static readonly string[] InvoiceTypes = { "Elektrik", "Telefon", "İnternet", "Su" };
-
     public static ControlScanResult Scan(
         IEnumerable<SchoolRecord> schools,
         IEnumerable<InvoiceRecord> activeInvoices,
@@ -32,7 +30,7 @@ public static class ControlCenterService
         return new ControlScanResult(ordered);
     }
 
-    private static void ScanSchools(IReadOnlyList<SchoolRecord> schools, ICollection<ControlIssue> issues)
+    private static void ScanSchools(IReadOnlyList<SchoolRecord> schools, List<ControlIssue> issues)
     {
         foreach (var school in schools)
         {
@@ -48,7 +46,7 @@ public static class ControlCenterService
                     school));
             }
 
-            foreach (var invoiceType in InvoiceTypes)
+            foreach (var invoiceType in InvoiceRulesEngine.SupportedInvoiceTypes)
             {
                 if (!string.IsNullOrWhiteSpace(school.GetServiceNumber(invoiceType))) continue;
 
@@ -64,7 +62,7 @@ public static class ControlCenterService
         }
     }
 
-    private static void ScanActiveList(IReadOnlyList<InvoiceRecord> invoices, ICollection<ControlIssue> issues)
+    private static void ScanActiveList(IReadOnlyList<InvoiceRecord> invoices, List<ControlIssue> issues)
     {
         var types = InvoiceListTypePolicy.GetDistinctTypes(invoices);
         if (types.Count <= 1) return;
@@ -85,12 +83,13 @@ public static class ControlCenterService
         IReadOnlyList<SchoolRecord> schools,
         IReadOnlyList<InvoiceRecord> invoices,
         DateTime today,
-        ICollection<ControlIssue> issues)
+        List<ControlIssue> issues)
     {
-        var taxService = new TaxCalculationService();
         foreach (var invoice in invoices)
         {
-            if (string.IsNullOrWhiteSpace(invoice.InstitutionName))
+            var rules = InvoiceRulesEngine.Evaluate(invoice);
+
+            if (rules.Has(InvoiceRuleCode.MissingInstitutionName))
             {
                 issues.Add(InvoiceIssue(
                     "INVOICE_INSTITUTION_INVALID",
@@ -100,8 +99,8 @@ public static class ControlCenterService
                     "Okul/kurum adı kontrol edilmelidir.",
                     invoice));
             }
-            else if (!string.IsNullOrWhiteSpace(invoice.Vkn)
-                     && (invoice.Vkn.Length != 10 || !invoice.Vkn.All(char.IsDigit)))
+            else if (rules.Has(InvoiceRuleCode.InvalidVknCharacters)
+                     || rules.Has(InvoiceRuleCode.InvalidVknLength))
             {
                 issues.Add(InvoiceIssue(
                     "INVOICE_VKN_INVALID",
@@ -112,7 +111,7 @@ public static class ControlCenterService
                     invoice));
             }
 
-            if (!InvoiceTypes.Contains(invoice.InvoiceType, StringComparer.Ordinal))
+            if (rules.Has(InvoiceRuleCode.InvalidInvoiceType))
             {
                 issues.Add(InvoiceIssue(
                     "INVOICE_TYPE_INVALID",
@@ -123,7 +122,7 @@ public static class ControlCenterService
                     invoice));
             }
 
-            if (string.IsNullOrWhiteSpace(invoice.ServiceNumber))
+            if (rules.Has(InvoiceRuleCode.MissingServiceNumber))
             {
                 issues.Add(InvoiceIssue(
                     "INVOICE_SERVICE_MISSING",
@@ -133,7 +132,7 @@ public static class ControlCenterService
                     "Fatura ödeme listesine geçmeden önce hizmet/tüketici numarası tamamlanmalıdır.",
                     invoice));
             }
-            else if (!invoice.ServiceNumber.All(char.IsDigit))
+            else if (rules.Has(InvoiceRuleCode.InvalidServiceNumberCharacters))
             {
                 issues.Add(InvoiceIssue(
                     "INVOICE_SERVICE_INVALID",
@@ -144,7 +143,7 @@ public static class ControlCenterService
                     invoice));
             }
 
-            if (invoice.InvoiceDate == default || invoice.DueDate == default)
+            if (rules.Has(InvoiceRuleCode.MissingInvoiceDates))
             {
                 issues.Add(InvoiceIssue(
                     "INVOICE_DATE_MISSING",
@@ -154,7 +153,7 @@ public static class ControlCenterService
                     "Fatura tarihi ve son ödeme tarihi birlikte girilmelidir.",
                     invoice));
             }
-            else if (invoice.DueDate.Date < invoice.InvoiceDate.Date)
+            else if (rules.Has(InvoiceRuleCode.DueDateBeforeInvoiceDate))
             {
                 issues.Add(InvoiceIssue(
                     "INVOICE_DATE_ORDER",
@@ -185,31 +184,24 @@ public static class ControlCenterService
                     invoice));
             }
 
-            var calculation = taxService.Calculate(
-                invoice.PayableAmount,
-                invoice.VatAmount,
-                invoice.InvoiceType,
-                invoice.InterruptionCompensationAmount);
-            if (!calculation.IsValid)
+            if (rules.Has(InvoiceRuleCode.TaxCalculationInvalid))
             {
                 issues.Add(InvoiceIssue(
                     "INVOICE_AMOUNT_INVALID",
                     ControlIssueSeverity.Error,
                     "Tutar / KDV",
                     "Fatura tutarı veya KDV geçersiz",
-                    calculation.Message,
+                    rules.Calculation.Message,
                     invoice));
             }
-            else if (invoice.VatBase != calculation.VatBase
-                     || invoice.StampDuty != calculation.StampDuty
-                     || invoice.PaymentAmount != calculation.PaymentAmount)
+            else if (rules.Has(InvoiceRuleCode.TaxCalculationMismatch))
             {
                 issues.Add(InvoiceIssue(
                     "INVOICE_TAX_MISMATCH",
                     ControlIssueSeverity.Error,
                     "Tutar / KDV",
                     "Vergi hesabı güncel kuralla uyuşmuyor",
-                    $"Beklenen ödeme {NumberParser.Money(calculation.PaymentAmount)}, kayıtlı ödeme {NumberParser.Money(invoice.PaymentAmount)}.",
+                    $"Beklenen ödeme {NumberParser.Money(rules.Calculation.PaymentAmount)}, kayıtlı ödeme {NumberParser.Money(invoice.PaymentAmount)}.",
                     invoice));
             }
 
@@ -220,11 +212,13 @@ public static class ControlCenterService
     private static void ScanInvoiceSchoolLink(
         IReadOnlyList<SchoolRecord> schools,
         InvoiceRecord invoice,
-        ICollection<ControlIssue> issues)
+        List<ControlIssue> issues)
     {
-        var school = schools.FirstOrDefault(candidate =>
-            string.Equals(candidate.InstitutionType, invoice.InstitutionType, StringComparison.Ordinal)
-            && string.Equals(candidate.Name, invoice.InstitutionName, StringComparison.CurrentCultureIgnoreCase));
+        var school = invoice.SchoolId != Guid.Empty
+            ? schools.FirstOrDefault(candidate => candidate.SchoolId == invoice.SchoolId)
+            : schools.FirstOrDefault(candidate =>
+                string.Equals(candidate.InstitutionType, invoice.InstitutionType, StringComparison.Ordinal)
+                && TurkishTextComparison.EqualsIgnoreCase(candidate.Name, invoice.InstitutionName));
         if (school is null)
         {
             issues.Add(InvoiceIssue(
@@ -264,7 +258,7 @@ public static class ControlCenterService
         }
     }
 
-    private static void ScanDuplicates(IReadOnlyList<InvoiceRecord> invoices, ICollection<ControlIssue> issues)
+    private static void ScanDuplicates(IReadOnlyList<InvoiceRecord> invoices, List<ControlIssue> issues)
     {
         var duplicateGroups = invoices
             .Where(invoice => !string.IsNullOrWhiteSpace(invoice.InvoiceType)

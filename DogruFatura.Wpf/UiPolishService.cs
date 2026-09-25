@@ -8,12 +8,14 @@ internal static class UiPolishService
 {
     public static void Apply(MainWindow window)
     {
+        ArgumentNullException.ThrowIfNull(window);
+
         ResponsiveLayoutService.Apply(window);
         TextSharpnessService.Apply(window);
 
         window.Loaded += (_, _) =>
         {
-            UiVisualPolishService.Apply(window);
+            WindowControlPolishService.Apply(window);
             UiPerformanceService.Apply(window);
             UiAccessibilityService.Apply(window);
             UnsavedChangesGuard.Attach(window);

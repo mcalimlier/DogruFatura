@@ -128,6 +128,34 @@ public sealed class DocumentArchiveStorageService
         return Path.GetFileName(destinationPath);
     }
 
+    public bool DeleteStoredPdf(ArchivedInvoiceList archive)
+    {
+        ArgumentNullException.ThrowIfNull(archive);
+        EnsureDirectories();
+
+        var fileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (!string.IsNullOrWhiteSpace(archive.PdfFileName))
+            fileNames.Add(Path.GetFileName(archive.PdfFileName));
+        if (!string.IsNullOrWhiteSpace(archive.HysPaymentOrderDocumentNumber))
+            fileNames.Add(archive.HysPaymentOrderDocumentNumber + ".pdf");
+
+        var deleted = false;
+        foreach (var fileName in fileNames)
+        {
+            foreach (var folder in new[] { ActiveOutputDirectory, ArchivedOutputDirectory })
+            {
+                var path = Path.Combine(folder, fileName);
+                if (!File.Exists(path))
+                    continue;
+
+                File.Delete(path);
+                deleted = true;
+            }
+        }
+
+        return deleted;
+    }
+
     public static void RollbackMove(PdfMoveResult move)
     {
         if (!move.Moved || move.SourcePath is null || move.DestinationPath is null) return;

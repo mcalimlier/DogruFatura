@@ -1,26 +1,14 @@
 using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
-using Microsoft.Win32;
 
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private void RefreshDashboard()
+{
+    private void RefreshDashboard()
     {
         if (HomeMonthLabelText is null) return;
 
@@ -85,12 +73,13 @@ public partial class MainWindow
         return Math.Max(8d, (double)(value / maximum) * availableWidth);
     }
 
-    private static Brush DashboardInvoiceTypeBrush(string invoiceType) => invoiceType switch
-    {
-        "Elektrik" => new SolidColorBrush(Color.FromRgb(255, 180, 31)),
-        "Telefon" => new SolidColorBrush(Color.FromRgb(36, 104, 216)),
-        "İnternet" => new SolidColorBrush(Color.FromRgb(42, 169, 190)),
-        "Su" => new SolidColorBrush(Color.FromRgb(67, 199, 122)),
-        _ => new SolidColorBrush(Color.FromRgb(145, 171, 192))
-    };
+    private static SolidColorBrush DashboardInvoiceTypeBrush(string invoiceType) =>
+        DomainValueText.ParseInvoiceKind(invoiceType) switch
+        {
+            InvoiceKind.Electricity => new SolidColorBrush(Color.FromRgb(255, 180, 31)),
+            InvoiceKind.Telephone => new SolidColorBrush(Color.FromRgb(36, 104, 216)),
+            InvoiceKind.Internet => new SolidColorBrush(Color.FromRgb(42, 169, 190)),
+            InvoiceKind.Water => new SolidColorBrush(Color.FromRgb(67, 199, 122)),
+            _ => new SolidColorBrush(Color.FromRgb(145, 171, 192))
+        };
 }

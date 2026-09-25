@@ -2,27 +2,35 @@ using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using Microsoft.Win32;
 
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow : Window
 {
+    private static readonly string[] InvoiceTypes =
+    {
+        DomainValueText.ToStorageValue(InvoiceKind.Electricity),
+        DomainValueText.ToStorageValue(InvoiceKind.Telephone),
+        DomainValueText.ToStorageValue(InvoiceKind.Internet),
+        DomainValueText.ToStorageValue(InvoiceKind.Water)
+    };
+
     private static readonly string[] InstitutionTypes =
-        { "İlkokul", "Ortaokul", "Anasınıfı/Anaokulu", "Kurum" };
+    {
+        DomainValueText.ToStorageValue(InstitutionKind.PrimarySchool),
+        DomainValueText.ToStorageValue(InstitutionKind.MiddleSchool),
+        DomainValueText.ToStorageValue(InstitutionKind.Preschool),
+        DomainValueText.ToStorageValue(InstitutionKind.Institution)
+    };
+
+    private static readonly string[] AllInvoiceTypeFilterPrefix = { "Tümü" };
+    private static readonly string[] AllInstitutionTypeFilterPrefix = { "Tümü" };
 
     public ObservableCollection<SchoolRecord> AllSchools { get; }
     public ObservableCollection<InvoiceRecord> ActiveInvoices { get; }
@@ -32,17 +40,19 @@ public partial class MainWindow : Window
     public ObservableCollection<DashboardBarItem> HomeInvoiceTypeBars { get; } = new();
     public ObservableCollection<DashboardBarItem> HomeMonthlyTrendBars { get; } = new();
 
-    private readonly TaxCalculationService _taxService = new();
-    private readonly SchoolDataStore _schoolDataStore = new();
-    private readonly InvoiceDataStore _invoiceDataStore = new();
-    private readonly AuthorityProfileDataStore _authorityProfileDataStore = new();
-    private readonly ArchivedInvoiceListDataStore _archiveDataStore = new();
-    private readonly FinalReportDocumentService _finalReportDocumentService = new();
-    private readonly FinalReportPdfService _finalReportPdfService = new();
-    private readonly DocumentArchiveStorageService _documentArchiveStorageService = new();
-    private readonly HistoricalPdfImportService _historicalPdfImportService = new();
+    private readonly TaxCalculationService _taxService;
+    private readonly SchoolDataStore _schoolDataStore;
+    private readonly InvoiceDataStore _invoiceDataStore;
+    private readonly AuthorityProfileDataStore _authorityProfileDataStore;
+    private readonly ArchivedInvoiceListDataStore _archiveDataStore;
+    private readonly FinalReportDocumentService _finalReportDocumentService;
+    private readonly FinalReportPdfService _finalReportPdfService;
+    private readonly DocumentArchiveStorageService _documentArchiveStorageService;
+    private readonly HistoricalPdfImportService _historicalPdfImportService;
     private readonly ArchivePdfSynchronizationService _archivePdfSynchronizationService;
-    private readonly ApplicationSafetyService _safetyService = new();
+    private readonly AuditTrailStore _auditTrailStore;
+    private readonly TransactionJournalStore _transactionJournalStore;
+    private readonly ApplicationSafetyService _safetyService;
     private readonly SafetyCheckResult _startupSafetyResult;
     private readonly ICollectionView _schoolView;
     private readonly ICollectionView _archiveView;
@@ -63,78 +73,90 @@ public partial class MainWindow : Window
     private string _currentView = "Home";
     private string? _lastSafetyBackupPath;
 
-    private const double DesignWidth = 1450.0;
-    private const double DesignHeight = 945.0;
-    private const double PreferredNormalScale = 0.90;
     private const int WmGetMinMaxInfo = 0x0024;
     private const uint MonitorDefaultToNearest = 0x00000002;
     private HwndSource? _windowSource;
 
-    public MainWindow()
+    internal MainWindow(
+        TaxCalculationService taxService,
+        SchoolDataStore schoolDataStore,
+        InvoiceDataStore invoiceDataStore,
+        AuthorityProfileDataStore authorityProfileDataStore,
+        ArchivedInvoiceListDataStore archiveDataStore,
+        ApplicationSafetyService safetyService,
+        FinalReportDocumentService finalReportDocumentService,
+        FinalReportPdfService finalReportPdfService,
+        DocumentArchiveStorageService documentArchiveStorageService,
+        HistoricalPdfImportService historicalPdfImportService,
+        ArchivePdfSynchronizationService archivePdfSynchronizationService,
+        AuditTrailStore auditTrailStore,
+        TransactionJournalStore transactionJournalStore,
+        MainWindowStartupState startupState)
     {
-        _startupSafetyResult = _safetyService.InitializeAndCheck();
+        ArgumentNullException.ThrowIfNull(taxService);
+        ArgumentNullException.ThrowIfNull(schoolDataStore);
+        ArgumentNullException.ThrowIfNull(invoiceDataStore);
+        ArgumentNullException.ThrowIfNull(authorityProfileDataStore);
+        ArgumentNullException.ThrowIfNull(archiveDataStore);
+        ArgumentNullException.ThrowIfNull(safetyService);
+        ArgumentNullException.ThrowIfNull(finalReportDocumentService);
+        ArgumentNullException.ThrowIfNull(finalReportPdfService);
+        ArgumentNullException.ThrowIfNull(documentArchiveStorageService);
+        ArgumentNullException.ThrowIfNull(historicalPdfImportService);
+        ArgumentNullException.ThrowIfNull(archivePdfSynchronizationService);
+        ArgumentNullException.ThrowIfNull(auditTrailStore);
+        ArgumentNullException.ThrowIfNull(transactionJournalStore);
+        ArgumentNullException.ThrowIfNull(startupState);
+
+        _taxService = taxService;
+        _schoolDataStore = schoolDataStore;
+        _invoiceDataStore = invoiceDataStore;
+        _authorityProfileDataStore = authorityProfileDataStore;
+        _archiveDataStore = archiveDataStore;
+        _safetyService = safetyService;
+        _finalReportDocumentService = finalReportDocumentService;
+        _finalReportPdfService = finalReportPdfService;
+        _documentArchiveStorageService = documentArchiveStorageService;
+        _historicalPdfImportService = historicalPdfImportService;
+        _archivePdfSynchronizationService = archivePdfSynchronizationService;
+        _auditTrailStore = auditTrailStore;
+        _transactionJournalStore = transactionJournalStore;
+
+        _startupSafetyResult = startupState.SafetyResult;
         _lastSafetyBackupPath = _startupSafetyResult.BackupPath;
-        _archivePdfSynchronizationService = new ArchivePdfSynchronizationService(
-            _documentArchiveStorageService,
-            _finalReportPdfService.Save);
 
-        SchoolLoadResult schoolLoadResult;
-        try
-        {
-            schoolLoadResult = _schoolDataStore.LoadOrCreate();
-        }
-        catch (Exception ex)
-        {
-            schoolLoadResult = new SchoolLoadResult(
-                SchoolSeedData.Create(),
-                "Kalıcı okul/kurum verisi açılamadı; bu oturumda başlangıç kayıtları kullanılıyor. " + ex.Message,
-                _schoolDataStore.DataFilePath);
-        }
+        var schoolLoadResult = startupState.SchoolLoadResult;
+        var invoiceLoadResult = startupState.InvoiceLoadResult;
+        var authorityProfileLoadResult = startupState.AuthorityProfileLoadResult;
+        var archiveLoadResult = startupState.ArchiveLoadResult;
+
         AllSchools = new ObservableCollection<SchoolRecord>(schoolLoadResult.Schools);
-
-        InvoiceLoadResult invoiceLoadResult;
-        try
-        {
-            invoiceLoadResult = _invoiceDataStore.LoadOrCreate();
-        }
-        catch (Exception ex)
-        {
-            invoiceLoadResult = new InvoiceLoadResult(
-                Array.Empty<InvoiceRecord>(),
-                "Kalıcı aktif fatura verisi açılamadı; bu oturumda boş liste kullanılıyor. " + ex.Message,
-                _invoiceDataStore.DataFilePath);
-        }
         ActiveInvoices = new ObservableCollection<InvoiceRecord>(invoiceLoadResult.Invoices);
-
-        AuthorityProfileLoadResult authorityProfileLoadResult;
-        try
-        {
-            authorityProfileLoadResult = _authorityProfileDataStore.LoadOrCreate();
-        }
-        catch (Exception ex)
-        {
-            authorityProfileLoadResult = new AuthorityProfileLoadResult(
-                AuthorityProfileDefaults.Create(),
-                "Kalıcı yetkili/imza profili açılamadı; bu oturumda varsayılan bilgiler kullanılıyor. " + ex.Message,
-                _authorityProfileDataStore.DataFilePath);
-        }
         _authorityProfile = authorityProfileLoadResult.Profile;
-
-        ArchivedInvoiceListLoadResult archiveLoadResult;
-        try
-        {
-            archiveLoadResult = _archiveDataStore.LoadOrCreate();
-        }
-        catch (Exception ex)
-        {
-            archiveLoadResult = new ArchivedInvoiceListLoadResult(
-                Array.Empty<ArchivedInvoiceList>(),
-                "Kalıcı işlem arşivi açılamadı; bu oturumda boş arşiv kullanılıyor. " + ex.Message,
-                _archiveDataStore.DataFilePath);
-        }
         ArchivedLists = new ObservableCollection<ArchivedInvoiceList>(archiveLoadResult.Archives);
 
         InitializeComponent();
+        EnsureDocumentArchiveDirectories();
+        InitializeWindowShell();
+        InitializeInvoiceEntrySources();
+        _schoolView = InitializeSchoolView();
+        StartNewSchool();
+        RefreshSchoolView();
+        LoadAuthorityProfileToForm(_authorityProfile);
+
+        _archiveView = InitializeArchiveView();
+        RefreshArchiveView();
+
+        _controlView = InitializeControlCenter();
+        RefreshControlCenter();
+
+        RunCalculationEngineSelfTest();
+        InitializeInitialUiState();
+        ShowStartupWarnings(startupState);
+    }
+
+    private void EnsureDocumentArchiveDirectories()
+    {
         try
         {
             _documentArchiveStorageService.EnsureDirectories();
@@ -147,46 +169,73 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
+    }
+
+    private void InitializeWindowShell()
+    {
         SourceInitialized += MainWindow_SourceInitialized;
         DataContext = this;
         ApplyTaskbarIcon();
-        ConfigureFixedWindowForCurrentScreen();
         UpdateMaximizeRestoreButton();
+    }
 
+    private void InitializeInvoiceEntrySources()
+    {
         _suppressFormEvents = true;
         InstitutionTypeBox.ItemsSource = InstitutionTypes;
-        InvoiceTypeBox.ItemsSource = new[] { "Elektrik", "Telefon", "İnternet", "Su" };
+        InvoiceTypeBox.ItemsSource = InvoiceTypes;
         InstitutionBox.ItemsSource = Array.Empty<SchoolRecord>();
         _suppressFormEvents = false;
+    }
 
+    private ICollectionView InitializeSchoolView()
+    {
         _suppressSchoolEvents = true;
-        SchoolFilterTypeBox.ItemsSource = new[] { "Tümü" }.Concat(InstitutionTypes).ToArray();
+        SchoolFilterTypeBox.ItemsSource = AllInstitutionTypeFilterPrefix.Concat(InstitutionTypes).ToArray();
         SchoolFilterTypeBox.SelectedIndex = 0;
         SchoolTypeEditorBox.ItemsSource = InstitutionTypes;
-        _schoolView = CollectionViewSource.GetDefaultView(AllSchools);
-        _schoolView.Filter = FilterSchool;
-        _schoolView.SortDescriptions.Add(new SortDescription(nameof(SchoolRecord.InstitutionType), ListSortDirection.Ascending));
-        _schoolView.SortDescriptions.Add(new SortDescription(nameof(SchoolRecord.Name), ListSortDirection.Ascending));
-        SchoolsGrid.ItemsSource = _schoolView;
+
+        var schoolView = CollectionViewSource.GetDefaultView(AllSchools);
+        schoolView.Filter = FilterSchool;
+        schoolView.SortDescriptions.Add(new SortDescription(nameof(SchoolRecord.InstitutionType), ListSortDirection.Ascending));
+        schoolView.SortDescriptions.Add(new SortDescription(nameof(SchoolRecord.Name), ListSortDirection.Ascending));
+        SchoolsGrid.ItemsSource = schoolView;
+
         _suppressSchoolEvents = false;
-        StartNewSchool();
-        RefreshSchoolView();
-        LoadAuthorityProfileToForm(_authorityProfile);
+        return schoolView;
+    }
 
+    private ICollectionView InitializeArchiveView()
+    {
         _suppressArchiveEvents = true;
-        ArchiveTypeFilterBox.ItemsSource = new[] { "Tümü", "Elektrik", "Telefon", "İnternet", "Su" };
+        ArchiveTypeFilterBox.ItemsSource = AllInvoiceTypeFilterPrefix.Concat(InvoiceTypes).ToArray();
         ArchiveTypeFilterBox.SelectedIndex = 0;
-        ArchiveStatusFilterBox.ItemsSource = new[] { "Tümü", "Açık", "Kapalı" };
+        ArchiveStatusFilterBox.ItemsSource = new[]
+        {
+            "Tümü",
+            DomainValueText.ToStorageValue(ArchiveState.Open),
+            DomainValueText.ToStorageValue(ArchiveState.Closed)
+        };
         ArchiveStatusFilterBox.SelectedIndex = 0;
-        _archiveView = CollectionViewSource.GetDefaultView(ArchivedLists);
-        _archiveView.Filter = FilterArchivedList;
-        ArchiveGrid.ItemsSource = _archiveView;
-        ArchiveInvoiceDetailGrid.ItemsSource = Array.Empty<InvoiceRecord>();
-        _suppressArchiveEvents = false;
-        RefreshArchiveView();
 
+        var archiveView = CollectionViewSource.GetDefaultView(ArchivedLists);
+        archiveView.Filter = FilterArchivedList;
+        ArchiveGrid.ItemsSource = archiveView;
+        ArchiveInvoiceDetailGrid.ItemsSource = Array.Empty<InvoiceRecord>();
+
+        _suppressArchiveEvents = false;
+        return archiveView;
+    }
+
+    private ICollectionView InitializeControlCenter()
+    {
         _suppressControlEvents = true;
-        ControlSeverityFilterBox.ItemsSource = new[] { "Tümü", "Hata", "Uyarı" };
+        ControlSeverityFilterBox.ItemsSource = new[]
+        {
+            "Tümü",
+            DomainValueText.ToDisplayValue(ControlIssueSeverity.Error),
+            DomainValueText.ToDisplayValue(ControlIssueSeverity.Warning)
+        };
         ControlSeverityFilterBox.SelectedIndex = 0;
         ControlCategoryFilterBox.ItemsSource = new[]
         {
@@ -199,22 +248,30 @@ public partial class MainWindow : Window
             "Kurum Bilgisi"
         };
         ControlCategoryFilterBox.SelectedIndex = 0;
-        _controlView = CollectionViewSource.GetDefaultView(ControlIssues);
-        _controlView.Filter = FilterControlIssue;
-        ControlIssuesGrid.ItemsSource = _controlView;
+
+        var controlView = CollectionViewSource.GetDefaultView(ControlIssues);
+        controlView.Filter = FilterControlIssue;
+        ControlIssuesGrid.ItemsSource = controlView;
+
         _suppressControlEvents = false;
-        RefreshControlCenter();
+        return controlView;
+    }
 
+    private void RunCalculationEngineSelfTest()
+    {
         var selfTest = EngineSelfTest.Run();
-        if (!selfTest.Success)
-        {
-            EngineStatusDot.Fill = new SolidColorBrush(Color.FromRgb(229, 57, 53));
-            EngineStatusText.Text = "Hata";
-            EngineStatusText.Foreground = Brushes.MistyRose;
-            MessageBox.Show("C# vergi hesap motoru öz testi başarısız:\n\n" + selfTest.Message,
-                "DoğruFatura", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        if (selfTest.Success)
+            return;
 
+        EngineStatusDot.Fill = new SolidColorBrush(Color.FromRgb(229, 57, 53));
+        EngineStatusText.Text = "Hata";
+        EngineStatusText.Foreground = Brushes.MistyRose;
+        MessageBox.Show("C# vergi hesap motoru öz testi başarısız:\n\n" + selfTest.Message,
+            "DoğruFatura", MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+
+    private void InitializeInitialUiState()
+    {
         ResetCalculationDisplay();
         UpdateFormReadiness();
         UpdateInvoiceListSummary();
@@ -223,6 +280,14 @@ public partial class MainWindow : Window
         Dispatcher.BeginInvoke(
             DispatcherPriority.Background,
             new Action(() => SynchronizeArchivePdfs(false)));
+    }
+
+    private void ShowStartupWarnings(MainWindowStartupState startupState)
+    {
+        var schoolLoadResult = startupState.SchoolLoadResult;
+        var invoiceLoadResult = startupState.InvoiceLoadResult;
+        var authorityProfileLoadResult = startupState.AuthorityProfileLoadResult;
+        var archiveLoadResult = startupState.ArchiveLoadResult;
 
         if (!string.IsNullOrWhiteSpace(schoolLoadResult.WarningMessage))
         {
@@ -252,5 +317,7 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
+
+        ShowPendingTransactionJournalWarning();
     }
 }

@@ -22,20 +22,20 @@ public static class NumberParser
         if (comma >= 0 && dot >= 0)
         {
             if (comma > dot)
-                normalized = normalized.Replace(".", "").Replace(',', '.');
+                normalized = normalized.Replace(".", "", StringComparison.Ordinal).Replace(',', '.');
             else
-                normalized = normalized.Replace(",", "");
+                normalized = normalized.Replace(",", "", StringComparison.Ordinal);
         }
         else if (comma >= 0)
         {
-            normalized = normalized.Replace(".", "").Replace(',', '.');
+            normalized = normalized.Replace(".", "", StringComparison.Ordinal).Replace(',', '.');
         }
         else if (dot >= 0)
         {
             var dotCount = normalized.Count(c => c == '.');
             var fractionLength = normalized.Length - dot - 1;
             if (dotCount > 1 || fractionLength == 3 && dot <= 3)
-                normalized = normalized.Replace(".", "");
+                normalized = normalized.Replace(".", "", StringComparison.Ordinal);
         }
 
         return decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out value)

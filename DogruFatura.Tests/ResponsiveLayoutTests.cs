@@ -11,7 +11,7 @@ public sealed class ResponsiveLayoutTests
     [InlineData(1920, 1080, 150)]
     [InlineData(2560, 1440, 175)]
     [InlineData(3840, 2160, 200)]
-    public void SupportedScreenProfiles_StayInsideWorkArea(int width, int height, int dpiPercent)
+    public void SupportedScreenProfilesStayInsideWorkArea(int width, int height, int dpiPercent)
     {
         var profile = ResponsiveLayoutService.CalculateForPixels(width, height, dpiPercent);
 
@@ -23,7 +23,7 @@ public sealed class ResponsiveLayoutTests
     }
 
     [Fact]
-    public void LargeScreen_DoesNotBitmapUpscaleDesign()
+    public void LargeScreenDoesNotBitmapUpscaleDesign()
     {
         var profile = ResponsiveLayoutService.CalculateForPixels(3840, 2160, 100);
 
@@ -34,11 +34,35 @@ public sealed class ResponsiveLayoutTests
     }
 
     [Fact]
-    public void FullHdAt150Percent_UsesControlledDownscale()
+    public void FullHdAt150PercentUsesControlledDownscale()
     {
         var profile = ResponsiveLayoutService.CalculateForPixels(1920, 1080, 150);
 
         Assert.True(profile.RequiresDownscale);
         Assert.InRange(profile.ContentScale, 0.70, 0.73);
     }
+    [Fact]
+    public void StartupLayoutUsesPreferredNinetyPercentOnLargeScreen()
+    {
+        var profile = ResponsiveLayoutService.CalculateStartup(1920, 1080);
+
+        Assert.Equal(1305, profile.WindowWidthDip);
+        Assert.Equal(850, profile.WindowHeightDip);
+        Assert.Equal(0.90, profile.ContentScale, 6);
+    }
+
+    [Theory]
+    [InlineData(1366, 768)]
+    [InlineData(1920, 1080)]
+    [InlineData(2560, 1440)]
+    public void StartupLayoutStaysInsideLegacyWorkAreaLimits(int width, int height)
+    {
+        var profile = ResponsiveLayoutService.CalculateStartup(width, height);
+
+        Assert.True(profile.WindowWidthDip <= width * 0.94 + 0.5);
+        Assert.True(profile.WindowHeightDip <= height * 0.92 + 0.5);
+        Assert.True(profile.WindowWidthDip <= ResponsiveLayoutService.DesignWidth * 0.90 + 0.5);
+        Assert.True(profile.WindowHeightDip <= ResponsiveLayoutService.DesignHeight * 0.90 + 0.5);
+    }
+
 }

@@ -1,32 +1,20 @@
-using DogruFatura.Core.Models;
-using DogruFatura.Core.Services;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 using Microsoft.Win32;
 
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private SafetyCheckResult RefreshSafetyInformation()
+{
+    private SafetyCheckResult RefreshSafetyInformation()
     {
+        HeaderVersionText.Text = AppVersionInfo.DisplayVersion;
+        HeaderVersionText.ToolTip = "DoğruFatura " + _safetyService.InformationalVersion;
         AboutVersionText.Text = "DoğruFatura " + _safetyService.InformationalVersion;
         AboutRuntimeText.Text = _safetyService.RuntimeDescription;
-        AboutDataFolderText.Text = _safetyService.DataFolder;
-        AboutDocumentFolderText.Text = _safetyService.DocumentRootFolder;
-        AboutBackupFolderText.Text = _safetyService.BackupFolder;
 
         SafetyCheckResult result;
         try
@@ -44,13 +32,14 @@ public partial class MainWindow
                 0);
         }
 
-        DataIntegrityText.Text = result.Message;
+        DataIntegrityText.Text = result.IsHealthy
+            ? "✓ Veriler ve PDF belgeleri sağlıklı"
+            : "⚠ Veri bütünlüğü kontrolü dikkat gerektiriyor";
+        DataIntegrityText.ToolTip = result.Message;
         DataIntegrityText.Foreground = new SolidColorBrush(result.IsHealthy
             ? Color.FromRgb(98, 217, 155)
             : Color.FromRgb(255, 180, 31));
-        LastSafetyBackupText.Text = string.IsNullOrWhiteSpace(_lastSafetyBackupPath)
-            ? "Bu sürümde henüz yeni güvenlik yedeği oluşturulmadı."
-            : "Son güvenlik yedeği: " + _lastSafetyBackupPath;
+        LastSafetyBackupText.Text = FormatLastSafetyBackupText(_lastSafetyBackupPath);
         return result;
     }
 
@@ -60,7 +49,7 @@ public partial class MainWindow
         if (result.IsHealthy) return;
 
         MessageBox.Show(this,
-            DataIntegrityText.Text,
+            result.Message,
             "DoğruFatura - Veri Bütünlüğü",
             MessageBoxButton.OK,
             MessageBoxImage.Warning);
@@ -149,26 +138,43 @@ public partial class MainWindow
         RestartApplication();
     }
 
-    private void OpenDataFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(_safetyService.DataFolder);
-    private void OpenDocumentFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(_safetyService.DocumentRootFolder);
-    private void OpenBackupFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(_safetyService.BackupFolder);
-    private void OpenLogFolder_Click(object sender, RoutedEventArgs e) => OpenFolder(_safetyService.LogFolder);
-
-    private static void OpenFolder(string folder)
+    private void CreateDiagnosticPackage_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            Directory.CreateDirectory(folder);
-            Process.Start(new ProcessStartInfo { FileName = folder, UseShellExecute = true });
+            var path = DiagnosticPackageService.Create(_safetyService);
+            UiNotificationService.Show(
+                this,
+                "Tanılama paketi oluşturuldu:\n" + path,
+                TimeSpan.FromSeconds(6));
         }
         catch (Exception ex)
         {
             MessageBox.Show(
-                "Klasör açılamadı:\n\n" + ex.Message,
-                "DoğruFatura",
+                this,
+                "Tanılama paketi oluşturulamadı:\n\n" + ex.Message,
+                "DoğruFatura - Tanılama",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    private static string FormatLastSafetyBackupText(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return "Bu oturumda yeni güvenlik yedeği oluşturulmadı.";
+
+        try
+        {
+            if (File.Exists(path))
+                return $"Son yedek: {File.GetLastWriteTime(path):dd.MM.yyyy HH:mm}";
+        }
+        catch
+        {
+            // Yedek var; zaman bilgisi okunamazsa kullanıcıya teknik yol göstermeden sade durum sunulur.
+        }
+
+        return "Son güvenlik yedeği oluşturuldu.";
     }
 
     private static void RestartApplication()

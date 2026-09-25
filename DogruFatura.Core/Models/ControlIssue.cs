@@ -27,7 +27,7 @@ public sealed record ControlIssue(
     string? SchoolInstitutionType = null,
     string? SchoolName = null)
 {
-    public string SeverityLabel => Severity == ControlIssueSeverity.Error ? "Hata" : "Uyarı";
+    public string SeverityLabel => DomainValueText.ToDisplayValue(Severity);
 
     public int SeverityRank => Severity == ControlIssueSeverity.Error ? 0 : 1;
 

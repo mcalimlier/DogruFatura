@@ -1,10 +1,10 @@
-# DoğruFatura 1.0.0 — Hızlı Kullanım Kılavuzu
+# DoğruFatura 1.1 — Hızlı Kullanım Kılavuzu
 
 ## 1. Programı açma
 
-DoğruFatura Windows 10/11 64-bit için hazırlanmıştır. Final Setup self-contained olduğundan hedef bilgisayarda .NET SDK, Visual Studio veya Excel kurulması gerekmez.
+DoğruFatura Windows 10/11 64-bit için hazırlanmıştır. Dağıtım Setup'ı self-contained olduğundan hedef bilgisayarda .NET SDK, Visual Studio veya Excel kurulması gerekmez.
 
-Program kullanıcı kayıtlarını uygulama klasöründe değil, Masaüstü altındaki `DoğruFatura` klasöründe tutar. Bu nedenle program güncellense veya kaldırılsa bile kullanıcı verileri korunur.
+Kullanıcı kayıtları uygulama klasöründe değil, Masaüstü altındaki `DoğruFatura` klasöründe tutulur. Program güncellense veya kaldırılsa bile kullanıcı verileri korunur.
 
 ## 2. Temel klasörler
 
@@ -14,7 +14,7 @@ Program kullanıcı kayıtlarını uygulama klasöründe değil, Masaüstü alt�
 - `Masaüstü\DoğruFatura\Yedekler` — güvenlik ve güncelleme öncesi yedekler
 - `Masaüstü\DoğruFatura\Loglar` — beklenmeyen hata kayıtları
 
-## 3. İlk kullanım sırası
+## 3. Günlük kullanım sırası
 
 1. **OKUL / KURUM** bölümünde kurum kayıtlarını kontrol edin.
 2. **YETKİLİ / İMZA** bölümünde gerçekleştirme görevlisi ve harcama yetkilisini doğrulayın.
@@ -24,25 +24,45 @@ Program kullanıcı kayıtlarını uygulama klasöründe değil, Masaüstü alt�
 6. **RAPORLAR / ÇIKTI** bölümünden PDF oluşturun veya yazdırın.
 7. İşlem tamamlandığında **İŞLEM ARŞİVİ** üzerinden listeyi arşivleyip HYS Ödeme Emri Belge No ile kapatın.
 
+Fatura numarası boş olan yeni kayıt, aynı kurum/hizmet, tür, tarihler ve tutarlara sahip başka bir boş-numaralı kayıtla eşleşirse olası mükerrer uyarısı gösterilir. Gerçekten ayrı bir fatura ise kullanıcı onayıyla kayda devam edilebilir.
+
 ## 4. Geçmiş PDF'yi arşive ekleme
 
-**İŞLEM ARŞİVİ → ARŞİV EKLE** ile eski DoğruFatura PDF belgeleri eklenebilir. Dosya adında sıra numarası bulunabilir; örneğin `48) HYS-2026-34546180.pdf` kabul edilir ve HYS numarası standart biçime dönüştürülür. Kaynak PDF silinmez.
+**İŞLEM ARŞİVİ → ARŞİV EKLE** ile eski DoğruFatura PDF belgeleri eklenebilir. Çoklu dosya aktarımında ilerleme gösterilir ve işlem iptal edilebilir. Dosya adında sıra numarası bulunabilir; örneğin `48) HYS-2026-34546180.pdf` kabul edilir ve HYS numarası standart biçime dönüştürülür. Kaynak PDF silinmez.
 
-## 5. Güvenlik yedeği
+## 5. İstatistik
 
-**HAKKINDA / GÜVENLİK → GÜVENLİK YEDEĞİ** ile kullanıcı verileri ve kayıtlı PDF belgeleri ZIP yedeğine alınır.
+**İSTATİSTİK** ekranında arşiv kayıtları:
+- yıl ve kurum,
+- başlangıç / bitiş tarihi,
+- fatura türü
 
-**YEDEKTEN GERİ YÜKLE** işlemi seçilen yedeği doğrular. Geri yüklemeden önce mevcut durum ayrıca güvenlik amacıyla yedeklenir.
+ile filtrelenebilir.
 
-## 6. Tanılama paketi
+Fatura Türü Dağılımı ödeme tutarlarının türlere göre payını gösterir. **ÇIKTI AL** menüsünden PDF, Yazdır, CSV, Excel veya PNG seçilebilir. CSV çıktısı Türkçe Excel kullanımına uygun `;` ayraçlı, UTF-8 ve virgüllü ondalık biçimindedir.
 
-**HAKKINDA / GÜVENLİK → TANILAMA PAKETİ** destek amaçlı bir ZIP oluşturur. Bu paket fatura JSON kayıtlarını ve PDF belgelerini içermez; yalnız çalışma ortamı özeti ile sınırlı sayıdaki hata günlüğünü içerir.
+## 6. Güvenlik yedeği ve geri yükleme
 
-## 7. Beklenmeyen kapanma
+**HAKKINDA / GÜVENLİK** bölümünde:
+- **KONTROL ET** — veri/PDF bütünlüğünü denetler.
+- **YEDEK OLUŞTUR** — kullanıcı JSON kayıtları ve PDF belgeleri için tam güvenlik yedeği oluşturur.
+- **GERİ YÜKLE** — seçilen yedeği doğrulayıp geri yükler; önce mevcut durumu ayrıca yedekler.
 
-Program normal kapanmadığını algılarsa bir sonraki açılışta mevcut durumu korumak için otomatik güvenlik yedeği almaya çalışır ve kullanıcıyı bilgilendirir. Ardından **HAKKINDA / GÜVENLİK** ekranındaki bütünlük kontrolü kullanılabilir.
+## 7. Tanılama paketi
 
-## 8. Klavye kısayolları
+**HAKKINDA / GÜVENLİK → GELİŞMİŞ / DESTEK → TANILAMA PAKETİ** destek amaçlı ZIP oluşturur.
+
+Tanılama paketi:
+- fatura JSON kayıtlarını içermez,
+- PDF belgelerini içermez,
+- yalnız çalışma ortamı özeti ile sınırlı hata günlüklerini içerir,
+- loglardaki kullanıcı/makine yolları ve yaygın kişisel veri örüntülerini maskeler.
+
+## 8. Beklenmeyen kapanma
+
+Program normal kapanmadığını algılarsa bir sonraki açılışta mevcut durumu korumak için otomatik güvenlik yedeği almaya çalışır ve kullanıcıyı bilgilendirir. Ardından **HAKKINDA / GÜVENLİK → KONTROL ET** kullanılabilir.
+
+## 9. Klavye kısayolları
 
 - `Ctrl + F` — açık ekranda arama alanına git
 - `Ctrl + P` — rapor ekranında yazdır
@@ -58,10 +78,10 @@ Program normal kapanmadığını algılarsa bir sonraki açılışta mevcut duru
 - `Alt + K` — Kontrol Merkezi
 - `Alt + H` — Hakkında / Güvenlik
 
-## 9. Güncelleme ve kaldırma
+## 10. Güncelleme ve kaldırma
 
-Setup yeni sürüm kurulurken yalnız Program Files altındaki program dosyalarını yeniler. Masaüstü `DoğruFatura` klasöründeki kullanıcı verileri korunur. Program kaldırıldığında da bu kullanıcı klasörü bilinçli olarak silinmez.
+Setup yeni sürüm kurulurken Program Files altındaki program dosyalarını yeniler. Masaüstü `DoğruFatura` klasöründeki kullanıcı verileri korunur. Program kaldırıldığında da kullanıcı veri klasörü bilinçli olarak silinmez.
 
-## 10. Sorun yaşandığında
+## 11. Sorun yaşandığında
 
-Önce **KONTROL MERKEZİ** ve **HAKKINDA / GÜVENLİK → KONTROL ET** kullanılmalıdır. Sorun devam ederse **TANILAMA PAKETİ** oluşturularak destek incelemesi için kullanılabilir.
+Önce **KONTROL MERKEZİ** ve **HAKKINDA / GÜVENLİK → KONTROL ET** kullanılmalıdır. Sorun devam ederse **GELİŞMİŞ / DESTEK → TANILAMA PAKETİ** oluşturularak destek incelemesi için kullanılabilir.

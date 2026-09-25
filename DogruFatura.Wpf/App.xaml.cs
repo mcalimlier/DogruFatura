@@ -1,5 +1,5 @@
+using DogruFatura.Core.Services;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -8,8 +8,7 @@ namespace DogruFatura.Wpf;
 public partial class App : Application
 {
     private const string SingleInstanceMutexName = @"Local\DogruFatura.Desktop.SingleInstance.2D22EB36-5AA7-4AD9-9814-DB03D1DFBFD3";
-    private static Mutex? _singleInstanceMutex;
-    private static bool _ownsMutex;
+    private static SingleInstanceLease? _singleInstanceLease;
     private bool _fatalShutdown;
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
@@ -22,13 +21,16 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
     }
 
-    private void Application_Startup(object sender, StartupEventArgs e)
+    private async void Application_Startup(object sender, StartupEventArgs e)
     {
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
         StartupPerformanceService.Begin();
+        StartupSplashHost? splashHost = null;
+
         try
         {
-            if (!TryAcquireSingleInstance())
+            var singleInstance = SingleInstanceGuard.TryAcquire(SingleInstanceMutexName);
+            if (singleInstance.Status == SingleInstanceAcquireStatus.AlreadyRunning)
             {
                 MessageBox.Show(
                     "DoğruFatura zaten açık. Aynı anda ikinci bir DoğruFatura penceresi çalıştırılmaz.",
@@ -38,6 +40,21 @@ public partial class App : Application
                 Shutdown(0);
                 return;
             }
+
+            if (!singleInstance.IsAcquired)
+            {
+                MessageBox.Show(
+                    "DoğruFatura güvenli yazma kilidini oluşturamadığı için başlatılmadı. "
+                    + "Veri dosyalarını korumak amacıyla uygulama güvenli biçimde kapatılacaktır.\n\n"
+                    + singleInstance.Message,
+                    "DoğruFatura - Güvenli Başlatma",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                Shutdown(-2);
+                return;
+            }
+
+            _singleInstanceLease = singleInstance.Lease;
 
             try
             {
@@ -49,55 +66,91 @@ public partial class App : Application
                 ApplicationCrashLogger.Write(ex, "RecoverySession.Begin");
             }
 
-            try { SetCurrentProcessExplicitAppUserModelID("DogruFatura.Wpf.App"); } catch { }
-            new SplashWindow().Show();
+            try
+            {
+                var appUserModelIdResult = SetCurrentProcessExplicitAppUserModelID("DogruFatura.Wpf.App");
+                if (appUserModelIdResult < 0)
+                    Marshal.ThrowExceptionForHR(appUserModelIdResult);
+            }
+            catch
+            {
+                // Taskbar kimliği uygulanamasa da uygulama güvenle çalışmaya devam edebilir.
+            }
+
+            // Splash ayrı STA/Dispatcher thread'inde çalışır. Böylece MainWindow kurulumu
+            // ana UI thread'ini meşgul etse bile karşılama animasyonu akıcı kalır.
+            splashHost = new StartupSplashHost();
+            splashHost.Show();
+
+            var taxService = new TaxCalculationService();
+            var finalReportDocumentService = new FinalReportDocumentService();
+            var finalReportPdfService = new FinalReportPdfService();
+            var documentArchiveStorageService = new DocumentArchiveStorageService();
+            var historicalPdfImportService = new HistoricalPdfImportService(taxService);
+            var safetyService = new ApplicationSafetyService();
+            var schoolDataStore = new SchoolDataStore();
+            var invoiceDataStore = new InvoiceDataStore();
+            var authorityProfileDataStore = new AuthorityProfileDataStore();
+            var archiveDataStore = new ArchivedInvoiceListDataStore();
+            var auditTrailStore = new AuditTrailStore();
+            var transactionJournalStore = new TransactionJournalStore();
+            var archivePdfSynchronizationService = new ArchivePdfSynchronizationService(
+                documentArchiveStorageService,
+                finalReportPdfService.Save);
+            var startupState = MainWindowStartupStateLoader.Load(
+                safetyService,
+                schoolDataStore,
+                invoiceDataStore,
+                authorityProfileDataStore,
+                archiveDataStore);
+
+            var main = new MainWindow(
+                taxService,
+                schoolDataStore,
+                invoiceDataStore,
+                authorityProfileDataStore,
+                archiveDataStore,
+                safetyService,
+                finalReportDocumentService,
+                finalReportPdfService,
+                documentArchiveStorageService,
+                historicalPdfImportService,
+                archivePdfSynchronizationService,
+                auditTrailStore,
+                transactionJournalStore,
+                startupState);
+            UiPolishService.Apply(main);
+
+            // Performans metriği yalnız gerçek hazırlık süresini ölçer; kullanıcı isteğiyle
+            // eklenen 5,5 saniyelik görsel splash süresi performans gerilemesi sayılmaz.
+            StartupPerformanceService.Complete();
+
+            // Splash en az yaklaşık 5,5 saniye görünür kalır ve son %100 geçişini tamamlar.
+            await splashHost.CompleteAsync();
+
+            MainWindow = main;
+            main.Show();
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
+
+            splashHost.Dispose();
+            splashHost = null;
         }
         catch (Exception ex)
         {
+            splashHost?.CloseImmediately();
+            splashHost?.Dispose();
             _fatalShutdown = true;
             ShowFatalError("Program açılışı sırasında hata oluştu.", ex);
             Shutdown(-1);
         }
     }
 
-    private static bool TryAcquireSingleInstance()
-    {
-        try
-        {
-            _singleInstanceMutex = new Mutex(true, SingleInstanceMutexName, out var createdNew);
-            _ownsMutex = createdNew;
-            if (!createdNew)
-            {
-                _singleInstanceMutex.Dispose();
-                _singleInstanceMutex = null;
-            }
-            return createdNew;
-        }
-        catch
-        {
-            // Nadir bir Windows oturum/izin sorunu programı tamamen kullanılamaz hale getirmesin.
-            _singleInstanceMutex = null;
-            _ownsMutex = false;
-            return true;
-        }
-    }
+    internal static void ReleaseSingleInstanceForRestart() => ReleaseSingleInstanceLease();
 
-    internal static void ReleaseSingleInstanceForRestart() => ReleaseSingleInstanceMutex();
-
-    private static void ReleaseSingleInstanceMutex()
+    private static void ReleaseSingleInstanceLease()
     {
-        if (_singleInstanceMutex is null) return;
-        try
-        {
-            if (_ownsMutex) _singleInstanceMutex.ReleaseMutex();
-        }
-        catch { }
-        finally
-        {
-            _ownsMutex = false;
-            _singleInstanceMutex.Dispose();
-            _singleInstanceMutex = null;
-        }
+        var lease = Interlocked.Exchange(ref _singleInstanceLease, null);
+        lease?.Dispose();
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -106,7 +159,7 @@ public partial class App : Application
         {
             try { RecoverySessionService.EndCleanly(); } catch { }
         }
-        ReleaseSingleInstanceMutex();
+        ReleaseSingleInstanceLease();
         base.OnExit(e);
     }
 

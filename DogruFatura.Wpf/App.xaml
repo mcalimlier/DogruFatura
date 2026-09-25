@@ -50,6 +50,7 @@
 
         <Style x:Key="StandardButtonBase" TargetType="Button">
             <Setter Property="Height" Value="42"/>
+            <Setter Property="MinHeight" Value="42"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="FontSize" Value="16.5"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -145,6 +146,7 @@
 
         <Style x:Key="PremiumPanel" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource PremiumPanelBrush}"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="BorderBrush" Value="{StaticResource PremiumGoldBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1.25"/>
             <Setter Property="CornerRadius" Value="12"/>
@@ -270,11 +272,22 @@
         <Style x:Key="PremiumDatePicker" TargetType="DatePicker">
             <Setter Property="Height" Value="42"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="BorderBrush" Value="#D2DBE7"/>
+            <Setter Property="Background" Value="{StaticResource PremiumInputBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PremiumInputBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontSize" Value="17.5"/>
             <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style TargetType="{x:Type DatePickerTextBox}">
+            <Setter Property="Background" Value="{StaticResource PremiumInputBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PremiumInputBorderBrush}"/>
+            <Setter Property="CaretBrush" Value="{StaticResource Gold500Brush}"/>
+            <Setter Property="SelectionBrush" Value="#2D6593"/>
+            <Setter Property="Padding" Value="9,0,5,0"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 

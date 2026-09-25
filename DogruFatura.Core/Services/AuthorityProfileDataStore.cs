@@ -21,9 +21,7 @@ public sealed class AuthorityProfileDataStore
     {
         DataFilePath = dataFilePath ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-            "DoğruFatura",
-            "Veri",
-            "YetkiliProfili.json");
+            "DoğruFatura", "Veri", "YetkiliProfili.json");
     }
 
     public string DataFilePath { get; }
@@ -40,7 +38,8 @@ public sealed class AuthorityProfileDataStore
         try
         {
             var json = File.ReadAllText(DataFilePath, Encoding.UTF8);
-            var profile = JsonSerializer.Deserialize<AuthorityProfile>(json, _jsonOptions);
+            var schema = DataFileSchemaService.Read(json, DataFileKinds.AuthorityProfile);
+            var profile = schema.Data.Deserialize<AuthorityProfile>(_jsonOptions);
             if (profile is null
                 || profile.RealizationOfficerName is null
                 || profile.RealizationOfficerTitle is null
@@ -49,15 +48,31 @@ public sealed class AuthorityProfileDataStore
                 || !profile.IsComplete)
                 throw new JsonException("Yetkili profilinde eksik alanlar var.");
 
-            return new AuthorityProfileLoadResult(profile.Normalize(), null, DataFilePath);
+            var normalized = profile.Normalize();
+            string? warning = null;
+            if (schema.RequiresUpgrade)
+            {
+                try
+                {
+                    var backupPath = DataFileSchemaService.CreatePreUpgradeBackup(DataFilePath, schema.SourceSchemaVersion);
+                    Save(normalized);
+                    warning = $"Yetkili profili veri dosyası şema {DataFileSchemaService.CurrentSchemaVersion} biçimine güvenle yükseltildi. Önceki biçim korundu: {backupPath}";
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    warning = $"Yetkili profili veri dosyasının şema yükseltmesi uygulanamadı; mevcut dosya korunuyor: {ex.Message}";
+                }
+            }
+
+            return new AuthorityProfileLoadResult(normalized, warning, DataFilePath);
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
             var backupPath = CreateCorruptFileBackup();
             var defaultProfile = AuthorityProfileDefaults.Create();
-            Save(defaultProfile);
-            var warning = "Yetkili/imza profili okunamadı; varsayılan bilgiler yeniden yüklendi."
-                          + (backupPath is null ? string.Empty : $" Bozuk dosya korundu: {backupPath}");
+            var warning = "Yetkili/imza profili okunamadı. Ana veri dosyasının üzerine varsayılan profil yazılmadı; bu oturumda yalnız geçici olarak varsayılan bilgiler kullanılıyor.";
+            if (backupPath is not null) warning += $" Sorunlu dosyanın koruma kopyası: {backupPath}";
+            warning += " Profili kaydetmeden önce mevcut sorunlu dosyayı inceleyin veya güvenli bir yedekten geri yükleyin.";
             return new AuthorityProfileLoadResult(defaultProfile, warning, DataFilePath);
         }
     }
@@ -68,12 +83,13 @@ public sealed class AuthorityProfileDataStore
         if (!normalized.IsComplete)
             throw new InvalidOperationException("Yetkili profilindeki bütün alanlar zorunludur.");
 
-        var folder = Path.GetDirectoryName(DataFilePath)
-                     ?? throw new InvalidOperationException("Yetkili profil klasörü belirlenemedi.");
+        var folder = Path.GetDirectoryName(DataFilePath) ?? throw new InvalidOperationException("Yetkili profil klasörü belirlenemedi.");
         Directory.CreateDirectory(folder);
-
-        var json = JsonSerializer.Serialize(normalized, _jsonOptions);
         var temporaryPath = DataFilePath + ".tmp";
+        var json = DataFileSchemaService.SerializeCurrent(
+            DataFileKinds.AuthorityProfile,
+            normalized,
+            _jsonOptions);
         File.WriteAllText(temporaryPath, json, new UTF8Encoding(false));
         File.Move(temporaryPath, DataFilePath, true);
     }
@@ -82,15 +98,10 @@ public sealed class AuthorityProfileDataStore
     {
         try
         {
-            var backupPath = Path.Combine(
-                Path.GetDirectoryName(DataFilePath)!,
-                $"YetkiliProfili_Bozuk_{DateTime.Now:yyyyMMdd_HHmmss}.json");
+            var backupPath = Path.Combine(Path.GetDirectoryName(DataFilePath)!, $"YetkiliProfili_Bozuk_{DateTime.Now:yyyyMMdd_HHmmss_fff}.json");
             File.Copy(DataFilePath, backupPath, false);
             return backupPath;
         }
-        catch
-        {
-            return null;
-        }
+        catch { return null; }
     }
 }

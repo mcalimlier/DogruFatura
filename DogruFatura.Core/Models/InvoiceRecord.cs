@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace DogruFatura.Core.Models;
 
 public sealed record InvoiceRecord(
@@ -16,4 +18,19 @@ public sealed record InvoiceRecord(
     decimal VatBase,
     decimal StampDuty,
     decimal PaymentAmount,
-    decimal InterruptionCompensationAmount = 0m);
+    decimal InterruptionCompensationAmount = 0m,
+    Guid SchoolId = default,
+    string TaxRuleVersion = "",
+    DateOnly? TaxRuleEffectiveFrom = null,
+    decimal AppliedStampDutyRate = 0m)
+{
+    [JsonIgnore]
+    public InvoiceKind Kind => DomainValueText.ParseInvoiceKind(InvoiceType);
+
+    [JsonIgnore]
+    public InstitutionKind InstitutionKind => DomainValueText.ParseInstitutionKind(InstitutionType);
+
+    [JsonIgnore]
+    public bool HasTaxRuleMetadata =>
+        !string.IsNullOrWhiteSpace(TaxRuleVersion) && AppliedStampDutyRate > 0m;
+}

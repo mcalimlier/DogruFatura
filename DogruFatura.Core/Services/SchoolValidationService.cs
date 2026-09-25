@@ -18,14 +18,23 @@ public static class SchoolValidationService
     private static readonly StringComparer TurkishTextComparer =
         StringComparer.Create(CultureInfo.GetCultureInfo("tr-TR"), true);
 
-    public static SchoolRecord Normalize(SchoolRecord school) => new(
-        school.InstitutionType.Trim(),
-        school.Name.Trim(),
-        school.Vkn.Trim(),
-        school.ElectricityServiceNumber.Trim(),
-        school.TelephoneServiceNumber.Trim(),
-        school.InternetServiceNumber.Trim(),
-        school.WaterServiceNumber.Trim());
+    public static SchoolRecord Normalize(SchoolRecord school)
+    {
+        var normalized = school with
+        {
+            InstitutionType = school.InstitutionType.Trim(),
+            Name = school.Name.Trim(),
+            Vkn = school.Vkn.Trim(),
+            ElectricityServiceNumber = school.ElectricityServiceNumber.Trim(),
+            TelephoneServiceNumber = school.TelephoneServiceNumber.Trim(),
+            InternetServiceNumber = school.InternetServiceNumber.Trim(),
+            WaterServiceNumber = school.WaterServiceNumber.Trim()
+        };
+
+        return normalized.SchoolId == Guid.Empty
+            ? normalized with { SchoolId = SchoolIdentityService.CreateLegacyId(normalized) }
+            : normalized;
+    }
 
     public static SchoolValidationResult Validate(
         SchoolRecord school,
