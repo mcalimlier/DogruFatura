@@ -40,3 +40,15 @@ GitHub Desktop'ta **Fetch origin** sonrasında `main` dalını güncelleyin ve f
 - Eski telefon HYS başlıklarındaki tekrar oluşturulan dizi bağımsız değişkenleri `static readonly` alias dizilerine taşındı; CA1861 uyarıları giderildi.
 - `HistoricalPdfImportReportTests.cs` içindeki xUnit `StartsWith` / `Contains` çağrıları açık `StringComparison.Ordinal` kullanacak şekilde güncellendi; CA1307 uyarıları giderildi.
 - Hedef: Release derlemesinde üretim kodu ve testlerde gereksiz analyzer/nullable uyarılarının temizlenmesi; işlevsel testlerin davranışı değiştirilmedi.
+
+
+## 2026-09-25 — Kalan 21 WPF + 3 test uyarısının doğrudan temizlenmesi
+
+Kullanıcının final EXE çıktısında kalan uyarılar tekrar incelendi. Önceki temizlikte alias dizileri tanımlanmış olmasına rağmen TryFindLegacyTelephoneHeader içinde bazı çağrılar hâlâ inline dizi oluşturuyordu; ayrıca telefon fatura türü akışında nullable değer bazı çağrılara taşınıyordu.
+
+Uygulanan son düzeltmeler:
+- TryFindLegacyTelephoneHeader içindeki 10 adet tekrar eden inline alias dizisi, mevcut static readonly alias alanlarını kullanacak şekilde değiştirildi; CA1861 kaynakları kaldırıldı.
+- TryParseLegacyTelephoneListPages içinde FindInvoiceType sonucu doğrulandıktan sonra validatedInvoiceType ile tüm devam eden çağrılar null güvenli hâle getirildi; CS8604 kaynakları kaldırıldı.
+- HistoricalPdfImportReportTests.cs içinde kalan 3 Assert.Contains çağrısına StringComparison.Ordinal eklendi; CA1307 kaynakları kaldırıldı.
+
+Bu değişikliklerin ardından yerel Windows Release kalite kapısının yeniden çalıştırılması gerekir. Bu ortamda kullanıcının yerel Windows SDK/build çıktısı doğrudan çalıştırılmadığından, 0 uyarı sonucu ancak kullanıcının yeni final BAT çıktısıyla kesinleşmiş sayılacaktır.
