@@ -433,8 +433,8 @@ public sealed class LegacyHysPdfImportTests
                 font, XBrushes.Black, 40, 400);
         }
         var page = document.AddPage();
-        page.Width = 1152;
-        page.Height = 576;
+        page.Width = XUnit.FromPoint(1152);
+        page.Height = XUnit.FromPoint(576);
         using var graphics = XGraphics.FromPdfPage(page);
         graphics.DrawString("AYRINTILI GÖNDERİLEN ÖDENEK/FATURA LİSTESİ",
             font, XBrushes.Black, 400, 60);
