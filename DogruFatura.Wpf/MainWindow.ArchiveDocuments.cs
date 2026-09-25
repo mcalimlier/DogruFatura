@@ -12,7 +12,9 @@ namespace DogruFatura.Wpf;
 
 public partial class MainWindow
 {
-    private static readonly TimeSpan HistoricalPdfStrongScanTimeout = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan HistoricalPdfFastScanTimeout = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan HistoricalPdfStrongScanTimeout = TimeSpan.FromSeconds(45);
+    private const int HistoricalPdfFastMaxConcurrency = 4;
     private CancellationTokenSource? _historicalPdfImportCancellation;
 
     private void SynchronizeArchivePdfs_Click(object sender, RoutedEventArgs e) =>
@@ -139,41 +141,77 @@ public partial class MainWindow
             var schools = AllSchools.ToList();
             var authorityProfile = _authorityProfile;
             var strongCandidateIndexes = new List<int>();
+            var fastCompleted = 0;
+            var strongLock = new object();
+            using var fastGate = new SemaphoreSlim(HistoricalPdfFastMaxConcurrency);
 
-            for (var index = 0; index < dialog.FileNames.Length; index++)
+            var fastTasks = dialog.FileNames.Select((fileName, index) => Task.Run(async () =>
             {
-                cancellation.Token.ThrowIfCancellationRequested();
+                await fastGate.WaitAsync(cancellation.Token);
+                try
+                {
+                    cancellation.Token.ThrowIfCancellationRequested();
+                    var progress = new Progress<string>(message => progressWindow.SetWorking(message));
+                    using var fastCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
+                    fastCancellation.CancelAfter(HistoricalPdfFastScanTimeout);
 
-                var fileName = dialog.FileNames[index];
-                activeFileName = fileName;
-                progressWindow.SetFileProgress(
-                    index + 1,
-                    dialog.FileNames.Length,
-                    Path.GetFileName(fileName),
-                    "1. aşama: hızlı metin taraması");
-                SetArchiveStatus(
-                    $"Hızlı tarama: {index + 1}/{dialog.FileNames.Length} arşiv PDF işleniyor...");
+                    HistoricalPdfImportPreview preview;
+                    try
+                    {
+                        preview = await Task.Run(
+                            () => _historicalPdfImportService.Read(
+                                fileName,
+                                schools,
+                                authorityProfile,
+                                progress,
+                                HistoricalPdfImportScanMode.Fast,
+                                fastCancellation.Token),
+                            fastCancellation.Token);
+                    }
+                    catch (OperationCanceledException) when (
+                        !cancellation.Token.IsCancellationRequested
+                        && fastCancellation.IsCancellationRequested)
+                    {
+                        preview = new HistoricalPdfImportPreview(
+                            fileName,
+                            Path.GetFileName(fileName),
+                            false,
+                            "Hızlı tarama 20 saniyelik süre sınırını aştı; güçlü taramaya ayrıldı.",
+                            "—", "—", 0, 0m, null)
+                        {
+                            ScanDetail = "Hızlı tarama • süre doldu"
+                        };
+                    }
 
-                var progress = new Progress<string>(message => progressWindow.SetWorking(message));
-                var preview = await Task.Run(
-                    () => _historicalPdfImportService.Read(
-                        fileName,
-                        schools,
-                        authorityProfile,
-                        progress,
-                        HistoricalPdfImportScanMode.Fast,
-                        cancellation.Token),
-                    cancellation.Token);
+                    lock (strongLock)
+                    {
+                        buffer[index] = preview;
+                        if (!preview.IsValid && !preview.OcrSkipped)
+                            strongCandidateIndexes.Add(index);
+                    }
 
-                cancellation.Token.ThrowIfCancellationRequested();
-                buffer[index] = preview;
-                if (!preview.IsValid && !preview.OcrSkipped)
-                    strongCandidateIndexes.Add(index);
+                    var completed = Interlocked.Increment(ref fastCompleted);
+                    Dispatcher.Invoke(() =>
+                    {
+                        activeFileName = fileName;
+                        progressWindow.SetFileProgress(
+                            completed,
+                            dialog.FileNames.Length,
+                            Path.GetFileName(fileName),
+                            "1. aşama: hızlı metin taraması • paralel");
+                        SetArchiveStatus(
+                            $"Hızlı tarama: {completed}/{dialog.FileNames.Length} tamamlandı; "
+                            + $"{strongCandidateIndexes.Count} dosya güçlü taramaya ayrıldı.");
+                    });
+                }
+                finally
+                {
+                    fastGate.Release();
+                }
+            }, cancellation.Token)).ToArray();
 
-                SetArchiveStatus(
-                    $"Hızlı tarama: {index + 1}/{dialog.FileNames.Length} tamamlandı; "
-                    + $"{strongCandidateIndexes.Count} dosya güçlü taramaya ayrıldı.");
-            }
+            await Task.WhenAll(fastTasks);
+            strongCandidateIndexes.Sort();
 
             for (var strongIndex = 0; strongIndex < strongCandidateIndexes.Count; strongIndex++)
             {
@@ -217,7 +255,7 @@ public partial class MainWindow
                 {
                     buffer[fileIndex] = (buffer[fileIndex]
                         ?? throw new InvalidOperationException("Hızlı tarama sonucu bulunamadı."))
-                        .WithError("Güçlü tarama 2 dakikalık süre sınırını aştı.") with
+                        .WithError("Güçlü tarama 45 saniyelik süre sınırını aştı.") with
                     {
                         ScanDetail = "Güçlü tarama • süre doldu; OCR durumu belirlenemedi"
                     };
