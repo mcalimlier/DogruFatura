@@ -1,0 +1,53 @@
+name: DogruFatura EXE Publish
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  publish-exe:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Kaynak kodu al
+        uses: actions/checkout@v4
+
+      - name: .NET 8 kur
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore DogruFatura.Wpf/DogruFatura.Wpf.csproj
+
+      - name: Release publish
+        run: >
+          dotnet publish DogruFatura.Wpf/DogruFatura.Wpf.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:PublishTrimmed=false
+          -o "${{ runner.temp }}\DogruFaturaPublish"
+
+      - name: EXE kontrolü
+        shell: pwsh
+        run: |
+          $exe = Join-Path $env:RUNNER_TEMP 'DogruFaturaPublish\DogruFatura.exe'
+          if (-not (Test-Path $exe)) { throw 'DogruFatura.exe oluşturulamadı.' }
+          Get-Item $exe | Format-List FullName,Length
+          (Get-FileHash $exe -Algorithm SHA256).Hash | Out-File (Join-Path $env:RUNNER_TEMP 'DogruFaturaPublish\DogruFatura.exe.sha256') -Encoding ascii
+
+      - name: EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DogruFatura-1.1-Final-EXE
+          path: ${{ runner.temp }}/DogruFaturaPublish/*
+          if-no-files-found: error
+          retention-days: 14
