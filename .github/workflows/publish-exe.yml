@@ -17,10 +17,19 @@ jobs:
       - name: Kaynak kodu al
         uses: actions/checkout@v4
 
-      - name: .NET 8 kur
+      - name: .NET 10 kur
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
+
+      - name: Türkçe OCR modelini hazırla
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:GITHUB_WORKSPACE 'DogruFatura.Wpf\Assets\Ocr'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $url = 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/923915d4ced2a7235221788285785a29c4a42d4a/tur.traineddata'
+          Invoke-WebRequest -Uri $url -OutFile (Join-Path $dir 'tur.traineddata')
+          if (-not (Test-Path (Join-Path $dir 'tur.traineddata'))) { throw 'tur.traineddata indirilemedi.' }
 
       - name: Restore
         run: dotnet restore DogruFatura.Wpf/DogruFatura.Wpf.csproj
