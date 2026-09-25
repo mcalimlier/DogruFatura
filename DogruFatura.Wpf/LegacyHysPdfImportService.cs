@@ -437,7 +437,7 @@ internal sealed class LegacyHysPdfImportService
             {
                 preview = Invalid(sourcePath, fileName,
                     $"{page.PageNumber}. sayfada fatura numarası okunamadı.",
-                    hysNumber, validatedInvoiceType);
+                    hysNumber, invoiceType);
                 return false;
             }
 
@@ -464,7 +464,7 @@ internal sealed class LegacyHysPdfImportService
             {
                 preview = Invalid(sourcePath, fileName,
                     $"{page.PageNumber}. sayfadan başlayan fatura doğrulanamadı: {invoiceError}",
-                    hysNumber, validatedInvoiceType);
+                    hysNumber, invoiceType);
                 return false;
             }
             invoices.Add(invoice!);
@@ -474,7 +474,7 @@ internal sealed class LegacyHysPdfImportService
             .Distinct(StringComparer.Ordinal).Count() != invoices.Count)
         {
             preview = Invalid(sourcePath, fileName,
-                "Eklerde yinelenen fatura numarası var.", hysNumber, validatedInvoiceType);
+                "Eklerde yinelenen fatura numarası var.", hysNumber, invoiceType);
             return false;
         }
 
@@ -485,7 +485,7 @@ internal sealed class LegacyHysPdfImportService
                 + $"brüt {NumberParser.Money(invoices.Sum(item => item.PayableAmount))} / {NumberParser.Money(totals.GrossAmount)}, "
                 + $"damga {NumberParser.Money(decimal.Round(invoices.Sum(item => item.StampDuty), 2, MidpointRounding.AwayFromZero))} / {NumberParser.Money(totals.StampDutyAmount)}, "
                 + $"net {NumberParser.Money(decimal.Round(invoices.Sum(item => item.PaymentAmount), 2, MidpointRounding.AwayFromZero))} / {NumberParser.Money(totals.PaymentAmount)}.",
-                hysNumber, validatedInvoiceType);
+                hysNumber, invoiceType);
             return false;
         }
 
@@ -506,7 +506,7 @@ internal sealed class LegacyHysPdfImportService
         {
             preview = Invalid(sourcePath, fileName,
                 "Arşiv doğrulaması: " + validation.Message,
-                hysNumber, validatedInvoiceType);
+                hysNumber, invoiceType);
             return false;
         }
 
