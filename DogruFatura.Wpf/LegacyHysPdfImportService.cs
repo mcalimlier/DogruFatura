@@ -720,6 +720,7 @@ internal sealed class LegacyHysPdfImportService
 
     private static bool TryMoney(string text, out decimal value)
     {
+        value = 0m;
         var match = Regex.Match(NormalizeOcrMoneyText(text),
             @"(?<!\d)(?:\d{1,3}(?:\.\d{3})+|\d+),\d{1,2}(?!\d)",
             RegexOptions.CultureInvariant);
