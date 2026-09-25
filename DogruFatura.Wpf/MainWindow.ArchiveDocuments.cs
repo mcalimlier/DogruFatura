@@ -145,10 +145,16 @@ public partial class MainWindow
             var strongLock = new object();
             using var fastGate = new SemaphoreSlim(HistoricalPdfFastMaxConcurrency);
 
+            var fastProgress = new Progress<string>(message =>
+                Dispatcher.BeginInvoke(new Action(() => progressWindow.SetWorking(message))));
+
             var fastTasks = dialog.FileNames.Select((fileName, index) => Task.Run(async () =>
             {
-                await fastGate.WaitAsync(cancellation.Token);
+                var gateEntered = false;
                 try
+                {
+                    await fastGate.WaitAsync(cancellation.Token);
+                    gateEntered = true;
                 {
                     cancellation.Token.ThrowIfCancellationRequested();
 
@@ -189,7 +195,6 @@ public partial class MainWindow
                         return;
                     }
 
-                    var progress = new Progress<string>(message => progressWindow.SetWorking(message));
                     using var fastCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
                     fastCancellation.CancelAfter(HistoricalPdfFastScanTimeout);
 
@@ -201,7 +206,7 @@ public partial class MainWindow
                                 fileName,
                                 schools,
                                 authorityProfile,
-                                progress,
+                                fastProgress,
                                 HistoricalPdfImportScanMode.Fast,
                                 fastCancellation.Token),
                             fastCancellation.Token);
@@ -229,7 +234,7 @@ public partial class MainWindow
                     }
 
                     var completed = Interlocked.Increment(ref fastCompleted);
-                    Dispatcher.Invoke(() =>
+                    await Dispatcher.InvokeAsync(() =>
                     {
                         activeFileName = fileName;
                         progressWindow.SetFileProgress(
@@ -242,9 +247,38 @@ public partial class MainWindow
                             + $"{strongCandidateIndexes.Count} dosya güçlü taramaya ayrıldı.");
                     });
                 }
+                catch (Exception ex) when (!cancellation.IsCancellationRequested)
+                {
+                    var preview = new HistoricalPdfImportPreview(
+                        fileName,
+                        Path.GetFileName(fileName),
+                        false,
+                        "Hızlı tarama görevi beklenmedik şekilde sonlandı: " + ex.Message,
+                        "—", "—", 0, 0m, null)
+                    {
+                        ScanDetail = "Hızlı tarama • görev hatası; güçlü taramaya ayrıldı"
+                    };
+                    lock (strongLock)
+                    {
+                        buffer[index] = preview;
+                        strongCandidateIndexes.Add(index);
+                    }
+
+                    var completed = Interlocked.Increment(ref fastCompleted);
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        activeFileName = fileName;
+                        progressWindow.SetFileProgress(
+                            completed,
+                            dialog.FileNames.Length,
+                            Path.GetFileName(fileName),
+                            "1. aşama: hızlı tarama • görev hatası, güçlü taramaya ayrıldı");
+                    });
+                }
                 finally
                 {
-                    fastGate.Release();
+                    if (gateEntered)
+                        fastGate.Release();
                 }
             }, cancellation.Token)).ToArray();
 
