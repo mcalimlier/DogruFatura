@@ -52,6 +52,16 @@ internal sealed class LegacyHysPdfImportService
         "son odeme tarihi", "son ödeme tarihi", "sonodemetarihi", "sonödemetarihi"
     };
     private static readonly string[] LegacyAmountAliases = { "tutar" };
+    private static readonly string[] LegacyTelephoneSequenceAliases = { "sira no", "sıra no", "s no", "s.no" };
+    private static readonly string[] LegacyTelephoneInstitutionAliases = { "okul adi", "okul adı" };
+    private static readonly string[] LegacyTelephoneServiceAliases = { "tel no", "telefon no", "telefon", "hizmet numarasi", "hizmet numarası", "hizmet no" };
+    private static readonly string[] LegacyTelephoneInvoiceAliases = { "fatura id", "fatura no" };
+    private static readonly string[] LegacyTelephoneInvoiceDateAliases = { "fatura tarihi" };
+    private static readonly string[] LegacyTelephoneDueDateAliases = { "son odeme tarihi", "son ödeme tarihi" };
+    private static readonly string[] LegacyTelephoneGrossAliases = { "odenecek tutar", "fatura tutari", "fatura tutarı" };
+    private static readonly string[] LegacyTelephoneVatAliases = { "kdv" };
+    private static readonly string[] LegacyTelephoneStampAliases = { "damga vergisi" };
+    private static readonly string[] LegacyTelephonePaymentAliases = { "odeme tutari", "ödeme tutarı" };
 
     private static readonly string[] DateFormats =
     {
@@ -546,6 +556,7 @@ internal sealed class LegacyHysPdfImportService
             || !reportDate.HasValue)
             return false;
 
+        var validatedInvoiceType = invoiceType ?? "Telefon";
         var invoices = new List<InvoiceRecord>();
         var missingDueDateCount = 0;
         foreach (var page in reportPages)
