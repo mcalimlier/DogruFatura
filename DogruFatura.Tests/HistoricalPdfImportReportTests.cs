@@ -33,13 +33,13 @@ public sealed class HistoricalPdfImportReportTests
             var path = HistoricalPdfImportReport.Write(root, previews, previews[..20], "Aktarım tamamlandı");
             var report = File.ReadAllText(path);
 
-            Assert.StartsWith(root, path);
-            Assert.Contains("Seçilen: 24 | Eklenen: 20 | Zaten arşivde: 0 | İnceleme gereken: 4", report);
-            Assert.Contains("MYS-2025-21.pdf | İNCELEME GEREKİYOR", report);
-            Assert.Contains("MYS-2025-24.pdf | İNCELEME GEREKİYOR", report);
-            Assert.Contains("Güçlü tarama • OCR denendi", report);
-            Assert.Contains("Tutar alanı okunamadı.", report);
-            Assert.Contains("MYS-2025-1.pdf | EKLENDİ", report);
+            Assert.StartsWith(root, path, StringComparison.Ordinal);
+            Assert.Contains("Seçilen: 24 | Eklenen: 20 | Zaten arşivde: 0 | İnceleme gereken: 4", report, StringComparison.Ordinal);
+            Assert.Contains("MYS-2025-21.pdf | İNCELEME GEREKİYOR", report, StringComparison.Ordinal);
+            Assert.Contains("MYS-2025-24.pdf | İNCELEME GEREKİYOR", report, StringComparison.Ordinal);
+            Assert.Contains("Güçlü tarama • OCR denendi", report, StringComparison.Ordinal);
+            Assert.Contains("Tutar alanı okunamadı.", report, StringComparison.Ordinal);
+            Assert.Contains("MYS-2025-1.pdf | EKLENDİ", report, StringComparison.Ordinal);
             var rerun = previews
                 .Select(item => item.IsValid
                     ? (item.WithError("İşlem arşivinde zaten kayıtlı.")
@@ -50,9 +50,9 @@ public sealed class HistoricalPdfImportReportTests
                 root, rerun, Array.Empty<HistoricalPdfImportPreview>(), "Tekrar seçim");
             var rerunReport = File.ReadAllText(rerunPath);
 
-            Assert.Contains("Eklenen: 0 | Zaten arşivde: 20 | İnceleme gereken: 4", rerunReport);
-            Assert.Contains("MYS-2025-1.pdf | ZATEN ARŞİVDE", rerunReport);
-            Assert.Contains("MYS-2025-21.pdf | İNCELEME GEREKİYOR", rerunReport);
+            Assert.Contains("Eklenen: 0 | Zaten arşivde: 20 | İnceleme gereken: 4", rerunReport, StringComparison.Ordinal);
+            Assert.Contains("MYS-2025-1.pdf | ZATEN ARŞİVDE", rerunReport, StringComparison.Ordinal);
+            Assert.Contains("MYS-2025-21.pdf | İNCELEME GEREKİYOR", rerunReport, StringComparison.Ordinal);
         }
         finally
         {
@@ -89,8 +89,8 @@ public sealed class HistoricalPdfImportReportTests
             var path = HistoricalPdfImportReport.Write(
                 root, new[] { preview }, new[] { preview }, "Aktarım tamamlandı");
             var report = File.ReadAllText(path);
-            Assert.Contains("Fatura: AAB2025001051104", report);
-            Assert.Contains("Abone: 00002700660", report);
+            Assert.Contains("Fatura: AAB2025001051104", report, StringComparison.Ordinal);
+            Assert.Contains("Abone: 00002700660", report, StringComparison.Ordinal);
             Assert.Contains("KDV: 31,01 TL", report);
             Assert.Contains("Damga: 1,47 TL", report);
             Assert.Contains("Doğrulanan toplam: Brüt 186,10 TL", report);
