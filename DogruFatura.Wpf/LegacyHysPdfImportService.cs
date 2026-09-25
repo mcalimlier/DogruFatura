@@ -622,7 +622,7 @@ internal sealed class LegacyHysPdfImportService
                     || !TryMoney(Cell(header.Payment), out var payment)
                     || gross <= 0m || vat < 0m || stamp < 0m || payment <= 0m
                     || service.Length < 6
-                    || !Regex.IsMatch(invoiceNumber, @"^[A-Z]{3}20\\d{11}$", RegexOptions.CultureInvariant))
+                    || !Regex.IsMatch(invoiceNumber, @"^[A-Z]{3}20\d{11}$", RegexOptions.CultureInvariant))
                 {
                     preview = Invalid(sourcePath, fileName,
                         $"{page.PageNumber}. sayfa {anchor.Sequence}. satır: fatura numarası/hizmet/tutar alanları okunamadı.",
@@ -740,7 +740,7 @@ internal sealed class LegacyHysPdfImportService
             }
             if (!TryFindAliasCenter(words, new[] { "sira no", "sıra no", "s no", "s.no" }, out var sequence)
                 || !TryFindAliasCenter(words, new[] { "okul adi", "okul adı" }, out var institution)
-                || !TryFindAliasCenter(words, new[] { "tel no", "telefon no", "telefon" }, out var service)
+                || !TryFindAliasCenter(words, new[] { "tel no", "telefon no", "telefon", "hizmet numarasi", "hizmet numarası", "hizmet no" }, out var service)
                 || !TryFindAliasCenter(words, new[] { "fatura id", "fatura no" }, out var invoice)
                 || !TryFindAliasCenter(words, new[] { "fatura tarihi" }, out var invoiceDate)
                 || !TryFindAliasCenter(words, new[] { "son odeme tarihi", "son ödeme tarihi" }, out var dueDate)
