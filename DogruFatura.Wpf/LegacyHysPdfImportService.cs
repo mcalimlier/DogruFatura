@@ -35,6 +35,24 @@ internal sealed class LegacyHysPdfImportService
 
     private static readonly CultureInfo Tr = CultureInfo.GetCultureInfo("tr-TR");
     private static readonly decimal[] CandidateVatRates = { 0.01m, 0.10m, 0.20m };
+    private static readonly string[] LegacySequenceAliases = { "sira no", "sıra no", "sirano" };
+    private static readonly string[] LegacyServiceAliases =
+    {
+        "hizmet no", "hizmetno", "hizmet numarasi", "hizmet numarası",
+        "hizmetnumarasi", "hizmetnumarası"
+    };
+    private static readonly string[] LegacyInvoiceAliases =
+    {
+        "fatura no", "faturano", "fatura numarasi", "fatura numarası",
+        "faturanumarasi", "faturanumarası"
+    };
+    private static readonly string[] LegacyPeriodAliases = { "donemi", "dönemi", "donem", "dönem" };
+    private static readonly string[] LegacyDueDateAliases =
+    {
+        "son odeme tarihi", "son ödeme tarihi", "sonodemetarihi", "sonödemetarihi"
+    };
+    private static readonly string[] LegacyAmountAliases = { "tutar" };
+
     private static readonly string[] DateFormats =
     {
         "dd.MM.yyyy", "d.M.yyyy",
@@ -489,7 +507,7 @@ internal sealed class LegacyHysPdfImportService
     // damga vergisi üretmeyiz; yalnız kaynakta gerçekten bulunan dönem/vade/brüt
     // satırlarını ve resmî ödeme emrindeki aggregate toplamları mühürlü kanıt
     // arşivi olarak saklarız. Böylece eksik tarih/vergi alanları uydurulmaz.
-    private bool TryParseLegacyGrossEvidencePages(
+    private static bool TryParseLegacyGrossEvidencePages(
         string sourcePath,
         string fileName,
         IReadOnlyList<PageData> pages,
@@ -569,7 +587,7 @@ internal sealed class LegacyHysPdfImportService
                     fileName,
                     $"{page.PageNumber}. sayfadaki ADSL tablosunda satır numaraları okunamadı.",
                     hysNumber,
-                    invoiceType);
+                    invoiceType ?? "—");
                 return true;
             }
 
@@ -608,7 +626,7 @@ internal sealed class LegacyHysPdfImportService
                         fileName,
                         $"{page.PageNumber}. sayfa {anchors[index].Sequence}. satır: son ödeme tarihi okunamadı.",
                         hysNumber,
-                        invoiceType);
+                        invoiceType ?? "—");
                     return true;
                 }
 
@@ -628,13 +646,13 @@ internal sealed class LegacyHysPdfImportService
                         fileName,
                         $"{page.PageNumber}. sayfa {anchors[index].Sequence}. satır: hizmet/fatura/dönem/tutar alanları güvenilir biçimde okunamadı.",
                         hysNumber,
-                        invoiceType);
+                        invoiceType ?? "—");
                     return true;
                 }
 
                 var byService = schools.Where(school =>
                     string.Equals(
-                        DigitsOnly(school.GetServiceNumber(invoiceType)).TrimStart('0'),
+                        DigitsOnly(school.GetServiceNumber(invoiceType!)).TrimStart('0'),
                         service.TrimStart('0'),
                         StringComparison.Ordinal)).ToArray();
                 if (byService.Length > 1)
@@ -644,7 +662,7 @@ internal sealed class LegacyHysPdfImportService
                         fileName,
                         $"{page.PageNumber}. sayfa {anchors[index].Sequence}. satır: hizmet numarası birden fazla kurumla eşleşti.",
                         hysNumber,
-                        invoiceType);
+                        invoiceType ?? "—");
                     return true;
                 }
 
@@ -657,7 +675,7 @@ internal sealed class LegacyHysPdfImportService
                         fileName,
                         $"{page.PageNumber}. sayfa {anchors[index].Sequence}. satır: kurum adı kaynak başlıktan veya kayıtlı hizmet numarasından bulunamadı.",
                         hysNumber,
-                        invoiceType);
+                        invoiceType ?? "—");
                     return true;
                 }
 
@@ -684,7 +702,7 @@ internal sealed class LegacyHysPdfImportService
                 fileName,
                 "Geçmiş dönem ADSL listesi sıra numaraları kesintisiz okunamadı.",
                 hysNumber,
-                invoiceType);
+                invoiceType ?? "—");
             return true;
         }
 
@@ -697,7 +715,7 @@ internal sealed class LegacyHysPdfImportService
                 fileName,
                 "Geçmiş dönem ADSL listesinde yinelenen fatura numarası var.",
                 hysNumber,
-                invoiceType);
+                invoiceType ?? "—");
             return true;
         }
 
@@ -716,7 +734,7 @@ internal sealed class LegacyHysPdfImportService
                 $"ADSL satır toplamı ödeme emri brüt tutarıyla eşleşmiyor: "
                 + $"{NumberParser.Money(evidenceGross)} / {NumberParser.Money(totals.GrossAmount)}.",
                 hysNumber,
-                invoiceType);
+                invoiceType ?? "—");
             return true;
         }
 
@@ -728,7 +746,7 @@ internal sealed class LegacyHysPdfImportService
             Guid.NewGuid(),
             "DF-PDF-" + hysNumber[4..],
             reportDate.Value.Date,
-            invoiceType,
+            invoiceType!,
             new List<InvoiceRecord>(),
             authorityProfile,
             hysNumber,
@@ -749,7 +767,7 @@ internal sealed class LegacyHysPdfImportService
                 fileName,
                 "Kaynak-delil arşiv doğrulaması: " + validation.Message,
                 hysNumber,
-                invoiceType);
+                invoiceType ?? "—");
             return true;
         }
 
@@ -786,29 +804,12 @@ internal sealed class LegacyHysPdfImportService
                 bottom = Math.Max(bottom, page.Lines[index + 1].Bottom);
             }
 
-            if (!TryFindAliasCenter(words, new[]
-                {
-                    "sira no", "sıra no", "sirano"
-                }, out var sequence)
-                || !TryFindAliasCenter(words, new[]
-                {
-                    "hizmet no", "hizmetno", "hizmet numarasi", "hizmet numarası",
-                    "hizmetnumarasi", "hizmetnumarası"
-                }, out var service)
-                || !TryFindAliasCenter(words, new[]
-                {
-                    "fatura no", "faturano", "fatura numarasi", "fatura numarası",
-                    "faturanumarasi", "faturanumarası"
-                }, out var invoice)
-                || !TryFindAliasCenter(words, new[]
-                {
-                    "donemi", "dönemi", "donem", "dönem"
-                }, out var period)
-                || !TryFindAliasCenter(words, new[]
-                {
-                    "son odeme tarihi", "son ödeme tarihi", "sonodemetarihi", "sonödemetarihi"
-                }, out var dueDate)
-                || !TryFindAliasCenter(words, new[] { "tutar" }, out var amount))
+            if (!TryFindAliasCenter(words, LegacySequenceAliases, out var sequence)
+                || !TryFindAliasCenter(words, LegacyServiceAliases, out var service)
+                || !TryFindAliasCenter(words, LegacyInvoiceAliases, out var invoice)
+                || !TryFindAliasCenter(words, LegacyPeriodAliases, out var period)
+                || !TryFindAliasCenter(words, LegacyDueDateAliases, out var dueDate)
+                || !TryFindAliasCenter(words, LegacyAmountAliases, out var amount))
                 continue;
 
             var centers = new[] { sequence, service, invoice, period, dueDate, amount };
@@ -1425,7 +1426,7 @@ internal sealed class LegacyHysPdfImportService
                 return fromSchool;
         }
 
-        return candidates.FirstOrDefault() ?? string.Empty;
+        return candidates.Count > 0 ? candidates[0] : string.Empty;
     }
 
     private static bool TryEmbeddedVat(string text, out decimal amount) =>
