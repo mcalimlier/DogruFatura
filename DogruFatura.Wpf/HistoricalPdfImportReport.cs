@@ -42,6 +42,8 @@ public static class HistoricalPdfImportReport
             lines.Add("- " + Clean(item.FileName));
             lines.Add("  Kaynak: " + Clean(item.SourcePath));
             lines.Add("  Tarama: " + Clean(item.ScanDetail));
+            lines.Add("  OCR denendi: " + (item.OcrAttempted ? "EVET" : "HAYIR"));
+            lines.Add("  OCR atlandı: " + (item.OcrSkipped ? "EVET" : "HAYIR"));
             lines.Add("  Neden: " + Clean(item.Status));
         }
 
@@ -63,6 +65,8 @@ public static class HistoricalPdfImportReport
             lines.Add("- " + Clean(item.FileName) + " | " + result);
             lines.Add("  Kaynak: " + Clean(item.SourcePath));
             lines.Add("  Tarama: " + Clean(item.ScanDetail));
+            lines.Add("  OCR denendi: " + (item.OcrAttempted ? "EVET" : "HAYIR"));
+            lines.Add("  OCR atlandı: " + (item.OcrSkipped ? "EVET" : "HAYIR"));
             lines.Add("  Açıklama: " + Clean(item.Status));
             if (item.Archive is { } archive)
             {
