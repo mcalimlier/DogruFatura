@@ -23,3 +23,12 @@ Bu değişiklik yalnızca test PDF'sinin sayfa boyutu oluşturma kodunu düzelti
 GitHub Desktop'ta **Fetch origin** sonrasında `main` dalını güncelleyin ve final EXE oluşturma komutunu yeniden çalıştırın.
 
 Üretim kodundaki mevcut nullable/code-analysis uyarıları hata değildir; EXE üretimini engelleyen iki test derleme hatası giderilmiştir.
+
+
+## 2026-09-25 — Legacy ADSL sıra numarası testi
+
+- `GrossOnlyLegacyAdslListCreatesSourceEvidenceWithoutInventingTaxes` testindeki tek başarısız senaryo düzeltildi.
+- Sorun: ADSL tablosu başlığı ile ilk veri satırı 30 puandan daha yakın olduğunda başlık algılama kodu ilk veri satırını başlık satırına katıyor ve ilk sıra numarasını veri taramasından dışarıda bırakıyordu.
+- Çözüm: Başlık satırı kendi başına tam algılanabiliyorsa sonraki satır artık başlığa eklenmiyor; yalnızca başlık parçaları eksikse yakın satır birleştiriliyor.
+- `fix/archive-import-legacy-hys` dalı `main` ile senkronlandı; dalda main'e göre ayrıca korunması gereken benzersiz değişiklik bulunmuyordu.
+- Beklenen sonuç: 155 otomatik testin tamamının geçmesi ve final EXE kalite kapısının Setup üretimine devam etmesi.
