@@ -52,3 +52,12 @@ Uygulanan son düzeltmeler:
 - HistoricalPdfImportReportTests.cs içinde kalan 3 Assert.Contains çağrısına StringComparison.Ordinal eklendi; CA1307 kaynakları kaldırıldı.
 
 Bu değişikliklerin ardından yerel Windows Release kalite kapısının yeniden çalıştırılması gerekir. Bu ortamda kullanıcının yerel Windows SDK/build çıktısı doğrudan çalıştırılmadığından, 0 uyarı sonucu ancak kullanıcının yeni final BAT çıktısıyla kesinleşmiş sayılacaktır.
+
+
+## 2026-09-25 — Kapsam hatası düzeltmesi
+
+Son uyarı temizliği uygulanırken `validatedInvoiceType` adı yanlışlıkla `TryParseEmbeddedInvoicePages` metodunun kapsamına da taşınmış ve Release derlemesinde 5 adet CS0103 oluşmuştur. Bu kapsam hatası düzeltildi; gömülü elektrik/diğer fatura ayrıştırıcısı tekrar kendi `invoiceType` değişkenini kullanıyor. Telefon legacy ayrıştırıcısında ise doğrulama sonrası `validatedInvoiceType` kullanılmaya devam ediyor.
+
+Düzeltme commit'i: `e10348fd4cf341b7d689d60a58b3cc56bf068063`.
+
+Yeni final BAT çalıştırmasıyla önce 5 CS0103 hatasının, ardından kalan analyzer uyarılarının 0'a indiği doğrulanmalıdır.
