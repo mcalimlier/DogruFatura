@@ -120,8 +120,10 @@ public sealed class WorkbenchWindowTests
 
     private static void Pump(Window window)
     {
+        window.UpdateLayout();
         window.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
         window.UpdateLayout();
+        window.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
     }
 
     private static void SaveScreenshot(Window window, string folder, string name)
