@@ -176,6 +176,7 @@ public partial class MainWindow : Window
         SourceInitialized += MainWindow_SourceInitialized;
         DataContext = this;
         ApplyTaskbarIcon();
+        ResponsiveLayoutService.Apply(this);
         UpdateMaximizeRestoreButton();
     }
 
