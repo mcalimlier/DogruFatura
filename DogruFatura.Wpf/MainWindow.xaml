@@ -4,10 +4,10 @@
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         Icon="Assets/AppIcon.ico"
         Title="DoğruFatura - Fatura Ödeme ve Kontrol Programı"
-        Width="1305" Height="850.5" SizeToContent="Manual" ResizeMode="NoResize"
+        Width="1305" Height="850.5" MinWidth="760" MinHeight="520" SizeToContent="Manual" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="Manual" WindowStyle="None" ShowInTaskbar="True" Background="White"
         UseLayoutRounding="True" SnapsToDevicePixels="True" StateChanged="Window_StateChanged">
-    <Viewbox x:Name="AppScaleViewbox" Stretch="Uniform" StretchDirection="Both">
+    <Viewbox x:Name="AppScaleViewbox" Stretch="Uniform" StretchDirection="DownOnly">
         <Border Width="1450" Height="945" CornerRadius="15" BorderBrush="#35546F" BorderThickness="1" Background="#031C38" Margin="8">
             <Grid>
                 <Grid.RowDefinitions><RowDefinition Height="86"/><RowDefinition Height="*"/></Grid.RowDefinitions>
@@ -130,36 +130,36 @@
                     <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="92"/></Grid.RowDefinitions>
                     <StackPanel Margin="0,12,0,0">
                         <Button x:Name="NavHome" Style="{StaticResource NavButton}" Tag="Active" Click="NavHome_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE80F;" FontSize="22" Width="42"/><TextBlock Text="ANA EKRAN" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE80F;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="ANA EKRAN" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Border Height="3" Background="#557A9D" Margin="16,8" CornerRadius="1.5"/>
                         <Button x:Name="NavInvoice" Style="{StaticResource NavButton}" Click="NavInvoice_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8A5;" FontSize="22" Width="42"/><TextBlock Text="FATURA GİRİŞİ" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8A5;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="FATURA GİRİŞİ" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Button x:Name="NavOfficials" Style="{StaticResource NavButton}" Click="NavOfficials_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE77B;" FontSize="22" Width="42"/><TextBlock Text="YETKİLİ / İMZA" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE77B;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="YETKİLİ / İMZA" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Button x:Name="NavList" Style="{StaticResource NavButton}" Click="NavList_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8FD;" FontSize="22" Width="42"/><TextBlock Text="FATURA LİSTESİ" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8FD;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="FATURA LİSTESİ" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Button x:Name="NavReports" Style="{StaticResource NavButton}" Click="NavReports_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D2;" FontSize="22" Width="42"/><TextBlock Text="RAPORLAR / ÇIKTI" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D2;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="RAPORLAR / ÇIKTI" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Border Height="3" Background="#557A9D" Margin="16,8" CornerRadius="1.5"/>
                         <Button x:Name="NavSchools" Style="{StaticResource NavButton}" Click="NavSchools_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE716;" FontSize="22" Width="42"/><TextBlock Text="OKUL / KURUM" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE716;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="OKUL / KURUM" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Button x:Name="NavArchive" Style="{StaticResource NavButton}" Click="NavArchive_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE81C;" FontSize="22" Width="42"/><TextBlock Text="İŞLEM ARŞİVİ" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE81C;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="İŞLEM ARŞİVİ" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Button x:Name="NavControl" Style="{StaticResource NavButton}" Click="NavControl_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D9;" FontSize="22" Width="42"/><TextBlock Text="KONTROL MERKEZİ" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D9;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="KONTROL MERKEZİ" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Button x:Name="NavStatistics" Style="{StaticResource NavButton}" Click="NavStatistics_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D2;" FontSize="22" Width="42"/><TextBlock Text="İSTATİSTİK" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D2;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="İSTATİSTİK" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Button x:Name="NavAbout" Style="{StaticResource NavButton}" Click="NavAbout_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE946;" FontSize="22" Width="42"/><TextBlock Text="HAKKINDA / GÜVENLİK" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE946;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="HAKKINDA / GÜVENLİK" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                     </StackPanel>
                     <Border Grid.Row="1" Margin="18,7,18,10" Padding="14,9" CornerRadius="9" Background="#082845" BorderBrush="#73581E" BorderThickness="1">
@@ -213,9 +213,9 @@
                                 </Border>
 
                                 <UniformGrid Columns="3" Margin="0,0,0,12">
-                                    <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="18,12" Margin="0,0,6,0"><StackPanel><TextBlock Text="KALICI VERİ" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeSchoolCountText" Text="27 KURUM" Foreground="#031C38" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock Text="Kurum kayıtları" Foreground="#526277" FontSize="13.5"/></StackPanel></Border>
-                                    <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="18,12" Margin="3,0"><StackPanel><TextBlock Text="AKTİF FATURA" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeInvoiceCountText" Text="0 KAYIT" Foreground="#031C38" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock x:Name="HomeInvoiceTypeText" Text="Tür: Henüz belirlenmedi" Foreground="#526277" FontSize="13.5"/></StackPanel></Border>
-                                    <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="18,12" Margin="6,0,0,0"><StackPanel><TextBlock Text="HYS KAPANIŞI" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeArchiveCountText" Text="0 / 0 KAPALI" Foreground="#031C38" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock Text="Kapalı / toplam arşiv" Foreground="#526277" FontSize="13.5"/></StackPanel></Border>
+                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="0,0,6,0"><StackPanel><StackPanel Orientation="Horizontal" Margin="0,0,0,4"><TextBlock Style="{StaticResource DashboardMetricIcon}" Text="&#xE80F;"/><TextBlock Text="KALICI VERİ" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/></StackPanel><TextBlock x:Name="HomeSchoolCountText" Text="27 KURUM" Foreground="#FFCA64" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock Text="Kurum kayıtları" Foreground="#C5D7E7" FontSize="13.5"/></StackPanel></Border>
+                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="3,0"><StackPanel><StackPanel Orientation="Horizontal" Margin="0,0,0,4"><TextBlock Style="{StaticResource DashboardMetricIcon}" Text="&#xE8A5;"/><TextBlock Text="AKTİF FATURA" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/></StackPanel><TextBlock x:Name="HomeInvoiceCountText" Text="0 KAYIT" Foreground="#FFCA64" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock x:Name="HomeInvoiceTypeText" Text="Tür: Henüz belirlenmedi" Foreground="#C5D7E7" FontSize="13.5"/></StackPanel></Border>
+                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="6,0,0,0"><StackPanel><StackPanel Orientation="Horizontal" Margin="0,0,0,4"><TextBlock Style="{StaticResource DashboardMetricIcon}" Text="&#xE81C;"/><TextBlock Text="HYS KAPANIŞI" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/></StackPanel><TextBlock x:Name="HomeArchiveCountText" Text="0 / 0 KAPALI" Foreground="#FFCA64" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock Text="Kapalı / toplam arşiv" Foreground="#C5D7E7" FontSize="13.5"/></StackPanel></Border>
                                 </UniformGrid>
 
                                 <Grid Margin="0,0,0,8">
@@ -223,10 +223,10 @@
                                     <TextBlock Text="HYS ile kapatılan arşivlerde fatura tarihi esas alınır" Foreground="#6A7C90" FontSize="13.5" HorizontalAlignment="Right"/>
                                 </Grid>
                                 <UniformGrid Columns="4" Margin="0,0,0,12">
-                                    <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="14,11" Margin="0,0,4,0"><StackPanel><TextBlock Text="FATURA SAYISI" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeMonthlyInvoiceCountText" Text="0 kayıt" Foreground="#031C38" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
-                                    <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="14,11" Margin="3,0"><StackPanel><TextBlock Text="FATURA TUTARI" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeMonthlyPayableText" Text="0,00 TL" Foreground="#031C38" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
-                                    <Border Background="#FFF9EC" BorderBrush="#E8C067" BorderThickness="1" CornerRadius="10" Padding="14,11" Margin="3,0"><StackPanel><TextBlock Text="DAMGA VERGİSİ" Foreground="#8A681A" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeMonthlyStampText" Text="0,00 TL" Foreground="#B7791F" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
-                                    <Border Background="#EFF9F3" BorderBrush="#A8D5B9" BorderThickness="1" CornerRadius="10" Padding="14,11" Margin="4,0,0,0"><StackPanel><TextBlock Text="ÖDEME TUTARI" Foreground="#34704B" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeMonthlyPaymentText" Text="0,00 TL" Foreground="#248A50" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
+                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="0,0,4,0"><StackPanel><StackPanel Orientation="Horizontal" Margin="0,0,0,4"><TextBlock Style="{StaticResource DashboardMetricIcon}" Text="&#xE8FD;"/><TextBlock Text="FATURA SAYISI" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/></StackPanel><TextBlock x:Name="HomeMonthlyInvoiceCountText" Text="0 kayıt" Foreground="#FFCA64" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
+                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="3,0"><StackPanel><StackPanel Orientation="Horizontal" Margin="0,0,0,4"><TextBlock Style="{StaticResource DashboardMetricIcon}" Text="&#xE8D4;"/><TextBlock Text="FATURA TUTARI" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/></StackPanel><TextBlock x:Name="HomeMonthlyPayableText" Text="0,00 TL" Foreground="#FFCA64" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
+                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="3,0"><StackPanel><StackPanel Orientation="Horizontal" Margin="0,0,0,4"><TextBlock Style="{StaticResource DashboardMetricIcon}" Text="&#xE8B7;"/><TextBlock Text="DAMGA VERGİSİ" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/></StackPanel><TextBlock x:Name="HomeMonthlyStampText" Text="0,00 TL" Foreground="#FFCA64" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
+                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="4,0,0,0"><StackPanel><StackPanel Orientation="Horizontal" Margin="0,0,0,4"><TextBlock Style="{StaticResource DashboardMetricIcon}" Text="&#xE8D4;"/><TextBlock Text="ÖDEME TUTARI" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/></StackPanel><TextBlock x:Name="HomeMonthlyPaymentText" Text="0,00 TL" Foreground="#FFCA64" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
                                 </UniformGrid>
 
                                 <Grid Margin="0,0,0,12">
@@ -379,7 +379,7 @@
 
                             <Grid Grid.Row="2">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="1.75*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="11" Padding="10">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="10">
                                     <DataGrid x:Name="SchoolsGrid" Style="{StaticResource ModernDataGrid}" AutoGenerateColumns="False" IsReadOnly="True"
                                               SelectionMode="Single" SelectionUnit="FullRow" SelectionChanged="SchoolsGrid_SelectionChanged">
                                         <DataGrid.Columns>
@@ -576,10 +576,10 @@
                             </StackPanel>
 
                             <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,10">
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="14,11" Margin="0,0,4,0"><StackPanel><TextBlock Text="FATURA SAYISI" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ActiveInvoiceCountText" Text="0 kayıt" Foreground="#031C38" FontSize="23.5" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock x:Name="ActiveInvoiceTypeText" Text="Tür: Henüz belirlenmedi" Foreground="#526277" FontSize="13" Margin="0,2,0,0"/></StackPanel></Border>
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="14,11" Margin="3,0"><StackPanel><TextBlock Text="TOPLAM TUTAR" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ActivePayableTotalText" Text="0,00 TL" Foreground="#031C38" FontSize="23.5" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
-                                <Border Background="#FFF9EC" BorderBrush="#E8C067" BorderThickness="1" CornerRadius="10" Padding="14,11" Margin="3,0"><StackPanel><TextBlock Text="TOPLAM DAMGA" Foreground="#8A681A" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ActiveStampTotalText" Text="0,00 TL" Foreground="#B7791F" FontSize="23.5" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
-                                <Border Background="#EFF9F3" BorderBrush="#A8D5B9" BorderThickness="1" CornerRadius="10" Padding="14,11" Margin="4,0,0,0"><StackPanel><TextBlock Text="TOPLAM ÖDEME" Foreground="#34704B" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ActivePaymentTotalText" Text="0,00 TL" Foreground="#248A50" FontSize="23.5" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="14,11" Margin="0,0,4,0"><StackPanel><TextBlock Text="FATURA SAYISI" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ActiveInvoiceCountText" Text="0 kayıt" Foreground="#031C38" FontSize="23.5" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock x:Name="ActiveInvoiceTypeText" Text="Tür: Henüz belirlenmedi" Foreground="#526277" FontSize="13" Margin="0,2,0,0"/></StackPanel></Border>
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="14,11" Margin="3,0"><StackPanel><TextBlock Text="TOPLAM TUTAR" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ActivePayableTotalText" Text="0,00 TL" Foreground="#031C38" FontSize="23.5" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="14,11" Margin="3,0"><StackPanel><TextBlock Text="TOPLAM DAMGA" Foreground="#8A681A" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ActiveStampTotalText" Text="0,00 TL" Foreground="#B7791F" FontSize="23.5" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="14,11" Margin="4,0,0,0"><StackPanel><TextBlock Text="TOPLAM ÖDEME" Foreground="#34704B" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ActivePaymentTotalText" Text="0,00 TL" Foreground="#248A50" FontSize="23.5" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
                             </UniformGrid>
 
                             <Border Grid.Row="2" Style="{StaticResource PremiumPanel}" Padding="12" Margin="0,0,0,10">
@@ -602,7 +602,7 @@
                                 </Grid>
                             </Border>
 
-                            <Border Grid.Row="3" Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="11" Padding="10">
+                            <Border Grid.Row="3" Style="{StaticResource PremiumLightCard}" Padding="10">
                                 <Grid>
                                     <DataGrid x:Name="InvoicesGrid" ItemsSource="{Binding ActiveInvoiceRows}" Style="{StaticResource ModernDataGrid}"
                                               AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionUnit="FullRow"
@@ -644,10 +644,10 @@
                             </StackPanel>
 
                             <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,9">
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="0,0,4,0"><StackPanel><TextBlock Text="FATURA SAYISI" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ReportInvoiceCountText" Text="0 kayıt" Foreground="#031C38" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel></Border>
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="3,0"><StackPanel><TextBlock Text="LİSTE TÜRÜ" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ReportInvoiceTypeText" Text="Belirlenmedi" Foreground="#031C38" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel></Border>
-                                <Border Background="#EFF9F3" BorderBrush="#A8D5B9" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="3,0"><StackPanel><TextBlock Text="TOPLAM ÖDEME" Foreground="#34704B" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ReportPaymentTotalText" Text="0,00 TL" Foreground="#248A50" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel></Border>
-                                <Border Background="#FFF9EC" BorderBrush="#E8C067" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="4,0,0,0"><StackPanel><TextBlock Text="SAYFA SAYISI" Foreground="#8A681A" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ReportPageCountText" Text="0 sayfa" Foreground="#B7791F" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel></Border>
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="13,8" Margin="0,0,4,0"><StackPanel><TextBlock Text="FATURA SAYISI" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ReportInvoiceCountText" Text="0 kayıt" Foreground="#031C38" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel></Border>
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="13,8" Margin="3,0"><StackPanel><TextBlock Text="LİSTE TÜRÜ" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ReportInvoiceTypeText" Text="Belirlenmedi" Foreground="#031C38" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel></Border>
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="13,8" Margin="3,0"><StackPanel><TextBlock Text="TOPLAM ÖDEME" Foreground="#34704B" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ReportPaymentTotalText" Text="0,00 TL" Foreground="#248A50" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel></Border>
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="13,8" Margin="4,0,0,0"><StackPanel><TextBlock Text="SAYFA SAYISI" Foreground="#8A681A" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ReportPageCountText" Text="0 sayfa" Foreground="#B7791F" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel></Border>
                             </UniformGrid>
 
                             <Border Grid.Row="2" Style="{StaticResource PremiumPanel}" Padding="10" Margin="0,0,0,9">
@@ -712,16 +712,16 @@
                             </Grid>
 
                             <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,9">
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="9" Padding="14,9" Margin="0,0,4,0">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="14,9" Margin="0,0,4,0">
                                     <StackPanel><TextBlock Text="TÜM ARŞİV" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ArchiveListCountText" Text="0 liste" Foreground="#031C38" FontSize="23" FontWeight="Bold" Margin="0,3,0,0"/></StackPanel>
                                 </Border>
-                                <Border Background="#EFF9F3" BorderBrush="#A8D5B9" BorderThickness="1" CornerRadius="9" Padding="14,9" Margin="3,0">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="14,9" Margin="3,0">
                                     <StackPanel><TextBlock Text="HYS İLE KAPALI" Foreground="#34704B" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ArchiveClosedListCountText" Text="0 liste" Foreground="#248A50" FontSize="23" FontWeight="Bold" Margin="0,3,0,0"/></StackPanel>
                                 </Border>
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="9" Padding="14,9" Margin="3,0">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="14,9" Margin="3,0">
                                     <StackPanel><TextBlock Text="KAPALI FATURA" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ArchiveInvoiceCountText" Text="0 fatura" Foreground="#031C38" FontSize="23" FontWeight="Bold" Margin="0,3,0,0"/></StackPanel>
                                 </Border>
-                                <Border Background="#EFF9F3" BorderBrush="#A8D5B9" BorderThickness="1" CornerRadius="9" Padding="14,9" Margin="4,0,0,0">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="14,9" Margin="4,0,0,0">
                                     <StackPanel><TextBlock Text="KAPALI ÖDEME" Foreground="#34704B" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ArchivePaymentTotalText" Text="0,00 TL" Foreground="#248A50" FontSize="23" FontWeight="Bold" Margin="0,3,0,0"/></StackPanel>
                                 </Border>
                             </UniformGrid>
@@ -770,7 +770,7 @@
                             <Grid Grid.Row="3">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="1.38*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
 
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="10">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="10">
                                     <Grid>
                                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                                         <Grid Margin="2,0,2,8">
@@ -907,13 +907,13 @@
                                 <Border Background="#FFF1F2" BorderBrush="#E8A1A7" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="0,0,4,0">
                                     <StackPanel><TextBlock Text="HATA" Foreground="#9A2F38" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ControlErrorCountText" Text="0" Foreground="#C23A43" FontSize="22" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel>
                                 </Border>
-                                <Border Background="#FFF9EC" BorderBrush="#E8C067" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="3,0">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="13,8" Margin="3,0">
                                     <StackPanel><TextBlock Text="UYARI" Foreground="#8A681A" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ControlWarningCountText" Text="0" Foreground="#B7791F" FontSize="22" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel>
                                 </Border>
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="3,0">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="13,8" Margin="3,0">
                                     <StackPanel><TextBlock Text="KONTROL EDİLEN" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ControlCheckedCountText" Text="0 kurum • 0 fatura" Foreground="#031C38" FontSize="18.5" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel>
                                 </Border>
-                                <Border Background="#EFF9F3" BorderBrush="#A8D5B9" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="4,0,0,0">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="13,8" Margin="4,0,0,0">
                                     <StackPanel><TextBlock Text="GENEL DURUM" Foreground="#34704B" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="ControlOverallStatusText" Text="TARANIYOR" Foreground="#248A50" FontSize="20" FontWeight="Bold" Margin="0,3,0,0"/></StackPanel>
                                 </Border>
                             </UniformGrid>
@@ -950,7 +950,7 @@
                             <Grid Grid.Row="3">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="1.45*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
 
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="10">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="10">
                                     <Grid>
                                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                                         <Grid Margin="2,0,2,8">
@@ -1047,16 +1047,16 @@
                             </Grid>
 
                             <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,9">
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="0,0,4,0">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="13,8" Margin="0,0,4,0">
                                     <StackPanel><TextBlock Text="ARŞİV" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="StatisticsArchiveCountText" Text="0 arşiv" Foreground="#031C38" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel>
                                 </Border>
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="3,0">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="13,8" Margin="3,0">
                                     <StackPanel><TextBlock Text="FATURA" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="StatisticsInvoiceCountText" Text="0 fatura" Foreground="#031C38" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel>
                                 </Border>
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="3,0">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="13,8" Margin="3,0">
                                     <StackPanel><TextBlock Text="KURUM" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="StatisticsInstitutionCountText" Text="0 kurum" Foreground="#031C38" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel>
                                 </Border>
-                                <Border Background="#EFF9F3" BorderBrush="#A8D5B9" BorderThickness="1" CornerRadius="9" Padding="13,8" Margin="4,0,0,0">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="13,8" Margin="4,0,0,0">
                                     <StackPanel><TextBlock Text="TOPLAM ÖDEME" Foreground="#34704B" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="StatisticsPaymentTotalText" Text="0,00 TL" Foreground="#248A50" FontSize="21.5" FontWeight="Bold" Margin="0,2,0,0"/></StackPanel>
                                 </Border>
                             </UniformGrid>
@@ -1213,16 +1213,16 @@
                             </Border>
 
                             <UniformGrid Grid.Row="3" Columns="4" Margin="0" Visibility="Collapsed">
-                                <Border Background="#FFF9EC" BorderBrush="#E8C067" BorderThickness="1" CornerRadius="10" Padding="13,9" Margin="0,0,4,0">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="13,9" Margin="0,0,4,0">
                                     <StackPanel><TextBlock Text="ORTALAMA FATURA" Foreground="#8A681A" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="StatisticsAverageText" Text="0,00 TL" Foreground="#B7791F" FontSize="19" FontWeight="Bold" Margin="0,3,0,0"/></StackPanel>
                                 </Border>
                                 <Border Background="#EEF5FF" BorderBrush="#B5CCE8" BorderThickness="1" CornerRadius="10" Padding="13,9" Margin="3,0">
                                     <StackPanel><TextBlock Text="ÖNCEKİ DÖNEM" Foreground="#496B91" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="StatisticsPreviousPeriodText" Text="Karşılaştırma yok" Foreground="#315371" FontSize="16.5" FontWeight="Bold" Margin="0,4,0,0" TextWrapping="Wrap"/></StackPanel>
                                 </Border>
-                                <Border Background="#EFF9F3" BorderBrush="#A8D5B9" BorderThickness="1" CornerRadius="10" Padding="13,9" Margin="3,0">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="13,9" Margin="3,0">
                                     <StackPanel><TextBlock Text="PDF SAĞLIĞI" Foreground="#34704B" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="StatisticsPdfHealthText" Text="Kontrol ediliyor" Foreground="#248A50" FontSize="16.5" FontWeight="Bold" Margin="0,4,0,0" TextWrapping="Wrap"/></StackPanel>
                                 </Border>
-                                <Border Background="#F7F9FC" BorderBrush="#DCE5EE" BorderThickness="1" CornerRadius="10" Padding="13,9" Margin="4,0,0,0">
+                                <Border Style="{StaticResource PremiumLightCard}" Padding="13,9" Margin="4,0,0,0">
                                     <StackPanel><TextBlock Text="KURUM PROFİLİ" Foreground="#54708D" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="StatisticsInstitutionProfileText" Text="Kurum seçilmedi" Foreground="#031C38" FontSize="15.5" FontWeight="Bold" Margin="0,4,0,0" TextWrapping="Wrap"/></StackPanel>
                                 </Border>
                             </UniformGrid>
