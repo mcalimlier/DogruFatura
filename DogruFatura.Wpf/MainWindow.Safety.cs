@@ -39,6 +39,9 @@ public partial class MainWindow
         DataIntegrityText.Foreground = new SolidColorBrush(result.IsHealthy
             ? Color.FromRgb(98, 217, 155)
             : Color.FromRgb(255, 180, 31));
+        _lastSafetyBackupPath ??= Directory.Exists(_safetyService.BackupFolder)
+            ? Directory.EnumerateFiles(_safetyService.BackupFolder, "*.zip", SearchOption.AllDirectories).OrderByDescending(File.GetLastWriteTimeUtc).FirstOrDefault()
+            : null;
         LastSafetyBackupText.Text = FormatLastSafetyBackupText(_lastSafetyBackupPath);
         return result;
     }
@@ -96,7 +99,7 @@ public partial class MainWindow
         if (dialog.ShowDialog(this) != true) return;
 
         var confirmation = MessageBox.Show(this,
-            "Seçilen tam yedek geri yüklenecek. Mevcut JSON kayıtları ve Masaüstündeki DoğruFatura PDF klasörleri değiştirilmeden önce otomatik emniyet kopyası oluşturulacaktır.\n\n"
+            DescribeBackup(dialog.FileName) + "Seçilen tam yedek geri yüklenecek. Mevcut JSON kayıtları ve Masaüstündeki DoğruFatura PDF klasörleri değiştirilmeden önce otomatik emniyet kopyası oluşturulacaktır.\n\n"
             + "Formlarda henüz kaydedilmemiş değişiklikler kaybolur. Devam edilsin mi?",
             "DoğruFatura - Yedekten Geri Yükle",
             MessageBoxButton.YesNo,

@@ -152,6 +152,7 @@ public partial class MainWindow : Window
 
         RunCalculationEngineSelfTest();
         InitializeInitialUiState();
+        InitializeWorkbench();
         ShowStartupWarnings(startupState);
     }
 
@@ -182,9 +183,10 @@ public partial class MainWindow : Window
     private void InitializeInvoiceEntrySources()
     {
         _suppressFormEvents = true;
-        InstitutionTypeBox.ItemsSource = InstitutionTypes;
+        InstitutionTypeBox.ItemsSource = AllInstitutionTypeFilterPrefix.Concat(InstitutionTypes).ToArray();
+        InstitutionTypeBox.SelectedIndex = 0;
         InvoiceTypeBox.ItemsSource = InvoiceTypes;
-        InstitutionBox.ItemsSource = Array.Empty<SchoolRecord>();
+        InstitutionBox.ItemsSource = AllSchools.OrderBy(x => x.Name).ToArray();
         _suppressFormEvents = false;
     }
 

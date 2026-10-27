@@ -11,6 +11,7 @@ public partial class MainWindow
     private void RefreshDashboard()
     {
         if (HomeMonthLabelText is null) return;
+        RefreshWorkbench();
 
         var today = DateTime.Today;
         var tr = CultureInfo.GetCultureInfo("tr-TR");

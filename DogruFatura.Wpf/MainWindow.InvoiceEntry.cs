@@ -80,6 +80,8 @@ public partial class MainWindow
                 ? Color.FromRgb(183, 121, 31)
                 : Color.FromRgb(49, 83, 113));
         InterruptionCompensationBox.IsEnabled = isElectric && _hasInterruptionCompensation;
+        ((FrameworkElement)InterruptionCompensationToggleButton.Parent).Visibility = isElectric ? Visibility.Visible : Visibility.Collapsed;
+        ((FrameworkElement)InterruptionCompensationBox.Parent).Visibility = isElectric ? Visibility.Visible : Visibility.Collapsed;
 
         if (VatBaseFormulaText is not null)
             VatBaseFormulaText.Text = isElectric && _hasInterruptionCompensation
@@ -112,9 +114,11 @@ public partial class MainWindow
     private void RefreshInvoiceInstitutionChoices(SchoolRecord? preferredSchool)
     {
         var type = InstitutionTypeBox.SelectedItem as string;
-        var choices = string.IsNullOrWhiteSpace(type)
-            ? Array.Empty<SchoolRecord>()
+        var choices = string.IsNullOrWhiteSpace(type) || type == "Tümü"
+            ? AllSchools.OrderBy(x => x.Name).ToArray()
             : AllSchools.Where(x => x.InstitutionType == type).OrderBy(x => x.Name).ToArray();
+        if (!string.IsNullOrWhiteSpace(_institutionSearch.Text))
+            choices = choices.Where(s => CultureInfo.GetCultureInfo("tr-TR").CompareInfo.IndexOf(s.Name, _institutionSearch.Text.Trim(), CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0).ToArray();
 
         var previousSuppression = _suppressFormEvents;
         _suppressFormEvents = true;
@@ -227,8 +231,8 @@ public partial class MainWindow
         {
             AddInvoiceButton.IsEnabled = canSave;
             AddInvoiceButton.Content = _editedInvoice is null
-                ? "FATURA LİSTESİNE EKLE"
-                : "FATURA KAYDINI GÜNCELLE";
+                ? "Kaydet ve yeni fatura"
+                : "Değişiklikleri kaydet";
             if (hasTypeConflict)
             {
                 SetInvoiceSaveStatus(listTypeResult.Message, true);
@@ -240,12 +244,21 @@ public partial class MainWindow
                         ? _editedInvoice is null
                             ? "Form hazır. Faturayı aktif listeye ekleyebilirsiniz."
                             : "Form hazır. Seçili fatura kaydını güncelleyebilirsiniz."
-                        : "Tüm zorunlu alanlar tamamlandığında kayıt etkinleşir.",
+                        : school is null ? "Okul / kurum seçin. Kurum adını yazarak arayabilirsiniz."
+                        : string.IsNullOrWhiteSpace(invoiceType) ? "Fatura türünü seçin."
+                        : string.IsNullOrWhiteSpace(school.GetServiceNumber(invoiceType)) ? "Kurumun ilgili hizmet numarası eksik. Okul / Kurum ekranından tamamlayın."
+                        : !InvoiceDatePicker.SelectedDate.HasValue ? "Fatura tarihini seçin."
+                        : !DueDatePicker.SelectedDate.HasValue ? "Son ödeme tarihini seçin."
+                        : DueDatePicker.SelectedDate < InvoiceDatePicker.SelectedDate ? "Son ödeme tarihi fatura tarihinden önce olamaz."
+                        : !payableValid ? "Sıfırdan büyük, geçerli bir fatura tutarı girin."
+                        : !vatValid ? "Geçerli KDV tutarını girin."
+                        : "Tutar, KDV ve varsa kesinti tazminatını kontrol edin.",
                     false,
                     calculatedPercent == 100);
             }
         }
         UpdateReadinessRing(displayPercent);
+        RefreshEntryErrors();
     }
 
     private void UpdateReadinessRing(int percent)
@@ -430,6 +443,7 @@ public partial class MainWindow
         var duplicate = InvoiceDuplicateService.Check(ActiveInvoices, invoice, editingInvoice?.Id);
         if (duplicate.IsDuplicate)
         {
+            ShowReadOnlyDetails("Mükerrer fatura karşılaştırması", "Bu kayıt mevcut faturayla eşleştiği için kaydedilmedi. İlk satır mevcut, ikinci satır yeni girişinizdir.", new[] { duplicate.ExistingInvoice!, invoice });
             SetInvoiceSaveStatus("Mükerrer fatura engellendi: " + duplicate.Message, true);
             return;
         }
@@ -440,6 +454,7 @@ public partial class MainWindow
             editingInvoice?.Id);
         if (possibleDuplicate.IsPossibleDuplicate)
         {
+            ShowReadOnlyDetails("Olası mükerrer karşılaştırması", "İlk satır mevcut, ikinci satır yeni girişinizdir. Karşılaştırmayı kapattıktan sonra kayda devam edip etmeyeceğinizi seçebilirsiniz.", new[] { possibleDuplicate.ExistingInvoice!, invoice });
             var confirmation = MessageBox.Show(
                 this,
                 "Fatura numarası boş. Aynı kurum/hizmet, fatura türü, tarihler ve tutarlarla aktif listede benzer bir kayıt bulundu.\n\n"
@@ -496,6 +511,8 @@ public partial class MainWindow
             $"Type={invoice.InvoiceType};Rule={invoice.TaxRuleVersion}");
 
         var invoiceReference = InvoiceReference(invoice);
+        _preferences = _preferences with { RecentSchools = new[] { school.SchoolId }.Concat(_preferences.RecentSchools.Where(id => id != school.SchoolId)).Take(8).ToList() };
+        SaveWorkbenchPreferences();
         var successMessage = editingInvoice is null
             ? $"{invoiceReference} aktif listeye kaydedildi."
             : $"{invoiceReference} güncellendi.";
@@ -507,6 +524,8 @@ public partial class MainWindow
 
         if (editingInvoice is not null)
             ShowView("List");
+        else
+            InvoiceNumberBox.Focus();
     }
 
     private bool TrySaveActiveInvoices(out string errorMessage)
@@ -528,8 +547,11 @@ public partial class MainWindow
     {
         _suppressFormEvents = true;
         InvoiceNumberBox.Clear();
-        InvoiceDatePicker.SelectedDate = null;
-        DueDatePicker.SelectedDate = null;
+        if (_keepDates.IsChecked != true)
+        {
+            InvoiceDatePicker.SelectedDate = null;
+            DueDatePicker.SelectedDate = null;
+        }
         PayableAmountBox.Clear();
         VatAmountBox.Clear();
         InterruptionCompensationBox.Text = "0,00";
@@ -577,5 +599,6 @@ public partial class MainWindow
         UpdateArchiveActiveListState();
         RefreshControlCenter();
         RefreshDashboard();
+        ApplyListFilter();
     }
 }

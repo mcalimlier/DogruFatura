@@ -188,8 +188,13 @@ public partial class MainWindow
             InvoicesGrid.SelectedItem = row;
             InvoicesGrid.ScrollIntoView(row);
             ShowView("List");
+            EditSelectedInvoice_Click(sender, e);
+            if (issue.Category == "Tarih") DueDatePicker.Focus();
+            else if (issue.Category == "Mükerrer Fatura") InvoiceNumberBox.Focus();
+            else PayableAmountBox.Focus();
+            SetInvoiceSaveStatus($"Kontrol Merkezi: {issue.Title}. İlgili alanı düzeltip kaydedin.", issue.Severity == ControlIssueSeverity.Error);
             SetInvoiceListStatus(
-                $"Kontrol Merkezi: {issue.Title}. Seçili faturayı DÜZENLE ile açabilirsiniz.",
+                $"Kontrol Merkezi: {issue.Title}. Fatura düzenleme formu açıldı.",
                 issue.Severity == ControlIssueSeverity.Error);
             return;
         }

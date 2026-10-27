@@ -53,13 +53,13 @@ internal sealed class UnsavedChangesGuard
         var button = FindAncestor<Button>(source);
         if (button?.Content is not string content) return;
 
-        if (content is "YENİ" or "DÜZENLE" or "VAZGEÇ / TEMİZLE" or "TEMİZLE")
+        if (content is "Yeni" or "Temizle" or "Düzenle" or "YENİ" or "DÜZENLE" or "VAZGEÇ / TEMİZLE" or "TEMİZLE")
         {
             _window.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(AcceptCurrentState));
             return;
         }
 
-        if (content is "FATURA LİSTESİNE EKLE" or "FATURA KAYDINI GÜNCELLE")
+        if (button.Name == "AddInvoiceButton" || content is "Kaydet ve listeye git" or "FATURA LİSTESİNE EKLE" or "FATURA KAYDINI GÜNCELLE")
         {
             _window.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
             {
@@ -71,7 +71,7 @@ internal sealed class UnsavedChangesGuard
             return;
         }
 
-        if (content == "KAYDET")
+        if (content is "KAYDET" or "Kaydet")
         {
             _window.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
             {

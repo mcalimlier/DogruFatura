@@ -122,7 +122,7 @@ public partial class MainWindow
               + (string.IsNullOrWhiteSpace(archive.PdfFileName) ? string.Empty : " • PDF kayıtlı")
               + (archive.HasClosedSnapshot ? " • Mühürlü" : string.Empty);
         ArchiveSelectedDateText.Text = archive.ArchivedAt.ToString("dd.MM.yyyy HH:mm", CultureInfo.CurrentCulture);
-        ArchiveSelectedClosureStateText.Text = archive.IsClosed ? "KAPALI" : "AÇIK";
+        ArchiveSelectedClosureStateText.Text = archive.IsClosed ? "HYS ile kapalı" : "HYS bekliyor";
         ArchiveSelectedClosureStateText.Foreground = new SolidColorBrush(archive.IsClosed
             ? Color.FromRgb(67, 199, 122)
             : Color.FromRgb(255, 180, 31));

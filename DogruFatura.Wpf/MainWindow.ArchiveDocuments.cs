@@ -413,14 +413,17 @@ public partial class MainWindow
                 "Aktarılabilecek geçerli PDF bulunamadı; arşiv kaydı oluşturulmadı.",
                 showFailures: true);
             if (previews.All(item => item.AlreadyArchived))
+            {
                 MessageBox.Show(this,
                     "Seçilen PDF zaten arşivde kayıtlı. Aynı ödeme emri yeniden eklenmedi.",
                     "DoğruFatura - Arşiv Aktarım Sonucu",
                     MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
+                return;
+            }
         }
 
-        var importDialog = new HistoricalPdfImportDialog(previews) { Owner = this };
+        var importDialog = new HistoricalPdfImportDialog(previews, AllSchools.ToArray(), _authorityProfile,
+            ArchivedLists.Select(a => a.HysPaymentOrderDocumentNumber)) { Owner = this };
         if (importDialog.ShowDialog() != true)
         {
             SaveHistoricalPdfImportReport(
@@ -433,6 +436,7 @@ public partial class MainWindow
         }
 
         var validItems = importDialog.ValidItems;
+        previews = importDialog.Items.ToArray();
         if (validItems.Count == 0)
         {
             SaveHistoricalPdfImportReport(
@@ -512,7 +516,7 @@ public partial class MainWindow
                 AuditTrailEventType.ArchiveImported,
                 AuditTrailEntityType.Archive,
                 importedArchive.Id.ToString("D"),
-                $"State={importedArchive.State};InvoiceCount={importedArchive.InvoiceCount};Type={importedArchive.InvoiceType}");
+                $"State={importedArchive.State};InvoiceCount={importedArchive.InvoiceCount};Type={importedArchive.InvoiceType};Review={importedArchive.LegacyEvidenceNote}");
         }
 
         var firstArchive = addedArchives.First();

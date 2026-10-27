@@ -1,0 +1,31 @@
+<UserControl x:Class="DogruFatura.Wpf.Workbench.WorkbenchPanel"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+ <StackPanel Margin="0,0,0,20">
+  <TextBlock Text="Bugünkü çalışma masanız" FontSize="27" FontWeight="SemiBold" Foreground="#031C38" Margin="0,0,0,6"/>
+  <TextBlock Text="Bekleyen işleri tamamlayın, kaldığınız listeden devam edin." Foreground="#526277" FontSize="14" TextWrapping="Wrap" Margin="0,0,0,14"/>
+  <WrapPanel>
+   <Button x:Name="ActiveCard" Style="{StaticResource ModernButton}" Height="84" MinWidth="175" Margin="0,0,8,8" Tag="List" Click="Navigate_Click"><StackPanel><TextBlock Text="Aktif faturalar" FontSize="14"/><TextBlock x:Name="ActiveText" FontSize="25" FontWeight="Bold"/></StackPanel></Button>
+   <Button Style="{StaticResource ModernButton}" Height="84" MinWidth="175" Margin="0,0,8,8" Background="#315371" Tag="Due" Click="Navigate_Click"><StackPanel><TextBlock Text="Vade takibi · 7 gün" FontSize="14"/><TextBlock x:Name="DueText" FontSize="21" FontWeight="Bold"/></StackPanel></Button>
+   <Button Style="{StaticResource ModernButton}" Height="84" MinWidth="175" Margin="0,0,8,8" Background="#315371" Tag="Pending" Click="Navigate_Click"><StackPanel><TextBlock Text="HYS bekleyen listeler" FontSize="14"/><TextBlock x:Name="PendingText" FontSize="25" FontWeight="Bold"/></StackPanel></Button>
+   <Button Style="{StaticResource ModernButton}" Height="84" MinWidth="175" Margin="0,0,8,8" Background="#315371" Tag="Control" Click="Navigate_Click"><StackPanel><TextBlock Text="Kontrol bulguları" FontSize="14"/><TextBlock x:Name="IssuesText" FontSize="25" FontWeight="Bold"/></StackPanel></Button>
+  </WrapPanel>
+  <Border Background="#EDF4FF" BorderBrush="#CDDDF5" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,4,0,12">
+   <StackPanel>
+    <TextBlock x:Name="ContinueText" Foreground="#031C38" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/>
+    <TextBlock x:Name="NextText" Foreground="#526277" FontSize="14" TextWrapping="Wrap" Margin="0,6,0,10"/>
+    <WrapPanel><Button Style="{StaticResource ModernButton}" Content="Çalışmaya devam et" Tag="Continue" Click="Navigate_Click" Margin="0,0,8,0"/><Button Style="{StaticResource ModernButton}" Content="Yeni fatura" Tag="Invoice" Click="Navigate_Click" Background="#315371"/></WrapPanel>
+   </StackPanel>
+  </Border>
+  <Expander Header="Taslak ödeme listeleri" Foreground="#031C38" FontSize="16" Margin="0,0,0,8">
+   <StackPanel Margin="0,10,0,0">
+    <TextBlock Text="Tür başına ayrı çalışın. Liste değiştirirken mevcut kayıtlarınız önce taslak olarak korunur; açılan taslağın kopyası rafta kalır." FontSize="13" Foreground="#526277" TextWrapping="Wrap" Margin="0,0,0,8"/>
+    <WrapPanel><TextBox x:Name="DraftNameBox" Width="210" Height="36" ToolTip="Taslak adı" Margin="0,0,8,8"/><Button Style="{StaticResource ModernButton}" Content="Aktif listeyi taslak sakla" Tag="SaveDraft" Click="Navigate_Click" Margin="0,0,8,8"/><Button Style="{StaticResource ModernButton}" Content="Boş listeye geç" Tag="NewDraft" Click="Navigate_Click" Background="#315371" Margin="0,0,8,8"/></WrapPanel>
+    <WrapPanel><ComboBox x:Name="DraftBox" Width="320" Height="38" Margin="0,0,8,0"/><Button Style="{StaticResource ModernButton}" Content="Taslağı aç" Tag="OpenDraft" Click="Navigate_Click"/></WrapPanel>
+   </StackPanel>
+  </Expander>
+  <TextBlock x:Name="NoticeText" Foreground="#526277" FontSize="13" TextWrapping="Wrap"/>
+  <Border Height="1" Background="#DCE5EE" Margin="0,16,0,4"/>
+  <TextBlock Text="Kapanmış HYS arşivleri" Foreground="#526277" FontSize="15" Margin="0,8,0,0"/>
+ </StackPanel>
+</UserControl>

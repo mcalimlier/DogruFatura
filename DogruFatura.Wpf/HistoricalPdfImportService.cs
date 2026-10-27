@@ -35,7 +35,7 @@ public sealed record HistoricalPdfImportPreview(
 
     public string InvoiceCountText => IsValid ? $"{InvoiceCount} fatura" : "—";
     public string PaymentTotalText => IsValid ? NumberParser.Money(PaymentTotal) : "—";
-    public string ResultText => IsValid ? "EKLEMEYE HAZIR" : AlreadyArchived ? "ZATEN ARŞİVDE" : "HATALI";
+    public string ResultText => IsValid ? "Doğrulandı" : AlreadyArchived ? "Zaten arşivde" : "İnceleme gerekiyor";
 
     public HistoricalPdfImportPreview WithError(string message) => this with
     {

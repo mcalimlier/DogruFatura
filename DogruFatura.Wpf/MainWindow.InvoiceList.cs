@@ -22,7 +22,7 @@ public partial class MainWindow
     {
         _editedInvoice = null;
         if (AddInvoiceButton is not null)
-            AddInvoiceButton.Content = "FATURA LİSTESİNE EKLE";
+            AddInvoiceButton.Content = "Kaydet ve yeni fatura";
     }
 
     private void InvoicesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
@@ -148,6 +148,9 @@ public partial class MainWindow
 
         if (_editedInvoice?.Id == invoice.Id)
             EndInvoiceEditMode();
+        _deletedInvoice = invoice;
+        _deletedInvoiceIndex = deletedIndex;
+        _undoInvoice.IsEnabled = true;
         var nextSelection = ActiveInvoices.Count == 0
             ? (Guid?)null
             : ActiveInvoices[Math.Min(deletedIndex, ActiveInvoices.Count - 1)].Id;

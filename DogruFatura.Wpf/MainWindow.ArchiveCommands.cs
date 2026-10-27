@@ -73,6 +73,11 @@ public partial class MainWindow
                 return;
             }
 
+            var closeConfirmation = MessageBox.Show(this,
+                $"Liste: {archive.ArchiveNumber}\nTür: {archive.InvoiceType}\nFatura: {archive.InvoiceCount}\nToplam ödeme: {NumberParser.Money(archive.PaymentTotal)}\nHYS belge no: {normalizedHysNumber}\n\nHYS kapanışı banka ödeme teyidi değildir. Bu liste kapatılsın mı?",
+                "HYS kapanış kontrolü", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
+            if (closeConfirmation != MessageBoxResult.Yes) return;
+
             try
             {
                 pdfMove = _documentArchiveStorageService.MoveActiveOutputToArchive(
@@ -320,6 +325,8 @@ public partial class MainWindow
             $"State={archive.State};InvoiceCount={archive.InvoiceCount};Type={archive.InvoiceType}");
 
         ActiveInvoices.Clear();
+        _deletedInvoice = null;
+        _undoInvoice.IsEnabled = false;
         EndInvoiceEditMode();
         ResetInvoiceEntryAfterArchive();
         UpdateInvoiceListSummary();
@@ -626,6 +633,8 @@ public partial class MainWindow
         }
 
         ActiveInvoices.Clear();
+        _deletedInvoice = null;
+        _undoInvoice.IsEnabled = false;
         foreach (var invoice in restoredInvoices)
             ActiveInvoices.Add(invoice);
 

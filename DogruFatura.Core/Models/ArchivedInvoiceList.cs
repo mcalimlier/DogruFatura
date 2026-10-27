@@ -50,6 +50,11 @@ public sealed record ArchivedInvoiceList(
     public string ClosureStatus => DomainValueText.ToStorageValue(State);
 
     [JsonIgnore]
+    public string WorkflowStatus => IsLegacyEvidenceOnly ? "Kaynak belge kaydı"
+        : string.IsNullOrWhiteSpace(PdfFileName) ? "PDF kontrolü gerekiyor"
+        : IsClosed ? "HYS ile kapalı" : "HYS bekliyor";
+
+    [JsonIgnore]
     public bool IsStatisticsEligible =>
         IsClosed
         && !string.IsNullOrWhiteSpace(HysPaymentOrderDocumentNumber)

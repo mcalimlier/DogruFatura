@@ -1,4 +1,5 @@
 using DogruFatura.Core.Services;
+using DogruFatura.Core.Models;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -106,6 +107,8 @@ public partial class MainWindow
         try
         {
             var filePath = SaveManagedReportPdf(_finalReportData);
+            if (_openedArchiveForReport is { } archive)
+                AppendAudit(AuditTrailEventType.ReportExported, AuditTrailEntityType.Archive, archive.Id.ToString("D"), "Format=PDF");
             SetReportStatus($"PDF başarıyla kaydedildi: {filePath}", false, true);
         }
         catch (Exception ex)
