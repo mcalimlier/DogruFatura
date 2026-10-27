@@ -4,10 +4,10 @@
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         Icon="Assets/AppIcon.ico"
         Title="DoğruFatura - Fatura Ödeme ve Kontrol Programı"
-        Width="1305" Height="850.5" SizeToContent="Manual" ResizeMode="NoResize"
+        Width="1305" Height="850.5" MinWidth="760" MinHeight="520" SizeToContent="Manual" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="Manual" WindowStyle="None" ShowInTaskbar="True" Background="White"
         UseLayoutRounding="True" SnapsToDevicePixels="True" StateChanged="Window_StateChanged">
-    <Viewbox x:Name="AppScaleViewbox" Stretch="Uniform" StretchDirection="Both">
+    <Viewbox x:Name="AppScaleViewbox" Stretch="Uniform" StretchDirection="DownOnly">
         <Border Width="1450" Height="945" CornerRadius="15" BorderBrush="#35546F" BorderThickness="1" Background="#031C38" Margin="8">
             <Grid>
                 <Grid.RowDefinitions><RowDefinition Height="86"/><RowDefinition Height="*"/></Grid.RowDefinitions>
