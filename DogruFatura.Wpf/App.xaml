@@ -196,7 +196,11 @@
         </Style>
 
         <Style x:Key="PremiumSectionTitle" TargetType="TextBlock" BasedOn="{StaticResource SectionTitle}">
-            <Setter Property="Foreground" Value="{StaticResource Gold500Brush}"/>
+            <Setter Property="Foreground" Value="#FFD36F"/>
+            <Setter Property="FontSize" Value="21"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
         </Style>
         <Style x:Key="PremiumSectionSubtitle" TargetType="TextBlock" BasedOn="{StaticResource SectionSubtitle}">
             <Setter Property="Foreground" Value="{StaticResource PremiumMutedTextBrush}"/>
