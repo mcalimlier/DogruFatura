@@ -12,7 +12,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Yayın derlemesi başarısız.' }
     Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/CALISMA_MASASI_1.2.md') -Destination (Join-Path $packageFolder 'KULLANIM.md')
     $archivePath = Join-Path $projectRoot 'artifacts/DoğruFatura-1.2.0-preview.1-win-x64.zip'
-    Compress-Archive -Path (Join-Path $packageFolder '*') -DestinationPath $archivePath -Force
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $temporaryArchive = $archivePath + '.' + [Guid]::NewGuid().ToString('N') + '.tmp'
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($packageFolder, $temporaryArchive, [System.IO.Compression.CompressionLevel]::Fastest, $false)
+    Move-Item -LiteralPath $temporaryArchive -Destination $archivePath -Force
     $digest = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash
     Set-Content -LiteralPath ($archivePath + '.sha256') -Value ($digest + '  ' + (Split-Path -Leaf $archivePath)) -Encoding utf8
     Write-Output $archivePath

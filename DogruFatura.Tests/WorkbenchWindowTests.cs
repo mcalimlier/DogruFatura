@@ -98,7 +98,10 @@ public sealed class WorkbenchWindowTests
                 Assert.Equal(64, ((Grid)((Border)((Grid)window.FindName("AppScaleViewbox")).Children[0]).Child).ColumnDefinitions[0].Width.Value);
                 if (!string.IsNullOrEmpty(output)) SaveScreenshot(window, output, "Invoice-narrow");
                 window.Width = 1366; Pump(window);
-                Assert.Equal(3, ((StackPanel)((ScrollViewer)window.FindName("InvoiceView")).Content).Children.OfType<Grid>().Single().ColumnDefinitions.Count);
+                // A hosted Windows desktop can clamp requested width below 1366 DIP.
+                // Verify the layout for the actual window instead of assuming a physical screen size.
+                var expectedColumns = window.ActualWidth >= 1218 ? 3 : 1;
+                Assert.Equal(expectedColumns, ((StackPanel)((ScrollViewer)window.FindName("InvoiceView")).Content).Children.OfType<Grid>().Single().ColumnDefinitions.Count);
                 Stage("close");
                 window.Close(); app.Shutdown();
                 Stage("complete");
