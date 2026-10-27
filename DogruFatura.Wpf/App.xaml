@@ -168,6 +168,20 @@
             </Setter>
         </Style>
 
+        <!-- Light surface for detailed financial data: retains dark-text readability. -->
+        <Style x:Key="PremiumLightCard" TargetType="Border">
+            <Setter Property="Background" Value="#FFFDF7"/>
+            <Setter Property="BorderBrush" Value="#D7AC52"/>
+            <Setter Property="BorderThickness" Value="1.25"/>
+            <Setter Property="CornerRadius" Value="11"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#09233E" BlurRadius="12" ShadowDepth="2" Opacity="0.13"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="PremiumPanel" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource PremiumPanelBrush}"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
