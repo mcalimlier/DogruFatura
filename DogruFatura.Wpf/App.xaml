@@ -20,9 +20,9 @@
         <SolidColorBrush x:Key="Text600Brush" Color="{StaticResource Text600}"/>
 
         <LinearGradientBrush x:Key="PremiumPanelBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#082744" Offset="0"/>
-            <GradientStop Color="#0A3154" Offset="0.58"/>
-            <GradientStop Color="#0B365C" Offset="1"/>
+            <GradientStop Color="#061E38" Offset="0"/>
+            <GradientStop Color="#0B3457" Offset="0.58"/>
+            <GradientStop Color="#11466C" Offset="1"/>
         </LinearGradientBrush>
         <SolidColorBrush x:Key="PremiumInputBrush" Color="#082744"/>
         <SolidColorBrush x:Key="PremiumInputBorderBrush" Color="#365874"/>
@@ -171,9 +171,14 @@
         <Style x:Key="PremiumPanel" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource PremiumPanelBrush}"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
-            <Setter Property="BorderBrush" Value="{StaticResource PremiumGoldBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1.25"/>
-            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="BorderBrush" Value="#D8A640"/>
+            <Setter Property="BorderThickness" Value="1.4"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#06162C" BlurRadius="19" ShadowDepth="3" Opacity="0.22"/>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="PremiumSectionTitle" TargetType="TextBlock" BasedOn="{StaticResource SectionTitle}">
             <Setter Property="Foreground" Value="{StaticResource Gold500Brush}"/>
@@ -320,19 +325,19 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Height" Value="42"/>
-            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="Height" Value="46"/>
+            <Setter Property="Padding" Value="16,0"/>
             <Setter Property="FontSize" Value="18"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Grid Background="{TemplateBinding Background}">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="0,9,9,0" Margin="7,1,9,1"><Grid>
                             <Border x:Name="Accent" Width="4" HorizontalAlignment="Left" Background="Transparent"/>
                             <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center"/>
-                        </Grid>
+                        </Grid></Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="Tag" Value="Active"><Setter Property="Background" Value="#1D4E91"/><Setter TargetName="Accent" Property="Background" Value="{StaticResource Gold500Brush}"/></Trigger>
-                            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#123B6C"/></Trigger>
+                            <Trigger Property="Tag" Value="Active"><Setter Property="Background" Value="#164F80"/><Setter TargetName="Accent" Property="Background" Value="{StaticResource Gold500Brush}"/></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#174267"/></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
