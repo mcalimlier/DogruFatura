@@ -130,36 +130,36 @@
                     <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="92"/></Grid.RowDefinitions>
                     <StackPanel Margin="0,12,0,0">
                         <Button x:Name="NavHome" Style="{StaticResource NavButton}" Tag="Active" Click="NavHome_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE80F;" FontSize="22" Width="42"/><TextBlock Text="ANA EKRAN" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE80F;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="ANA EKRAN" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Border Height="3" Background="#557A9D" Margin="16,8" CornerRadius="1.5"/>
                         <Button x:Name="NavInvoice" Style="{StaticResource NavButton}" Click="NavInvoice_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8A5;" FontSize="22" Width="42"/><TextBlock Text="FATURA GİRİŞİ" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8A5;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="FATURA GİRİŞİ" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Button x:Name="NavOfficials" Style="{StaticResource NavButton}" Click="NavOfficials_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE77B;" FontSize="22" Width="42"/><TextBlock Text="YETKİLİ / İMZA" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE77B;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="YETKİLİ / İMZA" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Button x:Name="NavList" Style="{StaticResource NavButton}" Click="NavList_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8FD;" FontSize="22" Width="42"/><TextBlock Text="FATURA LİSTESİ" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8FD;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="FATURA LİSTESİ" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Button x:Name="NavReports" Style="{StaticResource NavButton}" Click="NavReports_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D2;" FontSize="22" Width="42"/><TextBlock Text="RAPORLAR / ÇIKTI" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D2;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="RAPORLAR / ÇIKTI" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Border Height="3" Background="#557A9D" Margin="16,8" CornerRadius="1.5"/>
                         <Button x:Name="NavSchools" Style="{StaticResource NavButton}" Click="NavSchools_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE716;" FontSize="22" Width="42"/><TextBlock Text="OKUL / KURUM" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE716;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="OKUL / KURUM" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Button x:Name="NavArchive" Style="{StaticResource NavButton}" Click="NavArchive_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE81C;" FontSize="22" Width="42"/><TextBlock Text="İŞLEM ARŞİVİ" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE81C;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="İŞLEM ARŞİVİ" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Button x:Name="NavControl" Style="{StaticResource NavButton}" Click="NavControl_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D9;" FontSize="22" Width="42"/><TextBlock Text="KONTROL MERKEZİ" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D9;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="KONTROL MERKEZİ" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Button x:Name="NavStatistics" Style="{StaticResource NavButton}" Click="NavStatistics_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D2;" FontSize="22" Width="42"/><TextBlock Text="İSTATİSTİK" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D2;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="İSTATİSTİK" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                         <Button x:Name="NavAbout" Style="{StaticResource NavButton}" Click="NavAbout_Click">
-                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE946;" FontSize="22" Width="42"/><TextBlock Text="HAKKINDA / GÜVENLİK" Style="{StaticResource NavLabel}"/></StackPanel>
+                            <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE946;" FontSize="29" Width="48" Foreground="#FFCA64"/><TextBlock Text="HAKKINDA / GÜVENLİK" Style="{StaticResource NavLabel}"/></StackPanel>
                         </Button>
                     </StackPanel>
                     <Border Grid.Row="1" Margin="18,7,18,10" Padding="14,9" CornerRadius="9" Background="#082845" BorderBrush="#73581E" BorderThickness="1">
@@ -213,9 +213,9 @@
                                 </Border>
 
                                 <UniformGrid Columns="3" Margin="0,0,0,12">
-                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="0,0,6,0"><StackPanel><TextBlock Text="KALICI VERİ" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeSchoolCountText" Text="27 KURUM" Foreground="#FFCA64" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock Text="Kurum kayıtları" Foreground="#C5D7E7" FontSize="13.5"/></StackPanel></Border>
-                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="3,0"><StackPanel><TextBlock Text="AKTİF FATURA" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeInvoiceCountText" Text="0 KAYIT" Foreground="#FFCA64" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock x:Name="HomeInvoiceTypeText" Text="Tür: Henüz belirlenmedi" Foreground="#C5D7E7" FontSize="13.5"/></StackPanel></Border>
-                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="6,0,0,0"><StackPanel><TextBlock Text="HYS KAPANIŞI" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeArchiveCountText" Text="0 / 0 KAPALI" Foreground="#FFCA64" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock Text="Kapalı / toplam arşiv" Foreground="#C5D7E7" FontSize="13.5"/></StackPanel></Border>
+                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="0,0,6,0"><StackPanel><StackPanel Orientation="Horizontal" Margin="0,0,0,4"><TextBlock Style="{StaticResource DashboardMetricIcon}" Text="&#xE80F;"/><TextBlock Text="KALICI VERİ" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/></StackPanel><TextBlock x:Name="HomeSchoolCountText" Text="27 KURUM" Foreground="#FFCA64" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock Text="Kurum kayıtları" Foreground="#C5D7E7" FontSize="13.5"/></StackPanel></Border>
+                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="3,0"><StackPanel><StackPanel Orientation="Horizontal" Margin="0,0,0,4"><TextBlock Style="{StaticResource DashboardMetricIcon}" Text="&#xE8A5;"/><TextBlock Text="AKTİF FATURA" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/></StackPanel><TextBlock x:Name="HomeInvoiceCountText" Text="0 KAYIT" Foreground="#FFCA64" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock x:Name="HomeInvoiceTypeText" Text="Tür: Henüz belirlenmedi" Foreground="#C5D7E7" FontSize="13.5"/></StackPanel></Border>
+                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="6,0,0,0"><StackPanel><StackPanel Orientation="Horizontal" Margin="0,0,0,4"><TextBlock Style="{StaticResource DashboardMetricIcon}" Text="&#xE81C;"/><TextBlock Text="HYS KAPANIŞI" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/></StackPanel><TextBlock x:Name="HomeArchiveCountText" Text="0 / 0 KAPALI" Foreground="#FFCA64" FontSize="24" FontWeight="Bold" Margin="0,4,0,0"/><TextBlock Text="Kapalı / toplam arşiv" Foreground="#C5D7E7" FontSize="13.5"/></StackPanel></Border>
                                 </UniformGrid>
 
                                 <Grid Margin="0,0,0,8">
@@ -223,10 +223,10 @@
                                     <TextBlock Text="HYS ile kapatılan arşivlerde fatura tarihi esas alınır" Foreground="#6A7C90" FontSize="13.5" HorizontalAlignment="Right"/>
                                 </Grid>
                                 <UniformGrid Columns="4" Margin="0,0,0,12">
-                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="0,0,4,0"><StackPanel><TextBlock Text="FATURA SAYISI" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeMonthlyInvoiceCountText" Text="0 kayıt" Foreground="#FFCA64" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
-                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="3,0"><StackPanel><TextBlock Text="FATURA TUTARI" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeMonthlyPayableText" Text="0,00 TL" Foreground="#FFCA64" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
-                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="3,0"><StackPanel><TextBlock Text="DAMGA VERGİSİ" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeMonthlyStampText" Text="0,00 TL" Foreground="#FFCA64" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
-                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="4,0,0,0"><StackPanel><TextBlock Text="ÖDEME TUTARI" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/><TextBlock x:Name="HomeMonthlyPaymentText" Text="0,00 TL" Foreground="#FFCA64" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
+                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="0,0,4,0"><StackPanel><StackPanel Orientation="Horizontal" Margin="0,0,0,4"><TextBlock Style="{StaticResource DashboardMetricIcon}" Text="&#xE8FD;"/><TextBlock Text="FATURA SAYISI" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/></StackPanel><TextBlock x:Name="HomeMonthlyInvoiceCountText" Text="0 kayıt" Foreground="#FFCA64" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
+                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="3,0"><StackPanel><StackPanel Orientation="Horizontal" Margin="0,0,0,4"><TextBlock Style="{StaticResource DashboardMetricIcon}" Text="&#xE8D4;"/><TextBlock Text="FATURA TUTARI" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/></StackPanel><TextBlock x:Name="HomeMonthlyPayableText" Text="0,00 TL" Foreground="#FFCA64" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
+                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="3,0"><StackPanel><StackPanel Orientation="Horizontal" Margin="0,0,0,4"><TextBlock Style="{StaticResource DashboardMetricIcon}" Text="&#xE8B7;"/><TextBlock Text="DAMGA VERGİSİ" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/></StackPanel><TextBlock x:Name="HomeMonthlyStampText" Text="0,00 TL" Foreground="#FFCA64" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
+                                    <Border Style="{StaticResource DashboardMetricCard}" Margin="4,0,0,0"><StackPanel><StackPanel Orientation="Horizontal" Margin="0,0,0,4"><TextBlock Style="{StaticResource DashboardMetricIcon}" Text="&#xE8D4;"/><TextBlock Text="ÖDEME TUTARI" Foreground="#CAD9E9" FontSize="12.5" FontWeight="Bold"/></StackPanel><TextBlock x:Name="HomeMonthlyPaymentText" Text="0,00 TL" Foreground="#FFCA64" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/></StackPanel></Border>
                                 </UniformGrid>
 
                                 <Grid Margin="0,0,0,12">
