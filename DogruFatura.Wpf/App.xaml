@@ -145,16 +145,25 @@
         </Style>
 
         <!-- Ortak lacivert-altın KPI kartı: tek noktadan güncellenebilir. -->
+        <Style x:Key="DashboardMetricIcon" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="30"/>
+            <Setter Property="Foreground" Value="#FFD36F"/>
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+        </Style>
+
         <Style x:Key="DashboardMetricCard" TargetType="Border">
             <Setter Property="Background" Value="#092B4B"/>
-            <Setter Property="BorderBrush" Value="#B8892D"/>
+            <Setter Property="BorderBrush" Value="#E0AC40"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Padding" Value="18,14"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Effect">
                 <Setter.Value>
-                    <DropShadowEffect Color="#031C38" BlurRadius="14" ShadowDepth="2" Opacity="0.16"/>
+                    <DropShadowEffect Color="#020D1F" BlurRadius="22" ShadowDepth="4" Opacity="0.30"/>
                 </Setter.Value>
             </Setter>
         </Style>
