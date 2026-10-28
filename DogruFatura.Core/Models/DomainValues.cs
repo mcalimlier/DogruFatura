@@ -51,10 +51,10 @@ public static class DomainValueText
         _ => null
     };
 
-    public static ControlIssueSeverity? ParseControlIssueSeverity(string? value) => value?.Trim() switch
+    public static InvoiceIssueSeverity? ParseInvoiceIssueSeverity(string? value) => value?.Trim() switch
     {
-        "Hata" => ControlIssueSeverity.Error,
-        "Uyarı" => ControlIssueSeverity.Warning,
+        "Hata" => InvoiceIssueSeverity.Error,
+        "Uyarı" => InvoiceIssueSeverity.Warning,
         _ => null
     };
 
@@ -83,10 +83,10 @@ public static class DomainValueText
         _ => string.Empty
     };
 
-    public static string ToDisplayValue(ControlIssueSeverity value) => value switch
+    public static string ToDisplayValue(InvoiceIssueSeverity value) => value switch
     {
-        ControlIssueSeverity.Error => "Hata",
-        ControlIssueSeverity.Warning => "Uyarı",
+        InvoiceIssueSeverity.Error => "Hata",
+        InvoiceIssueSeverity.Warning => "Uyarı",
         _ => string.Empty
     };
 }

@@ -47,6 +47,7 @@ public sealed class ApplicationSafetyService
     private readonly Func<string> _informationalVersionProvider;
     private readonly string _legacyRootFolder;
     private readonly string _runtimeDescription;
+    private readonly bool _allowLegacyMigration;
 
     public ApplicationSafetyService(
         string? documentsRoot = null,
@@ -55,16 +56,14 @@ public sealed class ApplicationSafetyService
     {
         var documents = documentsRoot
                         ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        var desktop = desktopRoot
-                      ?? Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-
-        var documentStorage = new DocumentArchiveStorageService(desktop);
+        var documentStorage = new DocumentArchiveStorageService(desktopRoot);
         DocumentRootFolder = documentStorage.RootDirectory;
         RootFolder = DocumentRootFolder;
         DataFolder = Path.Combine(RootFolder, "Veri");
         BackupFolder = Path.Combine(RootFolder, "Yedekler");
         LogFolder = Path.Combine(RootFolder, "Loglar");
         _legacyRootFolder = Path.Combine(documents, "DoğruFatura");
+        _allowLegacyMigration = desktopRoot is not null || documentsRoot is not null || !RuntimeInstallationProfile.IsDistribution;
 
         ActivePdfFolder = documentStorage.ActiveOutputDirectory;
         ArchivedPdfFolder = documentStorage.ArchivedOutputDirectory;
@@ -261,6 +260,7 @@ public sealed class ApplicationSafetyService
 
     private string? MigrateLegacyStorageIfNeeded()
     {
+        if (!_allowLegacyMigration) return null;
         if (string.Equals(Path.GetFullPath(_legacyRootFolder).TrimEnd(Path.DirectorySeparatorChar),
                 Path.GetFullPath(RootFolder).TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase)
             || !Directory.Exists(_legacyRootFolder)) return null;

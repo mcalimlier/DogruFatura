@@ -11,7 +11,7 @@ namespace DogruFatura.Wpf;
 internal static class WindowControlPolishService
 {
     private static readonly FontFamily SymbolFont = new("Segoe MDL2 Assets");
-    private const double SymbolSize = 16.5;
+    private const double SymbolSize = 11.5;
 
     public static void Apply(MainWindow window)
     {
@@ -41,8 +41,9 @@ internal static class WindowControlPolishService
 
     private static void StandardizeButton(Button button)
     {
-        button.Width = 44;
-        button.Height = 42;
+        button.Width = 36;
+        button.Height = 30;
+        button.MinHeight = 30;
         button.Padding = new Thickness(0);
         button.HorizontalContentAlignment = HorizontalAlignment.Center;
         button.VerticalContentAlignment = VerticalAlignment.Center;

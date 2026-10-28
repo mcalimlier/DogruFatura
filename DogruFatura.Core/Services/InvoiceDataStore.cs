@@ -20,8 +20,7 @@ public sealed class InvoiceDataStore
     public InvoiceDataStore(string? dataFilePath = null)
     {
         DataFilePath = dataFilePath ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-            "DoğruFatura", "Veri", "AktifFaturalar.json");
+            RuntimeInstallationProfile.RootDirectory, "Veri", "AktifFaturalar.json");
     }
 
     public string DataFilePath { get; }
@@ -85,7 +84,7 @@ public sealed class InvoiceDataStore
 
         var warnings = new List<string>();
         var invalidCount = invoices.Count(invoice => !InvoiceValidationService.Validate(invoice).IsValid);
-        if (invalidCount > 0) warnings.Add($"Aktif listede {invalidCount} eksik veya hatalı kayıt korunarak açıldı. Ayrıntıları Kontrol Merkezi'nden düzeltin.");
+        if (invalidCount > 0) warnings.Add($"Aktif listede {invalidCount} eksik veya hatalı kayıt korunarak açıldı. Fatura Listesi'nden ilgili kaydı düzenleyin.");
 
         if (requiresSchemaUpgrade || migratedWaterInvoices > 0)
         {

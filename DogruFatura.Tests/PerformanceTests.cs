@@ -13,11 +13,11 @@ public sealed class PerformanceTests
         var invoices = Enumerable.Range(1, 1000).Select(index => Invoice(index, school.Name)).ToArray();
         var watch = Stopwatch.StartNew();
 
-        var result = ControlCenterService.Scan(new[] { school }, invoices, new DateTime(2026, 9, 3));
+        var result = InvoiceConsistencyService.Scan(new[] { school }, invoices, new DateTime(2026, 9, 3));
 
         watch.Stop();
         Assert.NotNull(result);
-        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(8), $"Kontrol Merkezi 1000 kayıtta {watch.Elapsed.TotalSeconds:0.00} sn sürdü.");
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(8), $"Fatura doğrulaması 1000 kayıtta {watch.Elapsed.TotalSeconds:0.00} sn sürdü.");
     }
 
     [Fact]

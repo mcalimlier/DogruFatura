@@ -1,4 +1,6 @@
-# DoğruFatura 1.1.0
+# DoğruFatura 1.2.0-preview.1
+
+Güncel panel düzeni: salt okunur aktif liste vitrini, kartlarla ayrılan fatura girişi ve hesaplama, Fatura Listesi içinde ayrı PDF/Yazdır/Klasör işlemleri, PDF ve imza bilgileriyle paket kaydı, HYS bekleyen/kapalı paket sekmeleri ve Excel benzeri arşiv tablosu. Güvenlik ile Hakkında/Ayarlar ayrıdır. Ekran profilleri 1024×768, 1366×768, 1920×1080'dir ve Uygula ile etkinleştirilir. Ayrı Raporlar/Kontrol Merkezi sayfaları, önizleme, oturum uyarısı ve Temizle düğmeleri kaldırılmıştır. Güncel kullanım: [Kullanıcı kılavuzu](KULLANICI_KILAVUZU.md).
 
 DoğruFatura; fatura ödeme listelerinin hazırlanması, mali hesap kontrolü, PDF/çıktı üretimi, HYS arşiv yönetimi, istatistik analizi ve kullanıcı verisi güvenliği için geliştirilmiş .NET 8 / WPF Windows masaüstü uygulamasıdır.
 

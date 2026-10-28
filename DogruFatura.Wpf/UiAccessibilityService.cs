@@ -1,4 +1,4 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -26,9 +26,7 @@ internal static class UiAccessibilityService
             ["VatAmountBox"] = "KDV tutarı",
             ["InterruptionCompensationBox"] = "Kesinti tazminatı tutarı",
             ["SchoolSearchBox"] = "Kurumlarda ara",
-            ["ArchiveSearchBox"] = "İşlem arşivinde ara",
-            ["ControlSearchBox"] = "Kontrol bulgularında ara",
-            ["ArchiveHysNumberBox"] = "HYS ödeme emri belge numarası"
+            ["ArchiveSearchBox"] = "İşlem arşivinde ara"
         };
 
     private static readonly string[] PreferredTabOrder =
@@ -36,11 +34,8 @@ internal static class UiAccessibilityService
         "InstitutionTypeBox", "InstitutionBox", "InvoiceTypeBox", "InvoiceNumberBox",
         "InvoiceDatePicker", "DueDatePicker", "PayableAmountBox", "VatAmountBox",
         "InterruptionCompensationToggleButton", "InterruptionCompensationBox", "AddInvoiceButton",
-        "SchoolSearchBox", "SchoolFilterTypeBox", "SchoolTypeEditorBox", "SchoolNameEditorBox",
-        "SchoolVknEditorBox", "SchoolElectricityEditorBox", "SchoolTelephoneEditorBox",
-        "SchoolInternetEditorBox", "SchoolWaterEditorBox",
-        "ArchiveSearchBox", "ArchiveTypeFilterBox", "ArchiveStatusFilterBox", "ArchiveHysNumberBox",
-        "ControlSearchBox", "ControlSeverityFilterBox", "ControlCategoryFilterBox"
+        "SchoolSearchBox", "SchoolFilterTypeBox", "NewSchoolButton", "EditSchoolButton",
+        "ArchiveSearchBox", "ArchiveTypeFilterBox",
     };
 
     public static void Apply(MainWindow window)
@@ -152,10 +147,8 @@ internal static class UiAccessibilityService
                     Key.F => "NavInvoice",
                     Key.Y => "NavOfficials",
                     Key.L => "NavList",
-                    Key.R => "NavReports",
                     Key.O => "NavSchools",
                     Key.I => "NavArchive",
-                    Key.K => "NavControl",
                     Key.H => "NavAbout",
                     _ => null
                 };
@@ -168,17 +161,10 @@ internal static class UiAccessibilityService
 
             if (e.Key == Key.Escape)
             {
-                if (UiTree.IsVisible(window, "InvoiceView"))
-                {
-                    var clear = UiTree.Descendants<Button>(window)
-                        .FirstOrDefault(x => Equals(x.Content, "TEMİZLE") && UiTree.FindAncestor<Grid>(x) is not null);
-                    if (clear is not null) RaiseClick(clear);
-                    e.Handled = clear is not null;
-                }
-                else if (UiTree.IsVisible(window, "SchoolsView"))
+                if (UiTree.IsVisible(window, "SchoolsView"))
                 {
                     var cancel = UiTree.Descendants<Button>(window)
-                        .FirstOrDefault(x => Equals(x.Content, "VAZGEÇ / TEMİZLE"));
+                        .FirstOrDefault(x => Equals(x.Content, "Vazgeç"));
                     if (cancel is not null) RaiseClick(cancel);
                     e.Handled = cancel is not null;
                 }
@@ -228,7 +214,6 @@ internal static class UiAccessibilityService
     {
         if (UiTree.IsVisible(window, "SchoolsView")) return window.FindName("SchoolSearchBox") as TextBox;
         if (UiTree.IsVisible(window, "ArchiveView")) return window.FindName("ArchiveSearchBox") as TextBox;
-        if (UiTree.IsVisible(window, "ControlView")) return window.FindName("ControlSearchBox") as TextBox;
         return null;
     }
 

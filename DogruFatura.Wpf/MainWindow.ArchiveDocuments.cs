@@ -1,4 +1,4 @@
-using DogruFatura.Core.Models;
+﻿using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
 using System.IO;
 using System.Threading;
@@ -413,14 +413,17 @@ public partial class MainWindow
                 "Aktarılabilecek geçerli PDF bulunamadı; arşiv kaydı oluşturulmadı.",
                 showFailures: true);
             if (previews.All(item => item.AlreadyArchived))
+            {
                 MessageBox.Show(this,
                     "Seçilen PDF zaten arşivde kayıtlı. Aynı ödeme emri yeniden eklenmedi.",
                     "DoğruFatura - Arşiv Aktarım Sonucu",
                     MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
+                return;
+            }
         }
 
-        var importDialog = new HistoricalPdfImportDialog(previews) { Owner = this };
+        var importDialog = new HistoricalPdfImportDialog(previews, AllSchools.ToArray(), _authorityProfile,
+            ArchivedLists.Select(a => a.HysPaymentOrderDocumentNumber)) { Owner = this };
         if (importDialog.ShowDialog() != true)
         {
             SaveHistoricalPdfImportReport(
@@ -433,6 +436,7 @@ public partial class MainWindow
         }
 
         var validItems = importDialog.ValidItems;
+        previews = importDialog.Items.ToArray();
         if (validItems.Count == 0)
         {
             SaveHistoricalPdfImportReport(
@@ -512,7 +516,7 @@ public partial class MainWindow
                 AuditTrailEventType.ArchiveImported,
                 AuditTrailEntityType.Archive,
                 importedArchive.Id.ToString("D"),
-                $"State={importedArchive.State};InvoiceCount={importedArchive.InvoiceCount};Type={importedArchive.InvoiceType}");
+                $"State={importedArchive.State};InvoiceCount={importedArchive.InvoiceCount};Type={importedArchive.InvoiceType};Review={importedArchive.LegacyEvidenceNote}");
         }
 
         var firstArchive = addedArchives.First();
@@ -609,7 +613,7 @@ public partial class MainWindow
             ArchiveVisibleCountText.Text = $"0 / {ArchivedLists.Count} kayıt";
             ArchiveListEmptyState.Visibility = Visibility.Visible;
             ArchiveGrid.SelectedItem = null;
-            UpdateArchiveSelection();
+
             SetArchiveStatus("Başlangıç tarihi, bitiş tarihinden sonra olamaz.", true);
             return;
         }
@@ -618,25 +622,7 @@ public partial class MainWindow
         SetArchiveStatus("Arşiv filtreleri uygulandı.", false, true);
     }
 
-    private void ClearArchiveFilters_Click(object sender, RoutedEventArgs e)
-    {
-        _suppressArchiveEvents = true;
-        ArchiveSearchBox.Clear();
-        ArchiveTypeFilterBox.SelectedIndex = 0;
-        ArchiveStatusFilterBox.SelectedIndex = 0;
-        ArchiveDateFromPicker.SelectedDate = null;
-        ArchiveDateToPicker.SelectedDate = null;
-        _suppressArchiveEvents = false;
-        RefreshArchiveView();
-        SetArchiveStatus("Arşiv filtreleri temizlendi.", false, true);
-    }
 
-    private void ArchiveGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
-        UpdateArchiveSelection();
 
-    private void ArchiveGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        if (ArchiveGrid.SelectedItem is ArchivedInvoiceList)
-            OpenArchivedList_Click(sender, e);
-    }
+
 }

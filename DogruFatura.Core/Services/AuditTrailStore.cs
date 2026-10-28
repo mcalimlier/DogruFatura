@@ -15,8 +15,7 @@ public sealed class AuditTrailStore
     public AuditTrailStore(string? filePath = null)
     {
         FilePath = filePath ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-            "DoğruFatura",
+            RuntimeInstallationProfile.RootDirectory,
             "Veri",
             "DenetimKaydi.jsonl");
     }

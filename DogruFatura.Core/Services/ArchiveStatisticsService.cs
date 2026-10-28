@@ -6,10 +6,12 @@ public static class ArchiveStatisticsService
 {
     public static ArchiveStatisticsResult Build(
         IEnumerable<ArchivedInvoiceList> archivedLists,
-        ArchiveStatisticsFilter? filter = null)
+        ArchiveStatisticsFilter? filter = null,
+        IEnumerable<SchoolRecord>? schools = null)
     {
         ArgumentNullException.ThrowIfNull(archivedLists);
         filter ??= new ArchiveStatisticsFilter();
+        var catalog = schools?.ToArray() ?? Array.Empty<SchoolRecord>();
 
         var eligibleArchives = archivedLists
             .Where(archive => archive.IsStatisticsEligible && archive.Invoices is not null)
@@ -23,7 +25,7 @@ public static class ArchiveStatisticsService
             {
                 if (invoice.Id != Guid.Empty && !knownInvoiceIds.Add(invoice.Id))
                     continue;
-                sourceBuffer.Add(new ArchiveInvoice(archive.Id, invoice));
+                sourceBuffer.Add(new ArchiveInvoice(archive.Id, InstitutionResolutionService.ForReporting(invoice, catalog)));
             }
         }
         var source = sourceBuffer.ToArray();

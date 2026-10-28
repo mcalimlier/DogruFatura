@@ -1,4 +1,4 @@
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -13,8 +13,6 @@ internal static class UiPerformanceService
             ["ActiveInvoiceGrid"] = "Aktif listede henüz fatura yok.",
             ["SchoolsGrid"] = "Bu filtreye uyan okul / kurum bulunamadı.",
             ["ArchiveGrid"] = "Bu filtreye uyan arşiv kaydı bulunamadı.",
-            ["ArchiveInvoiceDetailGrid"] = "Görüntülenecek fatura detayı yok.",
-            ["ControlIssuesGrid"] = "Kontrol bulgusu yok. Kayıtlar temiz görünüyor."
         };
 
     public static void Apply(MainWindow window)

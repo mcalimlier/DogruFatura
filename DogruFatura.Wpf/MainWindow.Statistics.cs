@@ -1,4 +1,4 @@
-using DogruFatura.Core.Models;
+﻿using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
 using LiveChartsCore;
 using LiveChartsCore.Measure;
@@ -27,7 +27,7 @@ public partial class MainWindow
         var currentInstitution = StatisticsInstitutionFilterBox.SelectedItem as string ?? "Tümü";
         var currentType = StatisticsTypeFilterBox.SelectedItem as string ?? "Tümü";
 
-        var options = ArchiveStatisticsService.Build(ArchivedLists);
+        var options = ArchiveStatisticsService.Build(ArchivedLists, schools: AllSchools);
 
         _suppressStatisticsEvents = true;
         try
@@ -56,23 +56,19 @@ public partial class MainWindow
     private void ApplyStatisticsFilters()
     {
         _statisticsFilter = ReadStatisticsFilter();
-        var result = ArchiveStatisticsService.Build(ArchivedLists, _statisticsFilter);
+        var result = ArchiveStatisticsService.Build(ArchivedLists, _statisticsFilter, AllSchools);
         _statisticsResult = result;
 
         StatisticsArchiveCountText.Text = $"{result.ArchiveCount} arşiv";
         StatisticsInvoiceCountText.Text = $"{result.InvoiceCount} fatura";
         StatisticsInstitutionCountText.Text = $"{result.InstitutionCount} kurum";
         StatisticsPaymentTotalText.Text = NumberParser.Money(result.PaymentTotal);
-        StatisticsAverageText.Text = NumberParser.Money(result.AveragePayableAmount);
         StatisticsTotalsText.Text =
             $"Fatura toplamı: {NumberParser.Money(result.PayableTotal)}"
             + $" • KDV: {NumberParser.Money(result.VatTotal)}"
             + $" • Damga: {NumberParser.Money(result.StampDutyTotal)}"
             + $" • Ödeme: {NumberParser.Money(result.PaymentTotal)}";
 
-        RefreshStatisticsPreviousPeriod(result);
-        RefreshStatisticsPdfHealth();
-        RefreshStatisticsInstitutionProfile(result);
         RefreshStatisticsDonut(result);
     }
 
@@ -103,114 +99,7 @@ public partial class MainWindow
             StatisticsDateToPicker.SelectedDate?.Date);
     }
 
-    private void RefreshStatisticsPreviousPeriod(ArchiveStatisticsResult current)
-    {
-        var previousFilter = PreviousStatisticsFilter(_statisticsFilter);
-        if (previousFilter is null)
-        {
-            StatisticsPreviousPeriodText.Text = "Karşılaştırma yok";
-            StatisticsPreviousPeriodText.Foreground =
-                new SolidColorBrush(Color.FromRgb(49, 83, 113));
-            return;
-        }
 
-        var previous = ArchiveStatisticsService.Build(ArchivedLists, previousFilter);
-        if (previous.PaymentTotal <= 0m)
-        {
-            StatisticsPreviousPeriodText.Text = "Önceki dönemde veri yok";
-            StatisticsPreviousPeriodText.Foreground =
-                new SolidColorBrush(Color.FromRgb(49, 83, 113));
-            return;
-        }
-
-        var difference = current.PaymentTotal - previous.PaymentTotal;
-        var percent = difference / previous.PaymentTotal * 100m;
-        var direction = difference > 0m ? "↑" : difference < 0m ? "↓" : "→";
-        StatisticsPreviousPeriodText.Text =
-            $"{direction} %{Math.Abs(percent).ToString("N1", CultureInfo.GetCultureInfo("tr-TR"))}"
-            + $" • {NumberParser.Money(previous.PaymentTotal)}";
-
-        StatisticsPreviousPeriodText.Foreground = difference switch
-        {
-            > 0m => new SolidColorBrush(Color.FromRgb(183, 121, 31)),
-            < 0m => new SolidColorBrush(Color.FromRgb(36, 138, 80)),
-            _ => new SolidColorBrush(Color.FromRgb(49, 83, 113))
-        };
-    }
-
-    private static ArchiveStatisticsFilter? PreviousStatisticsFilter(ArchiveStatisticsFilter current)
-    {
-        if (current.StartDate.HasValue && current.EndDate.HasValue)
-        {
-            var start = current.StartDate.Value.Date;
-            var end = current.EndDate.Value.Date;
-            if (end < start)
-                return null;
-
-            var dayCount = (end - start).Days + 1;
-            var previousEnd = start.AddDays(-1);
-            var previousStart = previousEnd.AddDays(-(dayCount - 1));
-            return current with
-            {
-                Year = null,
-                StartDate = previousStart,
-                EndDate = previousEnd
-            };
-        }
-
-        if (current.Year.HasValue)
-            return current with { Year = current.Year.Value - 1 };
-
-        return null;
-    }
-
-    private void RefreshStatisticsPdfHealth()
-    {
-        var eligible = ArchivedLists
-            .Where(archive => archive.IsStatisticsEligible)
-            .ToArray();
-
-        var missing = eligible.Count(archive =>
-        {
-            var fileName = !string.IsNullOrWhiteSpace(archive.PdfFileName)
-                ? Path.GetFileName(archive.PdfFileName)
-                : !string.IsNullOrWhiteSpace(archive.HysPaymentOrderDocumentNumber)
-                    ? archive.HysPaymentOrderDocumentNumber + ".pdf"
-                    : string.Empty;
-
-            return string.IsNullOrWhiteSpace(fileName)
-                || !File.Exists(Path.Combine(_documentArchiveStorageService.ArchivedOutputDirectory, fileName));
-        });
-
-        StatisticsPdfHealthText.Text = eligible.Length == 0
-            ? "Arşiv PDF kaydı yok"
-            : missing == 0
-                ? $"{eligible.Length}/{eligible.Length} PDF mevcut"
-                : $"{missing} eksik • {eligible.Length} arşiv";
-
-        StatisticsPdfHealthText.Foreground = missing == 0
-            ? new SolidColorBrush(Color.FromRgb(36, 138, 80))
-            : new SolidColorBrush(Color.FromRgb(194, 58, 67));
-    }
-
-    private void RefreshStatisticsInstitutionProfile(ArchiveStatisticsResult result)
-    {
-        if (string.IsNullOrWhiteSpace(_statisticsFilter.InstitutionName))
-        {
-            StatisticsInstitutionProfileText.Text = "Kurum seçilmedi";
-            return;
-        }
-
-        var typeCount = result.Rows
-            .Select(row => row.InvoiceType)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Count();
-
-        StatisticsInstitutionProfileText.Text = result.InvoiceCount == 0
-            ? $"{_statisticsFilter.InstitutionName}: veri yok"
-            : $"{_statisticsFilter.InstitutionName}: {result.InvoiceCount} fatura"
-              + $" • {typeCount} tür • {NumberParser.Money(result.PaymentTotal)}";
-    }
 
     private void RefreshStatisticsDonut(ArchiveStatisticsResult result)
     {
@@ -245,9 +134,7 @@ public partial class MainWindow
             var percentage = item.PaymentTotal / total;
             var skColor = StatisticsSkColor(item.InvoiceType);
             var wpfBrush = StatisticsBrush(item.InvoiceType);
-            var percentageText = "%" + (percentage * 100m).ToString(
-                "N0",
-                CultureInfo.GetCultureInfo("tr-TR"));
+            var percentageText = DonutPercentageLayout.FormatPercent(percentage * 100m);
 
             series.Add(new PieSeries<double>
             {
@@ -275,71 +162,37 @@ public partial class MainWindow
 
         StatisticsDonutChart.Series = series;
         RefreshStatisticsDonutLabels(distribution, total);
+        InformationCopyService.Apply(this);
     }
 
-    private void RefreshStatisticsDonutLabels(
-        IReadOnlyList<StatisticsDonutItem> distribution,
-        decimal total)
+    private void RefreshStatisticsDonutLabels(IReadOnlyList<StatisticsDonutItem> distribution, decimal total)
     {
-        const double chartSize = 328d;
-        const double center = chartSize / 2d;
-        const double labelRadius = 121d;
-        const double labelWidth = 52d;
-        const double labelHeight = 24d;
-
-        var angle = -90d;
-        foreach (var item in distribution)
+        StatisticsDonutLabelsCanvas.Children.Clear();
+        if (total <= 0) return;
+        foreach (var label in DonutPercentageLayout.Plan(distribution.Select(item => item.PaymentTotal).ToArray()))
         {
-            var percentage = item.PaymentTotal / total;
-            var sweep = (double)percentage * 360d;
-
-            if (percentage >= 0.06m)
+            var sliceColor = StatisticsSkColor(distribution[label.Index].InvoiceType);
+            var sliceBrush = StatisticsBrush(distribution[label.Index].InvoiceType);
+            if (label.IsCallout)
             {
-                var middleAngle = angle + (sweep / 2d);
-                var radians = middleAngle * Math.PI / 180d;
-                var x = center + (Math.Cos(radians) * labelRadius);
-                var y = center + (Math.Sin(radians) * labelRadius);
-
-                var label = new TextBlock
-                {
-                    Text = "%" + (percentage * 100m).ToString(
-                        "N0",
-                        CultureInfo.GetCultureInfo("tr-TR")),
-                    FontFamily = new FontFamily("Segoe UI"),
-                    FontSize = 14,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = StatisticsDataLabelBrush(StatisticsSkColor(item.InvoiceType)),
-                    TextAlignment = TextAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    SnapsToDevicePixels = true,
-                    UseLayoutRounding = true,
-                    IsHitTestVisible = false
-                };
-
-                TextOptions.SetTextFormattingMode(label, TextFormattingMode.Display);
-                TextOptions.SetTextRenderingMode(label, TextRenderingMode.ClearType);
-
-                var labelHost = new Border
-                {
-                    Width = labelWidth,
-                    Height = labelHeight,
-                    Background = Brushes.Transparent,
-                    Child = label,
-                    SnapsToDevicePixels = true,
-                    UseLayoutRounding = true,
-                    IsHitTestVisible = false
-                };
-
-                TextOptions.SetTextFormattingMode(labelHost, TextFormattingMode.Display);
-                TextOptions.SetTextRenderingMode(labelHost, TextRenderingMode.ClearType);
-
-                Canvas.SetLeft(labelHost, Math.Round(x - (labelWidth / 2d)));
-                Canvas.SetTop(labelHost, Math.Round(y - (labelHeight / 2d)));
-                StatisticsDonutLabelsCanvas.Children.Add(labelHost);
+                var edgeX = label.Left < DonutPercentageLayout.CanvasWidth / 2 ? label.Left + DonutPercentageLayout.LabelWidth : label.Left;
+                var middleX = edgeX + (label.Left < DonutPercentageLayout.CanvasWidth / 2 ? 2 : -2);
+                var radialX = DonutPercentageLayout.CanvasWidth / 2 + (label.AnchorX - DonutPercentageLayout.CanvasWidth / 2) * 172 / 157;
+                var radialY = DonutPercentageLayout.CanvasHeight / 2 + (label.AnchorY - DonutPercentageLayout.CanvasHeight / 2) * 172 / 157;
+                var leader = new System.Windows.Shapes.Polyline { Stroke = sliceBrush, StrokeThickness = 1.8,
+                    StrokeLineJoin = PenLineJoin.Round, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round,
+                    Points = new PointCollection { new(label.AnchorX,label.AnchorY), new(radialX,radialY), new(middleX,radialY), new(middleX,label.Top+12), new(edgeX,label.Top+12) }, IsHitTestVisible = false };
+                StatisticsDonutLabelsCanvas.Children.Add(leader);
+                var dot = new System.Windows.Shapes.Ellipse { Width = 6, Height = 6, Fill = sliceBrush, Stroke = Brushes.White, StrokeThickness = .7, IsHitTestVisible = false };
+                Canvas.SetLeft(dot, label.AnchorX - 3); Canvas.SetTop(dot, label.AnchorY - 3); StatisticsDonutLabelsCanvas.Children.Add(dot);
             }
-
-            angle += sweep;
+            var text = new TextBlock { Text = label.Text, FontFamily = new FontFamily("Segoe UI"), FontSize = 12,
+                FontWeight = FontWeights.SemiBold, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+                Foreground = StatisticsDataLabelBrush(sliceColor) };
+            var badge = new Border { Width = DonutPercentageLayout.LabelWidth, Height = DonutPercentageLayout.LabelHeight, Child = text,
+                CornerRadius = new CornerRadius(5), Background = label.IsCallout ? sliceBrush : Brushes.Transparent,
+                BorderBrush = label.IsCallout ? sliceBrush : Brushes.Transparent, BorderThickness = new Thickness(label.IsCallout ? .7 : 0) };
+            Canvas.SetLeft(badge,label.Left); Canvas.SetTop(badge,label.Top); StatisticsDonutLabelsCanvas.Children.Add(badge);
         }
     }
 
@@ -378,14 +231,14 @@ public partial class MainWindow
         label.Children.Add(new TextBlock
         {
             Text = item.InvoiceType,
-            Foreground = new SolidColorBrush(Color.FromRgb(3, 28, 56)),
-            FontSize = 16,
+            Foreground = new SolidColorBrush(Color.FromRgb(239, 244, 250)),
+            FontSize = 14,
             FontWeight = FontWeights.SemiBold
         });
         label.Children.Add(new TextBlock
         {
             Text = $"{item.InvoiceCount} fatura",
-            Foreground = new SolidColorBrush(Color.FromRgb(100, 119, 139)),
+            Foreground = new SolidColorBrush(Color.FromRgb(185, 203, 218)),
             FontSize = 13.5
         });
 
@@ -396,16 +249,16 @@ public partial class MainWindow
         value.Children.Add(new TextBlock
         {
             Text = NumberParser.Money(item.PaymentTotal),
-            Foreground = new SolidColorBrush(Color.FromRgb(3, 28, 56)),
-            FontSize = 16,
+            Foreground = new SolidColorBrush(Color.FromRgb(239, 244, 250)),
+            FontSize = 14,
             FontWeight = FontWeights.Bold,
             HorizontalAlignment = HorizontalAlignment.Right
         });
         value.Children.Add(new TextBlock
         {
-            Text = "%" + percentage.ToString("N1", CultureInfo.GetCultureInfo("tr-TR")),
-            Foreground = new SolidColorBrush(Color.FromRgb(84, 112, 141)),
-            FontSize = 13.5,
+            Text = DonutPercentageLayout.FormatPercent(percentage),
+            Foreground = new SolidColorBrush(Color.FromRgb(232, 199, 120)),
+            FontSize = 12.5,
             FontWeight = FontWeights.SemiBold,
             HorizontalAlignment = HorizontalAlignment.Right
         });
@@ -487,7 +340,7 @@ public partial class MainWindow
             switch (template)
             {
                 case "Yıllık Genel Rapor":
-                    var availableYears = ArchiveStatisticsService.Build(ArchivedLists).AvailableYears;
+                    var availableYears = ArchiveStatisticsService.Build(ArchivedLists, schools: AllSchools).AvailableYears;
                     var latestYear = availableYears.Count > 0 ? availableYears[0] : 0;
                     StatisticsYearFilterBox.SelectedItem = latestYear > 0
                         ? latestYear.ToString(CultureInfo.InvariantCulture)
@@ -568,26 +421,6 @@ public partial class MainWindow
     {
         if (_suppressStatisticsEvents)
             return;
-
-        ApplyStatisticsFilters();
-    }
-
-    private void ClearStatisticsFilters_Click(object sender, RoutedEventArgs e)
-    {
-        _suppressStatisticsEvents = true;
-        try
-        {
-            StatisticsYearFilterBox.SelectedIndex = 0;
-            StatisticsInstitutionFilterBox.SelectedIndex = 0;
-            StatisticsTypeFilterBox.SelectedIndex = 0;
-            StatisticsDateFromPicker.SelectedDate = null;
-            StatisticsDateToPicker.SelectedDate = null;
-            StatisticsTemplateBox.SelectedIndex = 0;
-        }
-        finally
-        {
-            _suppressStatisticsEvents = false;
-        }
 
         ApplyStatisticsFilters();
     }

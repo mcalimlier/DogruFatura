@@ -1,4 +1,4 @@
-using DogruFatura.Core.Models;
+﻿using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
 using System.ComponentModel;
 using System.Globalization;
@@ -19,8 +19,7 @@ public partial class MainWindow
             && !string.Equals(archive.InvoiceType, selectedType, StringComparison.Ordinal))
             return false;
 
-        var selectedState = DomainValueText.ParseArchiveState(ArchiveStatusFilterBox.SelectedItem as string);
-        if (selectedState.HasValue && archive.State != selectedState.Value) return false;
+        if (archive.IsClosed != (ArchiveStateTabs.SelectedIndex == 1)) return false;
 
         var from = ArchiveDateFromPicker.SelectedDate?.Date;
         var to = ArchiveDateToPicker.SelectedDate?.Date;
@@ -49,6 +48,12 @@ public partial class MainWindow
 
     private void RefreshArchiveView(Guid? selectedArchiveId = null)
     {
+        if (selectedArchiveId.HasValue && ArchivedLists.FirstOrDefault(a => a.Id == selectedArchiveId.Value) is { } target)
+        {
+            _suppressArchiveEvents = true;
+            ArchiveStateTabs.SelectedIndex = target.IsClosed ? 1 : 0;
+            _suppressArchiveEvents = false;
+        }
         _archiveView.Refresh();
         _archiveView.SortDescriptions.Clear();
         _archiveView.SortDescriptions.Add(new SortDescription(
@@ -63,7 +68,6 @@ public partial class MainWindow
             .ToArray();
         ArchiveListCountText.Text = $"{ArchivedLists.Count} liste";
         ArchiveClosedListCountText.Text = $"{closedArchives.Length} liste";
-        HomeArchiveCountText.Text = $"{closedArchives.Length} / {ArchivedLists.Count} KAPALI";
         ArchiveInvoiceCountText.Text = $"{closedArchives.Sum(archive => archive.InvoiceCount)} fatura";
         ArchivePaymentTotalText.Text = NumberParser.Money(closedArchives.Sum(archive => archive.PaymentTotal));
         ArchiveVisibleCountText.Text = visibleArchives.Length == ArchivedLists.Count
@@ -85,77 +89,10 @@ public partial class MainWindow
         ArchiveGrid.SelectedItem = selection;
         if (selection is not null)
             ArchiveGrid.ScrollIntoView(selection);
-        UpdateArchiveSelection();
-        UpdateArchiveActiveListState();
+
+
     }
 
-    private void UpdateArchiveSelection()
-    {
-        if (ArchiveGrid.SelectedItem is not ArchivedInvoiceList archive)
-        {
-            ArchiveSelectedNumberText.Text = "Henüz seçilmedi";
-            ArchiveSelectedPaymentText.Text = "0,00 TL";
-            ArchiveSelectedInfoText.Text = "Bir arşiv kaydı seçin.";
-            ArchiveSelectedDateText.Text = string.Empty;
-            ArchiveSelectedClosureStateText.Text = "AÇIK";
-            ArchiveSelectedClosureStateText.Foreground = new SolidColorBrush(Color.FromRgb(145, 171, 192));
-            ArchiveHysNumberBox.Clear();
-            ArchiveHysNumberBox.IsReadOnly = true;
-            ArchiveClosureButton.Content = "HYS İLE KAPAT";
-            ArchiveClosureButton.Background = new SolidColorBrush(Color.FromRgb(49, 83, 113));
-            ArchiveClosureButton.IsEnabled = false;
-            ArchiveInvoiceDetailGrid.ItemsSource = Array.Empty<InvoiceRecord>();
-            ArchiveDetailEmptyState.Visibility = Visibility.Visible;
-            OpenArchivedListButton.IsEnabled = false;
-            EditArchivedListButton.IsEnabled = false;
-            DeleteArchivedListButton.IsEnabled = false;
-            return;
-        }
 
-        ArchiveSelectedNumberText.Text = archive.ArchiveNumber;
-        ArchiveSelectedPaymentText.Text = NumberParser.Money(archive.PaymentTotal);
-        ArchiveSelectedInfoText.Text = archive.IsLegacyEvidenceOnly
-            ? $"{archive.InvoiceType} • {archive.InvoiceCount} kaynak satırı • vergisel satır detayı yok"
-              + (string.IsNullOrWhiteSpace(archive.PdfFileName) ? string.Empty : " • özgün PDF kayıtlı")
-              + (archive.HasClosedSnapshot ? " • Mühürlü" : string.Empty)
-            : $"{archive.InvoiceType} • {archive.InvoiceCount} fatura"
-              + (string.IsNullOrWhiteSpace(archive.PdfFileName) ? string.Empty : " • PDF kayıtlı")
-              + (archive.HasClosedSnapshot ? " • Mühürlü" : string.Empty);
-        ArchiveSelectedDateText.Text = archive.ArchivedAt.ToString("dd.MM.yyyy HH:mm", CultureInfo.CurrentCulture);
-        ArchiveSelectedClosureStateText.Text = archive.IsClosed ? "KAPALI" : "AÇIK";
-        ArchiveSelectedClosureStateText.Foreground = new SolidColorBrush(archive.IsClosed
-            ? Color.FromRgb(67, 199, 122)
-            : Color.FromRgb(255, 180, 31));
-        ArchiveHysNumberBox.Text = archive.HysPaymentOrderDocumentNumber;
-        ArchiveHysNumberBox.IsReadOnly = archive.IsClosed;
-        ArchiveClosureButton.Content = archive.IsClosed ? "KAPANIŞI GERİ AL" : "HYS İLE KAPAT";
-        ArchiveClosureButton.Background = new SolidColorBrush(archive.IsClosed
-            ? Color.FromRgb(145, 63, 72)
-            : Color.FromRgb(36, 138, 80));
-        ArchiveClosureButton.IsEnabled = !archive.IsLegacyEvidenceOnly;
-        ArchiveInvoiceDetailGrid.ItemsSource = archive.IsLegacyEvidenceOnly
-            ? Array.Empty<InvoiceRecord>()
-            : archive.Invoices;
-        ArchiveDetailEmptyState.Visibility = archive.IsLegacyEvidenceOnly
-            ? Visibility.Visible
-            : Visibility.Collapsed;
-        OpenArchivedListButton.IsEnabled = !archive.IsLegacyEvidenceOnly;
-        EditArchivedListButton.IsEnabled = !archive.IsLegacyEvidenceOnly;
-        DeleteArchivedListButton.IsEnabled = true;
-        SetArchiveStatus(archive.IsLegacyEvidenceOnly
-            ? archive.LegacyEvidenceNote
-              + " Özgün PDF ve resmî HYS toplamları korunmuştur; bu kayıt fatura düzenleme/istatistik hesabına sokulmaz."
-            : archive.HasClosedSnapshot
-                ? "Seçili HYS arşivinin bütünlük mührü geçerli. Kapanışı geri alırsanız mühür kaldırılır; yeniden kapatınca yeni mühür üretilir."
-                : "Seçili listeyi açtığınızda arşiv çıktısı gösterilir; aktif listeniz değişmez.");
-    }
 
-    private void UpdateArchiveActiveListState()
-    {
-        var validation = FinalReportValidationService.Validate(ActiveInvoices);
-        ArchiveActiveListButton.IsEnabled = validation.IsValid;
-        ArchiveActiveListButton.ToolTip = validation.IsValid
-            ? $"{ActiveInvoices.Count} faturadan oluşan aktif listeyi açık arşiv kaydı olarak sakla"
-            : validation.Message;
-    }
 }

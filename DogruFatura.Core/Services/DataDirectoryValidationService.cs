@@ -148,7 +148,8 @@ public static class DataDirectoryValidationService
             || profile.SpendingAuthorityTitle is null)
             throw new JsonException("Yetkili/imza profilinde eksik alan var.");
 
-        if (!profile.Normalize().IsComplete)
+        var normalized = profile.Normalize();
+        if (!normalized.IsComplete && !normalized.IsEmpty)
             throw new InvalidOperationException("Yetkili/imza profilindeki bütün alanlar zorunludur.");
     }
 

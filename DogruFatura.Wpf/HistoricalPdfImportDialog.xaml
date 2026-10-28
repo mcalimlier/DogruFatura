@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="DoğruFatura - Arşiv Ekle"
         Width="1120" Height="620" WindowStartupLocation="CenterOwner"
-        WindowStyle="None" ResizeMode="NoResize" Background="#031C38"
+        WindowStyle="SingleBorderWindow" ResizeMode="CanResize" Background="#031C38"
         FontFamily="Segoe UI" UseLayoutRounding="True" SnapsToDevicePixels="True">
     <Border BorderBrush="#FFB41F" BorderThickness="1.5" CornerRadius="12" Background="#F4F7FA">
         <Grid>
@@ -55,8 +55,10 @@
             <Border Grid.Row="2" Background="#082744" CornerRadius="0,0,10,10">
                 <Grid Margin="18,0">
                     <TextBlock Text="Hatalı dosyalar eklenmez; geçerli dosyalar tek işlemde arşive kaydedilir."
-                               Foreground="#B9CBDA" FontSize="13.5" VerticalAlignment="Center"/>
+                               Foreground="#B9CBDA" FontSize="12" VerticalAlignment="Center" MaxWidth="320" HorizontalAlignment="Left" TextWrapping="Wrap"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button Style="{StaticResource ModernButton}" Content="Kaynağı incele" Width="150" Margin="0,0,10,0" Click="Inspect_Click"/>
+                        <Button Style="{StaticResource ModernButton}" Content="Düzelterek doğrula" Width="170" Margin="0,0,10,0" Click="Review_Click"/>
                         <Button Style="{StaticResource ModernButton}" Content="VAZGEÇ" Width="120" Background="#315371" Margin="0,0,10,0" Click="Cancel_Click"/>
                         <Button x:Name="ConfirmButton" Style="{StaticResource ModernButton}" Content="GEÇERLİLERİ EKLE" Width="190" Background="#248A50" Click="Confirm_Click"/>
                     </StackPanel>

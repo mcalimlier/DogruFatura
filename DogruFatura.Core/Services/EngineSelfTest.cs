@@ -9,6 +9,8 @@ public static class EngineSelfTest
         try
         {
             var service = new TaxCalculationService();
+            // Self-tests use synthetic signatories, independent of the user's initial profile.
+            var testAuthority = new AuthorityProfile("Örnek Görevli", "Örnek Unvan", "Örnek Yetkili", "Örnek Unvan");
             var first = service.Calculate(4965.10m, 827.53m);
             if (!first.IsValid || first.VatBase != 4137.57m || first.StampDuty != 39.2241636m || first.PaymentAmount != 4925.8758364m)
                 return (false, "4.965,10 TL örneği hesap motoru öz testini geçemedi.");
@@ -124,7 +126,7 @@ public static class EngineSelfTest
                 DateTime.Now,
                 "Elektrik",
                 new List<InvoiceRecord> { savedInvoice, secondInvoice },
-                AuthorityProfileDefaults.Create());
+                testAuthority);
             if (!ArchivedInvoiceListValidationService.Validate(archive).IsValid)
                 return (false, "İşlem arşivi kayıt doğrulaması öz testini geçemedi.");
             if (ArchivedInvoiceListValidationService.Validate(archive with { InvoiceType = "Telefon" }).IsValid)
@@ -138,19 +140,19 @@ public static class EngineSelfTest
                 "00000000002",
                 "00000000003",
                 "00000000004");
-            var cleanScan = ControlCenterService.Scan(
+            var cleanScan = InvoiceConsistencyService.Scan(
                 new[] { controlSchool },
                 new[] { savedInvoice },
                 DateTime.Today);
             if (!cleanScan.IsClean)
-                return (false, "Kontrol Merkezi geçerli kayıtları yanlışlıkla sorunlu kabul etti.");
+                return (false, "Fatura doğrulaması geçerli kayıtları yanlışlıkla sorunlu kabul etti.");
             var optionalIdentifierSchool = controlSchool with { Vkn = string.Empty };
-            var optionalIdentifierScan = ControlCenterService.Scan(
+            var optionalIdentifierScan = InvoiceConsistencyService.Scan(
                 new[] { optionalIdentifierSchool },
                 new[] { invoiceWithoutOptionalIdentifiers },
                 DateTime.Today);
             if (!optionalIdentifierScan.IsClean)
-                return (false, "Kontrol Merkezi boş bırakılabilen VKN/fatura no alanlarını yanlışlıkla sorun kabul etti.");
+                return (false, "Fatura doğrulaması boş bırakılabilen VKN/fatura no alanlarını yanlışlıkla sorun kabul etti.");
 
             var missingServiceSchool = controlSchool with { TelephoneServiceNumber = string.Empty };
             var faultyInvoice = savedInvoice with
@@ -159,7 +161,7 @@ public static class EngineSelfTest
                 DueDate = savedInvoice.InvoiceDate.AddDays(-1),
                 PaymentAmount = savedInvoice.PaymentAmount + 1m
             };
-            var faultyScan = ControlCenterService.Scan(
+            var faultyScan = InvoiceConsistencyService.Scan(
                 new[] { missingServiceSchool },
                 new[] { savedInvoice, faultyInvoice },
                 DateTime.Today);
@@ -171,7 +173,7 @@ public static class EngineSelfTest
                 "INVOICE_TAX_MISMATCH"
             };
             if (expectedIssueCodes.Any(code => faultyScan.Issues.All(issue => issue.Code != code)))
-                return (false, "Kontrol Merkezi beklenen hata türlerini bulamadı.");
+                return (false, "Fatura doğrulaması beklenen hata türlerini bulamadı.");
 
             var dashboardDate = new DateTime(2026, 9, 15);
             var dashboardCurrentInvoice = savedInvoice with
@@ -226,7 +228,7 @@ public static class EngineSelfTest
                     dashboardThirdInvoice,
                     dashboardArchivedInvoice
                 },
-                AuthorityProfileDefaults.Create(),
+                testAuthority,
                 "HYS-202614586",
                 true,
                 dashboardDate);
@@ -236,7 +238,7 @@ public static class EngineSelfTest
                 dashboardDate.AddDays(-10),
                 "Elektrik",
                 new List<InvoiceRecord> { dashboardOpenInvoice },
-                AuthorityProfileDefaults.Create());
+                testAuthority);
             var dashboard = DashboardStatisticsService.Build(
                 new[] { dashboardOpenArchive, dashboardArchive },
                 dashboardDate);
@@ -266,7 +268,7 @@ public static class EngineSelfTest
                 || emptyDashboard.MonthlyTrend.Count != 6)
                 return (false, "Ana Ekran boş veri öz testini geçemedi.");
 
-            return (true, "Vergi motoru, su istisnası, elektrik kesinti tazminatı, isteğe bağlı VKN/fatura no, tek tür liste, mükerrer kontrol, nihai çıktı, HYS arşiv kapanışı, Kontrol Merkezi ve Ana Ekran istatistik öz testi başarılı.");
+            return (true, "Vergi motoru, su istisnası, elektrik kesinti tazminatı, isteğe bağlı VKN/fatura no, tek tür liste, mükerrer kontrol, nihai çıktı, HYS arşiv kapanışı, Fatura doğrulaması ve Ana Ekran istatistik öz testi başarılı.");
         }
         catch (Exception ex)
         {

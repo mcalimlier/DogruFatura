@@ -20,8 +20,7 @@ public sealed class SchoolDataStore
     public SchoolDataStore(string? dataFilePath = null)
     {
         DataFilePath = dataFilePath ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-            "DoğruFatura", "Veri", "Okullar.json");
+            RuntimeInstallationProfile.RootDirectory, "Veri", "Okullar.json");
     }
 
     public string DataFilePath { get; }

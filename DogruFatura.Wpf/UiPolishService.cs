@@ -1,4 +1,4 @@
-namespace DogruFatura.Wpf;
+﻿namespace DogruFatura.Wpf;
 
 /// <summary>
 /// MainWindow'un iş kurallarına dokunmadan final kullanıcı deneyimi katmanını kurar.
@@ -18,16 +18,10 @@ internal static class UiPolishService
             WindowControlPolishService.Apply(window);
             UiPerformanceService.Apply(window);
             UiAccessibilityService.Apply(window);
+            InformationCopyService.Apply(window);
             UnsavedChangesGuard.Attach(window);
 
-            if (!string.IsNullOrWhiteSpace(RecoverySessionService.PendingNotice))
-            {
-                UiNotificationService.Show(
-                    window,
-                    RecoverySessionService.PendingNotice,
-                    TimeSpan.FromSeconds(8));
-                RecoverySessionService.ClearPendingNotice();
-            }
+
         };
     }
 }

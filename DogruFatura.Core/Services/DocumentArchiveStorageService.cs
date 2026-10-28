@@ -18,8 +18,7 @@ public sealed class DocumentArchiveStorageService
 {
     public DocumentArchiveStorageService(string? desktopRoot = null)
     {
-        var desktop = desktopRoot ?? Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-        RootDirectory = Path.Combine(desktop, "DoğruFatura");
+        RootDirectory = desktopRoot is null ? RuntimeInstallationProfile.RootDirectory : Path.Combine(desktopRoot, "DoğruFatura");
         ActiveOutputDirectory = Path.Combine(RootDirectory, "Aktif Çıktılar");
         ArchivedOutputDirectory = Path.Combine(RootDirectory, "Arşivlenenler");
     }

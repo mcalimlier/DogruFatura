@@ -20,8 +20,7 @@ public sealed class AuthorityProfileDataStore
     public AuthorityProfileDataStore(string? dataFilePath = null)
     {
         DataFilePath = dataFilePath ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-            "DoğruFatura", "Veri", "YetkiliProfili.json");
+            RuntimeInstallationProfile.RootDirectory, "Veri", "YetkiliProfili.json");
     }
 
     public string DataFilePath { get; }
@@ -45,7 +44,7 @@ public sealed class AuthorityProfileDataStore
                 || profile.RealizationOfficerTitle is null
                 || profile.SpendingAuthorityName is null
                 || profile.SpendingAuthorityTitle is null
-                || !profile.IsComplete)
+                || (!profile.IsComplete && !profile.IsEmpty))
                 throw new JsonException("Yetkili profilinde eksik alanlar var.");
 
             var normalized = profile.Normalize();
@@ -80,7 +79,7 @@ public sealed class AuthorityProfileDataStore
     public void Save(AuthorityProfile profile)
     {
         var normalized = profile.Normalize();
-        if (!normalized.IsComplete)
+        if (!normalized.IsComplete && !normalized.IsEmpty)
             throw new InvalidOperationException("Yetkili profilindeki bütün alanlar zorunludur.");
 
         var folder = Path.GetDirectoryName(DataFilePath) ?? throw new InvalidOperationException("Yetkili profil klasörü belirlenemedi.");

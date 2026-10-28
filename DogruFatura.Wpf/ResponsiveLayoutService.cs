@@ -70,18 +70,8 @@ public static class ResponsiveLayoutService
         ArgumentNullException.ThrowIfNull(window);
 
         window.ResizeMode = ResizeMode.CanResizeWithGrip;
-        window.MinWidth = 760;
-        window.MinHeight = 520;
-
-        if (window.FindName("AppScaleViewbox") is Viewbox viewbox)
-        {
-            // Büyük ekranlarda tasarımı bitmap gibi büyütmeyerek metin keskinliğini koru;
-            // küçük ekranlarda ise tüm formu orantılı biçimde aşağı ölçekle.
-            viewbox.Stretch = System.Windows.Media.Stretch.Uniform;
-            viewbox.StretchDirection = StretchDirection.DownOnly;
-            viewbox.SnapsToDevicePixels = true;
-            viewbox.UseLayoutRounding = true;
-        }
+        window.MinWidth = Math.Min(820, SystemParameters.WorkArea.Width);
+        window.MinHeight = Math.Min(520, SystemParameters.WorkArea.Height);
 
         FitStartupWindowToCurrentWorkArea(window);
         window.SizeChanged += (_, _) =>

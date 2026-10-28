@@ -15,8 +15,7 @@ public sealed class TransactionJournalStore
     public TransactionJournalStore(string? filePath = null)
     {
         FilePath = filePath ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-            "DoğruFatura",
+            RuntimeInstallationProfile.RootDirectory,
             "Veri",
             "IslemJournal.jsonl");
     }

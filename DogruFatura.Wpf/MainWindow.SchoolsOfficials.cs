@@ -1,4 +1,4 @@
-using DogruFatura.Core.Models;
+﻿using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
 using System.Windows;
 using System.Windows.Controls;
@@ -46,156 +46,11 @@ public partial class MainWindow
         _schoolView.Refresh();
         var visibleCount = _schoolView.Cast<object>().Count();
         SchoolCountText.Text = $"{visibleCount} / {AllSchools.Count} kayıt";
-        HomeSchoolCountText.Text = $"{AllSchools.Count} KURUM";
-    }
-
-    private void SchoolsGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (_suppressSchoolEvents || SchoolsGrid.SelectedItem is not SchoolRecord school) return;
-        LoadSchoolIntoEditor(school);
-    }
-
-    private void LoadSchoolIntoEditor(SchoolRecord school)
-    {
-        _editedSchool = school;
-        SchoolEditorModeText.Text = $"Düzenleniyor: {school.Name}";
-        SchoolTypeEditorBox.SelectedItem = school.InstitutionType;
-        SchoolNameEditorBox.Text = school.Name;
-        SchoolVknEditorBox.Text = school.Vkn;
-        SchoolElectricityEditorBox.Text = school.ElectricityServiceNumber;
-        SchoolTelephoneEditorBox.Text = school.TelephoneServiceNumber;
-        SchoolInternetEditorBox.Text = school.InternetServiceNumber;
-        SchoolWaterEditorBox.Text = school.WaterServiceNumber;
-        DeleteSchoolButton.IsEnabled = true;
-        SetSchoolFormStatus("Seçili kaydı düzenleyebilir veya silebilirsiniz.", false);
-    }
-
-    private void NewSchool_Click(object sender, RoutedEventArgs e) => StartNewSchool();
-
-    private void CancelSchoolEdit_Click(object sender, RoutedEventArgs e) => StartNewSchool();
-
-    private void StartNewSchool()
-    {
-        _editedSchool = null;
-        _suppressSchoolEvents = true;
-        SchoolsGrid.SelectedItem = null;
-        _suppressSchoolEvents = false;
-
-        SchoolEditorModeText.Text = "Yeni kayıt";
-        var filteredKind = DomainValueText.ParseInstitutionKind(
-            SchoolFilterTypeBox.SelectedItem as string);
-        SchoolTypeEditorBox.SelectedItem = filteredKind != InstitutionKind.Unknown
-            ? DomainValueText.ToStorageValue(filteredKind)
-            : InstitutionTypes[0];
-        SchoolNameEditorBox.Clear();
-        SchoolVknEditorBox.Clear();
-        SchoolElectricityEditorBox.Clear();
-        SchoolTelephoneEditorBox.Clear();
-        SchoolInternetEditorBox.Clear();
-        SchoolWaterEditorBox.Clear();
-        DeleteSchoolButton.IsEnabled = false;
-        SetSchoolFormStatus("Yeni kayıt için yıldızlı alanları doldurun.", false);
-    }
-
-    private SchoolRecord ReadSchoolEditor() => SchoolValidationService.Normalize(new SchoolRecord(
-        SchoolTypeEditorBox.SelectedItem as string ?? string.Empty,
-        SchoolNameEditorBox.Text,
-        SchoolVknEditorBox.Text,
-        SchoolElectricityEditorBox.Text,
-        SchoolTelephoneEditorBox.Text,
-        SchoolInternetEditorBox.Text,
-        SchoolWaterEditorBox.Text,
-        _editedSchool?.SchoolId ?? Guid.NewGuid()));
-
-    private void SaveSchool_Click(object sender, RoutedEventArgs e)
-    {
-        var candidate = ReadSchoolEditor();
-        var validation = SchoolValidationService.Validate(candidate, AllSchools, _editedSchool);
-        if (!validation.IsValid)
-        {
-            SetSchoolFormStatus(validation.Message, true);
-            return;
-        }
-
-        var invoiceSelection = InstitutionBox.SelectedItem as SchoolRecord;
-        var wasNewSchool = _editedSchool is null;
-        var editingInvoiceSelection = _editedSchool is not null && ReferenceEquals(invoiceSelection, _editedSchool);
-
-        if (_editedSchool is null)
-        {
-            AllSchools.Add(candidate);
-            if (!TrySaveSchools(out var errorMessage))
-            {
-                AllSchools.Remove(candidate);
-                SetSchoolFormStatus(errorMessage, true);
-                RefreshSchoolView();
-                return;
-            }
-        }
-        else
-        {
-            var editedIndex = AllSchools.IndexOf(_editedSchool);
-            if (editedIndex < 0)
-            {
-                SetSchoolFormStatus("Düzenlenen kayıt artık listede bulunmuyor.", true);
-                StartNewSchool();
-                return;
-            }
-
-            var previous = _editedSchool;
-            AllSchools[editedIndex] = candidate;
-            if (!TrySaveSchools(out var errorMessage))
-            {
-                AllSchools[editedIndex] = previous;
-                SetSchoolFormStatus(errorMessage, true);
-                RefreshSchoolView();
-                return;
-            }
-        }
-
-        AppendAudit(
-            wasNewSchool ? AuditTrailEventType.SchoolCreated : AuditTrailEventType.SchoolUpdated,
-            AuditTrailEntityType.School,
-            candidate.SchoolId.ToString("D"),
-            $"Kind={candidate.Kind}");
-
-        RefreshSchoolView();
-        if (_schoolView.Contains(candidate))
-        {
-            _suppressSchoolEvents = true;
-            SchoolsGrid.SelectedItem = candidate;
-            SchoolsGrid.ScrollIntoView(candidate);
-            _suppressSchoolEvents = false;
-        }
-        else
-        {
-            _suppressSchoolEvents = true;
-            SchoolsGrid.SelectedItem = null;
-            _suppressSchoolEvents = false;
-        }
-        LoadSchoolIntoEditor(candidate);
-        SetSchoolFormStatus("Kayıt kalıcı olarak kaydedildi.", false, true);
-        RefreshControlCenter();
-
-        if (editingInvoiceSelection)
-        {
-            var previousSuppression = _suppressFormEvents;
-            _suppressFormEvents = true;
-            InstitutionTypeBox.SelectedItem = candidate.InstitutionType;
-            _suppressFormEvents = previousSuppression;
-            RefreshInvoiceInstitutionChoices(candidate);
-        }
-        else
-        {
-            RefreshInvoiceInstitutionChoices(invoiceSelection);
-        }
     }
 
     private void DeleteSchool_Click(object sender, RoutedEventArgs e)
     {
-        if (_editedSchool is null) return;
-
-        var schoolToDelete = _editedSchool;
+        if (SchoolsGrid.SelectedItem is not SchoolRecord schoolToDelete) return;
         var confirmation = MessageBox.Show(this,
             $"'{schoolToDelete.Name}' kaydı kalıcı olarak silinsin mi?",
             "DoğruFatura - Kurum Silme Onayı",
@@ -224,10 +79,9 @@ public partial class MainWindow
             $"Kind={schoolToDelete.Kind}");
 
         RefreshSchoolView();
-        StartNewSchool();
+        UpdateSchoolActions();
         SetSchoolFormStatus("Kurum kaydı silindi.", false, true);
         RefreshInvoiceInstitutionChoices(deletedInvoiceSelection ? null : invoiceSelection);
-        RefreshControlCenter();
     }
 
     private bool TrySaveSchools(out string errorMessage)
@@ -309,7 +163,6 @@ public partial class MainWindow
                 "authority-profile");
             _authorityProfile = profile;
             LoadAuthorityProfileToForm(profile);
-            InvalidateFinalReportPreview();
             SetAuthorityStatus("Yetkili profili kaydedildi; önizleme, PDF ve yazdırma güncellendi.", false, true);
         }
         catch (Exception ex)
@@ -340,7 +193,6 @@ public partial class MainWindow
                 "authority-profile");
             _authorityProfile = defaultProfile;
             LoadAuthorityProfileToForm(defaultProfile);
-            InvalidateFinalReportPreview();
             SetAuthorityStatus("Varsayılan yetkili bilgileri geri yüklendi ve kaydedildi.", false, true);
         }
         catch (Exception ex)
@@ -366,9 +218,9 @@ public partial class MainWindow
         SpendingAuthorityTitleBox.Text = profile.SpendingAuthorityTitle;
         _suppressAuthorityEvents = false;
 
-        SaveAuthorityProfileButton.IsEnabled = true;
+        SaveAuthorityProfileButton.IsEnabled = profile.IsComplete;
         UpdateAuthorityProfilePreview();
-        SetAuthorityStatus("Yetkili bilgileri kayıtlı ve nihai çıktıya hazır.", false, true);
+        SetAuthorityStatus(profile.IsComplete ? "Yetkili bilgileri kayıtlı ve nihai çıktıya hazır." : "Ödeme listesi hazırlamadan önce imzacıların ad ve unvanlarını tanımlayın.", false, profile.IsComplete);
     }
 
     private void UpdateAuthorityProfilePreview()
