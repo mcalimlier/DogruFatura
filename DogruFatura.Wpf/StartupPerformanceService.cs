@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using DogruFatura.Core.Services;
 using System.IO;
 using System.Text;
 
@@ -31,8 +32,7 @@ public static class StartupPerformanceService
         try
         {
             var folder = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-                "DoğruFatura",
+                RuntimeInstallationProfile.RootDirectory,
                 "Loglar");
             Directory.CreateDirectory(folder);
             var path = Path.Combine(folder, $"DogruFatura_AcilisPerformansi_{DateTime.Now:yyyyMMdd_HHmmss}.log");

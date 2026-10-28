@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
@@ -11,9 +11,9 @@ public partial class MainWindow
 {
     private SafetyCheckResult RefreshSafetyInformation()
     {
-        HeaderVersionText.Text = AppVersionInfo.DisplayVersion;
-        HeaderVersionText.ToolTip = "DoğruFatura " + _safetyService.InformationalVersion;
-        AboutVersionText.Text = "DoğruFatura " + _safetyService.InformationalVersion;
+        HeaderVersionText.Text = AppVersionInfo.ShortDisplayVersion;
+        HeaderVersionText.ToolTip = "DoğruFatura " + AppVersionInfo.InformationalVersion;
+        AboutVersionText.Text = "DoğruFatura " + AppVersionInfo.DisplayVersion;
         AboutRuntimeText.Text = _safetyService.RuntimeDescription;
 
         SafetyCheckResult result;

@@ -1,87 +1,42 @@
-# DoğruFatura 1.1 — Hızlı Kullanım Kılavuzu
+# DoğruFatura — Kullanıcı Kılavuzu
 
-## 1. Programı açma
+## Günlük çalışma
 
-DoğruFatura Windows 10/11 64-bit için hazırlanmıştır. Dağıtım Setup'ı self-contained olduğundan hedef bilgisayarda .NET SDK, Visual Studio veya Excel kurulması gerekmez.
+1. **Okul / Kurum:** kartın içindeki Yeni düğmesiyle ayrı kayıt penceresini açın. Tablodan kayıt seçince Düzenle etkinleşir ve seçili bilgileri ayrı pencerede açar. Kaydet kalıcı kaydı yapar ve başarı bildirimi gösterir; Vazgeç veya pencereyi kapatmak değişiklik yapmaz.
+2. **Yetkili / imza:** gerçekleştirme görevlisi ve harcama yetkilisini kaydedin.
+3. **Fatura Girişi:** kurum, tür, tarihler, tutar ve KDV bilgilerini girin. Okul/Kurum alanında kurum adını yazarak seçim yapabilirsiniz. Elektrik kesinti tazminatı ve su damga istisnası hesaplama kartında dikkate alınır.
+4. **Fatura Listesi:** faturaları düzenleyin, sıralayın, silin veya son silmeyi geri alın. PDF dosyayı kaydeder; Yazdır yazıcı seçimini açar; Klasör ilgili çıktı klasörünü açar. Önizleme alanı bulunmaz.
+5. **Paketi Kaydet ve Gönder:** PDF, faturalar ve o anki imza bilgileri korunur. PDF yazılamazsa aktif faturalar kaldırılmaz. Başarılı kayıt sonrasında aktif liste boşalır; paket arşivde HYS bekleyenler arasında görünür.
+6. **İşlem Arşivi:** HYS Bekleyenler tablosundaki ilgili satırın HYS İle Kapat düğmesine basın. Paket bilgilerini ve faturaları inceleyip HYS belge numarasını Kaydet ile onaylayın. Vazgeç değişiklik yapmaz. Paket HYS İle Kapananlar sekmesine geçer. HYS kapanışı banka ödeme teyidi değildir.
 
-Kullanıcı kayıtları uygulama klasöründe değil, Masaüstü altındaki `DoğruFatura` klasöründe tutulur. Program güncellense veya kaldırılsa bile kullanıcı verileri korunur.
+## Ana ekran
 
-## 2. Temel klasörler
+Yalnızca bilgi verir: aktif fatura sayısı, liste türü, ödeme toplamı, çıktı sayfa sayısı, HYS bekleyen paket adedi, vadesi geçen fatura adedi/tutarı ve farklı kurum sayısı. İşlem veya yönlendirme düğmesi yoktur.
 
-- `Masaüstü\DoğruFatura\Veri` — kurum, fatura, yetkili ve arşiv kayıtları
-- `Masaüstü\DoğruFatura\Aktif Çıktılar` — henüz HYS ile kapatılmamış PDF çıktıları
-- `Masaüstü\DoğruFatura\Arşivlenenler` — HYS ile kapatılmış PDF belgeleri
-- `Masaüstü\DoğruFatura\Yedekler` — güvenlik ve güncelleme öncesi yedekler
-- `Masaüstü\DoğruFatura\Loglar` — beklenmeyen hata kayıtları
+## Paketler ve geçmiş PDF'ler
 
-## 3. Günlük kullanım sırası
+Arşiv tablosu sıralanabilir sütunlar, satır seçimi, başlıklarla kopyalama ve metin/tür/tarih filtreleri sunar. Paket bilgileri, faturaları ve işlem geçmişi satırın HYS düğmesiyle açılan pencerededir. HYS İle Kapananlar bölümündeki Kapanışı Geri Al penceresinde Düzenle, aktif liste boşsa paketi düzenlemek için aktif listeye taşır ve kapananlardan kaldırır. Aktif liste doluysa bilgilendirme gösterilir ve veri değiştirilmez. PDF ve Sil işlemleri de satırdadır. Önceki PDF'ler Arşiv Ekle ile aktarılır; PDF Kontrol belgeleri denetler. Kaynak PDF'ler korunur.
 
-1. **OKUL / KURUM** bölümünde kurum kayıtlarını kontrol edin.
-2. **YETKİLİ / İMZA** bölümünde gerçekleştirme görevlisi ve harcama yetkilisini doğrulayın.
-3. **FATURA GİRİŞİ** bölümünde kurum, fatura türü, fatura numarası, tarihler ve tutarları girin.
-4. Hesaplama alanlarını kontrol edin ve faturayı aktif listeye ekleyin.
-5. **FATURA LİSTESİ** bölümünde kayıtları son kez kontrol edin.
-6. **RAPORLAR / ÇIKTI** bölümünden PDF oluşturun veya yazdırın.
-7. İşlem tamamlandığında **İŞLEM ARŞİVİ** üzerinden listeyi arşivleyip HYS Ödeme Emri Belge No ile kapatın.
+Üst şeritte sürüm kısa biçimde ve ayrı sürüm kanalı rozetiyle gösterilir. Sürüm ve bilgi değerleri fareyle seçilip Ctrl+C ile kopyalanabilir; diğer bilgi metinlerinde sağ tık menüsündeki Metni Kopyala kullanılabilir.
 
-Fatura numarası boş olan yeni kayıt, aynı kurum/hizmet, tür, tarihler ve tutarlara sahip başka bir boş-numaralı kayıtla eşleşirse olası mükerrer uyarısı gösterilir. Gerçekten ayrı bir fatura ise kullanıcı onayıyla kayda devam edilebilir.
+## İstatistik
 
-## 4. Geçmiş PDF'yi arşive ekleme
+HYS ile kapanmış uygun arşivler üzerinden yıl, tarih, kurum ve fatura türüne göre analiz yapılır. Hazır rapor seçenekleri, dağılım grafikleri, PDF, Excel ve yazdırma bulunur. Filtrelerde Tümü veya boş tarih alanları kullanılabilir.
 
-**İŞLEM ARŞİVİ → ARŞİV EKLE** ile eski DoğruFatura PDF belgeleri eklenebilir. Çoklu dosya aktarımında ilerleme gösterilir ve işlem iptal edilebilir. Dosya adında sıra numarası bulunabilir; örneğin `48) HYS-2026-34546180.pdf` kabul edilir ve HYS numarası standart biçime dönüştürülür. Kaynak PDF silinmez.
+## Güvenlik
 
-## 5. İstatistik
+Kurulum çeşitleri: **Tam Verili – Kişisel Kurulum**, okul/kurum, imzacılar, aktif faturalar, işlem arşivi ve PDF belgelerini içerir. **Temiz Verisiz – Dağıtım Kurulumu** yeni kullanıcıda boş başlar. Kişisel veriler yalnız ilk açılışta doğrulanarak aktarılır; mevcut kayıtlar varsa başlangıç paketi bunların üzerine yazılmaz.
 
-**İSTATİSTİK** ekranında arşiv kayıtları:
-- yıl ve kurum,
-- başlangıç / bitiş tarihi,
-- fatura türü
+İki sürüm aynı bilgisayarda yan yana kullanılabilir. Kişisel kayıtlar Masaüstü/DoğruFatura, dağıtım kayıtları Masaüstü/DoğruFatura - Dağıtım klasöründe tutulur. Dağıtım eski kişisel kayıtları otomatik içe aktarmaz. Masaüstünde kişisel sürümün adı DoğruFatura - Kişisel, dağıtımın adı DoğruFatura'dır. Eksik kurum veya imzacı tanımı varsa açılışta kısa bir bilgilendirme gösterilir; program normal çalışmaya devam eder.
 
-ile filtrelenebilir.
+Aktif fatura listesi doluyken program kapatılırsa çıkış onayı istenir. Uyarı, faturaların diske kaydedildiğini ve sonraki açılışta aktif listede kalacağını belirtir. Formlarda ayrıca kaydedilmemiş değişiklik varsa bunlar da bildirilir. Varsayılan seçenek Hayır'dır; onay verilmezse program açık kalır.
 
-Fatura Türü Dağılımı ödeme tutarlarının türlere göre payını gösterir. **ÇIKTI AL** menüsünden PDF, Yazdır, CSV, Excel veya PNG seçilebilir. CSV çıktısı Türkçe Excel kullanımına uygun `;` ayraçlı, UTF-8 ve virgüllü ondalık biçimindedir.
+Kontrol Et veri/PDF bütünlüğünü denetler. Yedek Oluştur tam güvenlik yedeği alır. Geri Yükle seçilen yedeği doğrular ve mevcut durumu ayrıca korur. Son yedek bilgisi gösterilir.
 
-## 6. Güvenlik yedeği ve geri yükleme
+Kullanıcı kayıtları uygulama klasöründen ayrı, Masaüstü altındaki DoğruFatura klasöründe saklanır. Veri, Aktif Çıktılar, Arşivlenenler, Yedekler ve Loglar klasörleri güncelleme veya kaldırmada bilinçli olarak silinmez.
 
-**HAKKINDA / GÜVENLİK** bölümünde:
-- **KONTROL ET** — veri/PDF bütünlüğünü denetler.
-- **YEDEK OLUŞTUR** — kullanıcı JSON kayıtları ve PDF belgeleri için tam güvenlik yedeği oluşturur.
-- **GERİ YÜKLE** — seçilen yedeği doğrulayıp geri yükler; önce mevcut durumu ayrıca yedekler.
+## Hakkında / Ayarlar
 
-## 7. Tanılama paketi
+Programın amacı, sürümü, geliştirici ve çalışma ortamı bilgileri gösterilir. Ekran profilleri 1024×768 (4:3), 1366×768 ve 1920×1080'dir. Seçimden sonra yanındaki Uygula düğmesine basın. Uygulanan seçim saklanır; düğme yeni bir profil seçilene kadar pasif kalır. Pencere Windows ölçeklendirmesi ve kullanılabilir masaüstü alanına sığar; dar alanda paneller alt alta geçer, tablolar kendi içinde kayar.
 
-**HAKKINDA / GÜVENLİK → GELİŞMİŞ / DESTEK → TANILAMA PAKETİ** destek amaçlı ZIP oluşturur.
-
-Tanılama paketi:
-- fatura JSON kayıtlarını içermez,
-- PDF belgelerini içermez,
-- yalnız çalışma ortamı özeti ile sınırlı hata günlüklerini içerir,
-- loglardaki kullanıcı/makine yolları ve yaygın kişisel veri örüntülerini maskeler.
-
-## 8. Beklenmeyen kapanma
-
-Program normal kapanmadığını algılarsa bir sonraki açılışta mevcut durumu korumak için otomatik güvenlik yedeği almaya çalışır ve kullanıcıyı bilgilendirir. Ardından **HAKKINDA / GÜVENLİK → KONTROL ET** kullanılabilir.
-
-## 9. Klavye kısayolları
-
-- `Ctrl + F` — açık ekranda arama alanına git
-- `Ctrl + P` — rapor ekranında yazdır
-- `Enter` — uygun formda ana kaydet/ekle işlemi
-- `Esc` — form düzenleme/temizleme işleminden vazgeç
-- `Alt + A` — Ana Ekran
-- `Alt + F` — Fatura Girişi
-- `Alt + Y` — Yetkili / İmza
-- `Alt + L` — Fatura Listesi
-- `Alt + R` — Raporlar / Çıktı
-- `Alt + O` — Okul / Kurum
-- `Alt + I` — İşlem Arşivi
-- `Alt + K` — Kontrol Merkezi
-- `Alt + H` — Hakkında / Güvenlik
-
-## 10. Güncelleme ve kaldırma
-
-Setup yeni sürüm kurulurken Program Files altındaki program dosyalarını yeniler. Masaüstü `DoğruFatura` klasöründeki kullanıcı verileri korunur. Program kaldırıldığında da kullanıcı veri klasörü bilinçli olarak silinmez.
-
-## 11. Sorun yaşandığında
-
-Önce **KONTROL MERKEZİ** ve **HAKKINDA / GÜVENLİK → KONTROL ET** kullanılmalıdır. Sorun devam ederse **GELİŞMİŞ / DESTEK → TANILAMA PAKETİ** oluşturularak destek incelemesi için kullanılabilir.
+Gelişmiş / destek altındaki tanılama paketi fatura JSON/PDF içeriklerini dışarıda bırakır; sınırlı hata günlüklerindeki yaygın kişisel veri örüntülerini maskeler.

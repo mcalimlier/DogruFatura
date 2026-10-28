@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,8 +14,6 @@ internal sealed class UnsavedChangesGuard
         "InstitutionTypeBox", "InstitutionBox", "InvoiceTypeBox", "InvoiceNumberBox",
         "InvoiceDatePicker", "DueDatePicker", "PayableAmountBox", "VatAmountBox",
         "InterruptionCompensationBox",
-        "SchoolTypeEditorBox", "SchoolNameEditorBox", "SchoolVknEditorBox",
-        "SchoolElectricityEditorBox", "SchoolTelephoneEditorBox", "SchoolInternetEditorBox", "SchoolWaterEditorBox",
         "RealizationOfficerNameBox", "RealizationOfficerTitleBox",
         "SpendingAuthorityNameBox", "SpendingAuthorityTitleBox"
     };
@@ -53,7 +51,7 @@ internal sealed class UnsavedChangesGuard
         var button = FindAncestor<Button>(source);
         if (button?.Content is not string content) return;
 
-        if (content is "Yeni" or "Temizle" or "Düzenle" or "YENİ" or "DÜZENLE" or "VAZGEÇ / TEMİZLE" or "TEMİZLE")
+        if (content is "Yeni" or "Vazgeç" or "Düzenle" or "YENİ" or "DÜZENLE")
         {
             _window.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(AcceptCurrentState));
             return;
@@ -86,12 +84,14 @@ internal sealed class UnsavedChangesGuard
 
     private void OnClosing(object? sender, CancelEventArgs e)
     {
-        if (_suppress || !IsDirty()) return;
+        if (_suppress) return;
+        var prompt = ExitConfirmationPolicy.Create(IsDirty(), _window.ActiveInvoices.Count);
+        if (prompt is null) return;
 
         var result = MessageBox.Show(
             _window,
-            "Formlarda kaydedilmemiş değişiklikler var. Program kapatılırsa bu değişiklikler kaybolacak.\n\nYine de çıkmak istiyor musunuz?",
-            "DoğruFatura - Kaydedilmemiş Değişiklik",
+            prompt.Message,
+            prompt.Title,
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning,
             MessageBoxResult.No);

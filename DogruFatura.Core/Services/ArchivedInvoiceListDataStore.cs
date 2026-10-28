@@ -20,8 +20,7 @@ public sealed class ArchivedInvoiceListDataStore
     public ArchivedInvoiceListDataStore(string? dataFilePath = null)
     {
         DataFilePath = dataFilePath ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-            "DoğruFatura", "Veri", "IslemArsivi.json");
+            RuntimeInstallationProfile.RootDirectory, "Veri", "IslemArsivi.json");
     }
 
     public string DataFilePath { get; }

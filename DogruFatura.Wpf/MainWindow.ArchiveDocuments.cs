@@ -1,4 +1,4 @@
-using DogruFatura.Core.Models;
+﻿using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
 using System.IO;
 using System.Threading;
@@ -613,7 +613,7 @@ public partial class MainWindow
             ArchiveVisibleCountText.Text = $"0 / {ArchivedLists.Count} kayıt";
             ArchiveListEmptyState.Visibility = Visibility.Visible;
             ArchiveGrid.SelectedItem = null;
-            UpdateArchiveSelection();
+
             SetArchiveStatus("Başlangıç tarihi, bitiş tarihinden sonra olamaz.", true);
             return;
         }
@@ -622,25 +622,7 @@ public partial class MainWindow
         SetArchiveStatus("Arşiv filtreleri uygulandı.", false, true);
     }
 
-    private void ClearArchiveFilters_Click(object sender, RoutedEventArgs e)
-    {
-        _suppressArchiveEvents = true;
-        ArchiveSearchBox.Clear();
-        ArchiveTypeFilterBox.SelectedIndex = 0;
-        ArchiveStatusFilterBox.SelectedIndex = 0;
-        ArchiveDateFromPicker.SelectedDate = null;
-        ArchiveDateToPicker.SelectedDate = null;
-        _suppressArchiveEvents = false;
-        RefreshArchiveView();
-        SetArchiveStatus("Arşiv filtreleri temizlendi.", false, true);
-    }
 
-    private void ArchiveGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
-        UpdateArchiveSelection();
 
-    private void ArchiveGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        if (ArchiveGrid.SelectedItem is ArchivedInvoiceList)
-            OpenArchivedList_Click(sender, e);
-    }
+
 }

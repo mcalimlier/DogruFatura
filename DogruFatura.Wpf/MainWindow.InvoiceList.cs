@@ -1,4 +1,4 @@
-using DogruFatura.Core.Models;
+﻿using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
 using System.Globalization;
 using System.Windows;
@@ -21,6 +21,7 @@ public partial class MainWindow
     private void EndInvoiceEditMode()
     {
         _editedInvoice = null;
+        if (CancelInvoiceEditButton is not null) CancelInvoiceEditButton.Visibility = Visibility.Collapsed;
         if (AddInvoiceButton is not null)
             AddInvoiceButton.Content = "Kaydet ve yeni fatura";
     }
@@ -81,6 +82,7 @@ public partial class MainWindow
         }
 
         _editedInvoice = invoice;
+        CancelInvoiceEditButton.Visibility = Visibility.Visible;
         _suppressFormEvents = true;
         InstitutionTypeBox.SelectedItem = school.InstitutionType;
         InstitutionBox.ItemsSource = AllSchools
@@ -104,9 +106,17 @@ public partial class MainWindow
         UpdateCalculation();
         UpdateFormReadiness();
         SetInvoiceSaveStatus(
-            $"Düzenleme modu: {InvoiceReference(invoice)}. Değişiklikleri tamamlayıp güncelleyin; vazgeçmek için TEMİZLE'yi kullanın.",
+            $"Düzenleme modu: {InvoiceReference(invoice)}. Değişiklikleri kaydedin veya Düzenlemeden vazgeç düğmesini kullanın.",
             false);
         ShowView("Invoice");
+    }
+
+    private void CancelInvoiceEdit_Click(object sender, RoutedEventArgs e)
+    {
+        if (_editedInvoice is null) return;
+        EndInvoiceEditMode();
+        ClearInvoiceEntryFieldsAfterSave();
+        SetInvoiceSaveStatus("Düzenleme iptal edildi; kayıtlı fatura değiştirilmedi.", false);
     }
 
     private void InvoicesGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -195,10 +205,14 @@ public partial class MainWindow
     private void ArchiveActiveListFromList_Click(object sender, RoutedEventArgs e)
     {
         if (!TryArchiveActiveList(true))
+        {
+            SetInvoiceListStatus(ArchiveStatusText.Text, true);
             return;
+        }
 
+        ShowView("Archive");
         SetInvoiceListStatus(
-            "Aktif fatura listesi işlem arşivine kaydedildi ve aktif liste kapatıldı.",
+            "Paket PDF ve imza bilgileriyle kaydedildi; HYS kapanışı bekliyor.",
             false,
             true);
     }
@@ -228,6 +242,7 @@ public partial class MainWindow
 
     private void SetInvoiceSaveStatus(string message, bool isError, bool isSuccess = false)
     {
+        InvoiceSaveStatusBorder.Visibility = Visibility.Visible;
         InvoiceSaveStatusText.Text = message;
         if (isError)
         {

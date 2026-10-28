@@ -1,4 +1,4 @@
-using DogruFatura.Core.Models;
+﻿using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -36,9 +36,6 @@ public partial class MainWindow : Window
     public ObservableCollection<InvoiceRecord> ActiveInvoices { get; }
     public ObservableCollection<ActiveInvoiceRow> ActiveInvoiceRows { get; } = new();
     public ObservableCollection<ArchivedInvoiceList> ArchivedLists { get; }
-    public ObservableCollection<ControlIssue> ControlIssues { get; } = new();
-    public ObservableCollection<DashboardBarItem> HomeInvoiceTypeBars { get; } = new();
-    public ObservableCollection<DashboardBarItem> HomeMonthlyTrendBars { get; } = new();
 
     private readonly TaxCalculationService _taxService;
     private readonly SchoolDataStore _schoolDataStore;
@@ -56,20 +53,15 @@ public partial class MainWindow : Window
     private readonly SafetyCheckResult _startupSafetyResult;
     private readonly ICollectionView _schoolView;
     private readonly ICollectionView _archiveView;
-    private readonly ICollectionView _controlView;
+
     private bool _suppressFormEvents = true;
     private bool _suppressSchoolEvents = true;
     private bool _suppressAuthorityEvents = true;
     private bool _suppressArchiveEvents = true;
-    private bool _suppressControlEvents = true;
+
     private AuthorityProfile _authorityProfile = AuthorityProfileDefaults.Create();
-    private SchoolRecord? _editedSchool;
     private InvoiceRecord? _editedInvoice;
     private bool _hasInterruptionCompensation;
-    private FixedDocument? _finalReportDocument;
-    private FinalReportData? _finalReportData;
-    private ArchivedInvoiceList? _openedArchiveForReport;
-    private bool _isWholePageReportView;
     private string _currentView = "Home";
     private string? _lastSafetyBackupPath;
 
@@ -140,15 +132,12 @@ public partial class MainWindow : Window
         InitializeWindowShell();
         InitializeInvoiceEntrySources();
         _schoolView = InitializeSchoolView();
-        StartNewSchool();
+        UpdateSchoolActions();
         RefreshSchoolView();
         LoadAuthorityProfileToForm(_authorityProfile);
 
         _archiveView = InitializeArchiveView();
         RefreshArchiveView();
-
-        _controlView = InitializeControlCenter();
-        RefreshControlCenter();
 
         RunCalculationEngineSelfTest();
         InitializeInitialUiState();
@@ -195,7 +184,7 @@ public partial class MainWindow : Window
         _suppressSchoolEvents = true;
         SchoolFilterTypeBox.ItemsSource = AllInstitutionTypeFilterPrefix.Concat(InstitutionTypes).ToArray();
         SchoolFilterTypeBox.SelectedIndex = 0;
-        SchoolTypeEditorBox.ItemsSource = InstitutionTypes;
+
 
         var schoolView = CollectionViewSource.GetDefaultView(AllSchools);
         schoolView.Filter = FilterSchool;
@@ -212,51 +201,15 @@ public partial class MainWindow : Window
         _suppressArchiveEvents = true;
         ArchiveTypeFilterBox.ItemsSource = AllInvoiceTypeFilterPrefix.Concat(InvoiceTypes).ToArray();
         ArchiveTypeFilterBox.SelectedIndex = 0;
-        ArchiveStatusFilterBox.ItemsSource = new[]
-        {
-            "Tümü",
-            DomainValueText.ToStorageValue(ArchiveState.Open),
-            DomainValueText.ToStorageValue(ArchiveState.Closed)
-        };
-        ArchiveStatusFilterBox.SelectedIndex = 0;
+
 
         var archiveView = CollectionViewSource.GetDefaultView(ArchivedLists);
         archiveView.Filter = FilterArchivedList;
         ArchiveGrid.ItemsSource = archiveView;
-        ArchiveInvoiceDetailGrid.ItemsSource = Array.Empty<InvoiceRecord>();
+
 
         _suppressArchiveEvents = false;
         return archiveView;
-    }
-
-    private ICollectionView InitializeControlCenter()
-    {
-        _suppressControlEvents = true;
-        ControlSeverityFilterBox.ItemsSource = new[]
-        {
-            "Tümü",
-            DomainValueText.ToDisplayValue(ControlIssueSeverity.Error),
-            DomainValueText.ToDisplayValue(ControlIssueSeverity.Warning)
-        };
-        ControlSeverityFilterBox.SelectedIndex = 0;
-        ControlCategoryFilterBox.ItemsSource = new[]
-        {
-            "Tümü",
-            "Hizmet Numarası",
-            "Tarih",
-            "Mükerrer Fatura",
-            "Tutar / KDV",
-            "Liste Türü",
-            "Kurum Bilgisi"
-        };
-        ControlCategoryFilterBox.SelectedIndex = 0;
-
-        var controlView = CollectionViewSource.GetDefaultView(ControlIssues);
-        controlView.Filter = FilterControlIssue;
-        ControlIssuesGrid.ItemsSource = controlView;
-
-        _suppressControlEvents = false;
-        return controlView;
     }
 
     private void RunCalculationEngineSelfTest()

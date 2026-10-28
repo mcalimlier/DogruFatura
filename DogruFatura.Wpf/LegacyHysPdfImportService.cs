@@ -2128,7 +2128,8 @@ internal sealed class LegacyHysPdfImportService
             return false;
         }
 
-        var school = ResolveSchool(institutionText, schools);
+        var school = InstitutionResolutionService.Resolve(institutionText, invoiceType, serviceNumber, Guid.Empty, schools)
+            ?? ResolveSchool(institutionText, schools);
         var institutionName = school?.Name ?? institutionText;
         var institutionType = school?.InstitutionType ?? InferInstitutionType(institutionText);
 
@@ -2468,11 +2469,12 @@ internal sealed class LegacyHysPdfImportService
         var value = (text ?? string.Empty).Trim();
 
         // Bazı eski PDF'lerde sıra numarası ile okul/kurum sütunu geometrik olarak
-        // birleşebiliyor. Yalnız baştaki saf sıra numarasını temizle; kurum adındaki
-        // diğer rakamlara dokunma.
+        // birleşebiliyor. Yalnız ayraçla açıkça ayrılmış sıra numarasını temizle.
+        // 31 Ağustos / 30 Ağustos gibi gerçek okul adlarının rakamlarını koru;
+        // ayraçsız önekler okul kataloğu ve hizmet numarası ile çözülür.
         value = Regex.Replace(
             value,
-            @"^\s*\d{1,4}\s+(?=\p{L})",
+            @"^\s*\d{1,4}\s*[|.)]\s*",
             string.Empty,
             RegexOptions.CultureInvariant);
 
@@ -2483,6 +2485,8 @@ internal sealed class LegacyHysPdfImportService
         string institutionText,
         IReadOnlyList<SchoolRecord> schools)
     {
+        var resolved = InstitutionResolutionService.Resolve(institutionText, "", "", Guid.Empty, schools);
+        if (resolved is not null) return resolved;
         var key = NormalizeKey(institutionText);
         var compactKey = key.Replace(" ", string.Empty, StringComparison.Ordinal);
         return schools.FirstOrDefault(school =>

@@ -29,58 +29,6 @@ public partial class MainWindow
         menu.IsOpen = true;
     }
 
-    private void ExportStatisticsCsv_Click(object sender, RoutedEventArgs e)
-    {
-        if (!TryGetStatisticsResult(out var result))
-            return;
-
-        var dialog = new SaveFileDialog
-        {
-            Title = "İstatistik CSV çıktısını kaydet",
-            Filter = "CSV dosyası (*.csv)|*.csv",
-            FileName = $"DogruFatura-Istatistik-{StatisticsExportTimestamp()}.csv",
-            AddExtension = true,
-            DefaultExt = ".csv"
-        };
-        if (dialog.ShowDialog(this) != true)
-            return;
-
-        try
-        {
-            var csvCulture = CultureInfo.GetCultureInfo("tr-TR");
-            var builder = new StringBuilder();
-            builder.AppendLine("Kurum;Yıl;Fatura Türü;Fatura Adedi;Fatura Tutarı;KDV;Damga Vergisi;Ödeme");
-
-            foreach (var row in result.Rows)
-            {
-                builder.Append(CsvCell(row.InstitutionName)).Append(';')
-                    .Append(row.Year.ToString(CultureInfo.InvariantCulture)).Append(';')
-                    .Append(CsvCell(row.InvoiceType)).Append(';')
-                    .Append(row.InvoiceCount.ToString(CultureInfo.InvariantCulture)).Append(';')
-                    .Append(row.PayableTotal.ToString("0.00", csvCulture)).Append(';')
-                    .Append(row.VatTotal.ToString("0.00", csvCulture)).Append(';')
-                    .Append(row.StampDutyTotal.ToString("0.00", csvCulture)).Append(';')
-                    .AppendLine(row.PaymentTotal.ToString("0.00", csvCulture));
-            }
-
-            File.WriteAllText(
-                dialog.FileName,
-                builder.ToString(),
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
-
-            MessageBox.Show(
-                this,
-                "CSV istatistik çıktısı düzenli tablo biçiminde kaydedildi.",
-                "DoğruFatura - İstatistik",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
-        catch (Exception ex)
-        {
-            ShowStatisticsExportError("CSV çıktısı kaydedilemedi", ex);
-        }
-    }
-
     private void ExportStatisticsExcel_Click(object sender, RoutedEventArgs e)
     {
         if (!TryGetStatisticsResult(out var result))
@@ -209,41 +157,6 @@ public partial class MainWindow
         }
     }
 
-    private void ExportStatisticsPng_Click(object sender, RoutedEventArgs e)
-    {
-        if (!TryGetStatisticsResult(out _))
-            return;
-
-        var dialog = new SaveFileDialog
-        {
-            Title = "İstatistik grafiğini PNG olarak kaydet",
-            Filter = "PNG görseli (*.png)|*.png",
-            FileName = $"DogruFatura-Istatistik-Grafik-{StatisticsExportTimestamp()}.png",
-            AddExtension = true,
-            DefaultExt = ".png"
-        };
-        if (dialog.ShowDialog(this) != true)
-            return;
-
-        try
-        {
-            File.WriteAllBytes(
-                dialog.FileName,
-                CaptureStatisticsElementPng(StatisticsDonutCard, 2d));
-
-            MessageBox.Show(
-                this,
-                "İstatistik grafiği PNG olarak kaydedildi.",
-                "DoğruFatura - İstatistik",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
-        catch (Exception ex)
-        {
-            ShowStatisticsExportError("PNG çıktısı kaydedilemedi", ex);
-        }
-    }
-
     private void ExportStatisticsPdf_Click(object sender, RoutedEventArgs e)
     {
         if (!TryGetStatisticsResult(out var result))
@@ -323,7 +236,6 @@ public partial class MainWindow
             DrawStatisticsPdfDonutAndDistribution(graphics, result, donutPng);
         }
 
-
         var directory = Path.GetDirectoryName(filePath);
         if (!string.IsNullOrWhiteSpace(directory))
             Directory.CreateDirectory(directory);
@@ -381,7 +293,7 @@ public partial class MainWindow
             XStringFormats.CenterLeft);
     }
 
-    private void DrawStatisticsPdfDonutAndDistribution(
+    private static void DrawStatisticsPdfDonutAndDistribution(
         XGraphics graphics,
         ArchiveStatisticsResult result,
         byte[] donutPng)
@@ -436,28 +348,6 @@ public partial class MainWindow
             y += 32;
         }
 
-        graphics.DrawString(
-            $"PDF sağlığı: {StatisticsPdfHealthText.Text}",
-            rowFont,
-            new XSolidBrush(muted),
-            new XRect(430, 420, 360, 20),
-            XStringFormats.CenterLeft);
-        graphics.DrawString(
-            $"Önceki dönem: {StatisticsPreviousPeriodText.Text}",
-            rowFont,
-            new XSolidBrush(muted),
-            new XRect(430, 445, 360, 20),
-            XStringFormats.CenterLeft);
-        graphics.DrawString(
-            $"Kurum profili: {StatisticsInstitutionProfileText.Text}",
-            rowFont,
-            new XSolidBrush(muted),
-            new XRect(430, 470, 360, 35),
-            new XStringFormat
-            {
-                Alignment = XStringAlignment.Near,
-                LineAlignment = XLineAlignment.Near
-            });
     }
 
     private FlowDocument BuildStatisticsPrintDocument(ArchiveStatisticsResult result)

@@ -29,4 +29,5 @@ public static class AppVersionInfo
     }
 
     public static bool IsPreRelease => InformationalVersion.Contains('-', StringComparison.Ordinal);
+    public static string ShortDisplayVersion => "v" + InformationalVersion.Split('-')[0];
 }

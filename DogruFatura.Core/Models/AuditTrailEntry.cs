@@ -17,7 +17,8 @@ public enum AuditTrailEventType
     ArchiveRestoredToActive,
     ArchiveDeleted,
     ArchiveImported,
-    ReportExported
+    ReportExported,
+    ArchiveInstitutionNamesCorrected
 }
 
 public enum AuditTrailEntityType

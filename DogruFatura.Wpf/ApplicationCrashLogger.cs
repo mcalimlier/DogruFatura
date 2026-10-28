@@ -1,4 +1,5 @@
 using System.Globalization;
+using DogruFatura.Core.Services;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -11,8 +12,7 @@ internal static class ApplicationCrashLogger
     private const int RetainedLogCount = 50;
 
     public static string LogFolder => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-        "DoğruFatura",
+        RuntimeInstallationProfile.RootDirectory,
         "Loglar");
 
     public static string Write(Exception exception, string source)

@@ -1,4 +1,4 @@
-using DogruFatura.Core.Services;
+﻿using DogruFatura.Core.Services;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Threading;
@@ -9,7 +9,6 @@ public partial class App : Application
 {
     private const string SingleInstanceMutexName = @"Local\DogruFatura.Desktop.SingleInstance.2D22EB36-5AA7-4AD9-9814-DB03D1DFBFD3";
     private static SingleInstanceLease? _singleInstanceLease;
-    private bool _fatalShutdown;
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern int SetCurrentProcessExplicitAppUserModelID(string appId);
@@ -29,7 +28,7 @@ public partial class App : Application
 
         try
         {
-            var singleInstance = SingleInstanceGuard.TryAcquire(SingleInstanceMutexName);
+            var singleInstance = SingleInstanceGuard.TryAcquire(SingleInstanceMutexName + (RuntimeInstallationProfile.IsDistribution ? ".Distribution" : ""));
             if (singleInstance.Status == SingleInstanceAcquireStatus.AlreadyRunning)
             {
                 MessageBox.Show(
@@ -56,19 +55,13 @@ public partial class App : Application
 
             _singleInstanceLease = singleInstance.Lease;
 
-            try
-            {
-                RecoverySessionService.Begin();
-            }
-            catch (Exception ex)
-            {
-                // Oturum korumasının kendisi programın açılmasını engellemesin.
-                ApplicationCrashLogger.Write(ex, "RecoverySession.Begin");
-            }
+            InitialUserDataService.Initialize(
+                System.IO.Path.Combine(AppContext.BaseDirectory, "InitialData"),
+                RuntimeInstallationProfile.RootDirectory);
 
             try
             {
-                var appUserModelIdResult = SetCurrentProcessExplicitAppUserModelID("DogruFatura.Wpf.App");
+                var appUserModelIdResult = SetCurrentProcessExplicitAppUserModelID(RuntimeInstallationProfile.IsDistribution ? "DogruFatura.Wpf.Distribution" : "DogruFatura.Wpf.App");
                 if (appUserModelIdResult < 0)
                     Marshal.ThrowExceptionForHR(appUserModelIdResult);
             }
@@ -134,12 +127,15 @@ public partial class App : Application
 
             splashHost.Dispose();
             splashHost = null;
+            var setupMessage = InitialSetupNotice.GetMessage(main.AllSchools.Count, startupState.AuthorityProfileLoadResult.Profile.IsComplete);
+            if (setupMessage is not null)
+                main.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() =>
+                    MessageBox.Show(main, setupMessage, "İlk Kullanım", MessageBoxButton.OK, MessageBoxImage.Information)));
         }
         catch (Exception ex)
         {
             splashHost?.CloseImmediately();
             splashHost?.Dispose();
-            _fatalShutdown = true;
             ShowFatalError("Program açılışı sırasında hata oluştu.", ex);
             Shutdown(-1);
         }
@@ -155,17 +151,13 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        if (!_fatalShutdown)
-        {
-            try { RecoverySessionService.EndCleanly(); } catch { }
-        }
+
         ReleaseSingleInstanceLease();
         base.OnExit(e);
     }
 
     private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        _fatalShutdown = true;
         ShowFatalError("DoğruFatura beklenmeyen bir hatayla karşılaştı.", e.Exception);
         e.Handled = true;
         Shutdown(-1);
@@ -173,7 +165,6 @@ public partial class App : Application
 
     private void CurrentDomain_UnhandledException(object? sender, UnhandledExceptionEventArgs e)
     {
-        _fatalShutdown = true;
         if (e.ExceptionObject is Exception ex)
             ApplicationCrashLogger.Write(ex, "AppDomain.UnhandledException");
     }

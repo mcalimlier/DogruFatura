@@ -19,5 +19,6 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
+    <DefineConstants Condition="'$(CleanDistribution)' == 'true'">$(DefineConstants);DOGRUFATURA_CLEAN_DISTRIBUTION</DefineConstants>
   </PropertyGroup>
 </Project>

@@ -1,4 +1,4 @@
-using DogruFatura.Wpf;
+﻿using DogruFatura.Wpf;
 using System.IO.Compression;
 using System.Text;
 
@@ -63,32 +63,6 @@ public sealed class DiagnosticAndRecoveryTests
         Assert.Contains("%IP%", sanitizedLog, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void StaleSessionMarkerTriggersRecoveryBackupAndCleanExitRemovesMarker()
-    {
-        using var temp = new TempEnvironment();
-        var markerRoot = Path.Combine(temp.Root, "Session");
-        Directory.CreateDirectory(markerRoot);
-        var marker = Path.Combine(markerRoot, "oturum_acik.marker");
-        File.WriteAllText(marker, "PID: 999999\n", Encoding.UTF8);
-
-        var safety = new ApplicationSafetyService(temp.Documents, temp.Desktop, () => "1.0.0-rc1-test");
-        safety.InitializeAndCheck();
-        Directory.CreateDirectory(safety.DataFolder);
-        File.WriteAllText(Path.Combine(safety.DataFolder, "test.txt"), "korunacak", Encoding.UTF8);
-
-        RecoverySessionService.Begin(markerRoot, () => safety);
-
-        Assert.NotNull(RecoverySessionService.PendingNotice);
-        Assert.Contains("güvenlik yedeği", RecoverySessionService.PendingNotice, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(File.Exists(marker));
-        Assert.NotEmpty(Directory.EnumerateFiles(Path.Combine(safety.BackupFolder, "Güvenlik"), "*.zip"));
-
-        RecoverySessionService.EndCleanly();
-        RecoverySessionService.ClearPendingNotice();
-        Assert.False(File.Exists(marker));
-    }
-
     private sealed class TempEnvironment : IDisposable
     {
         public TempEnvironment()
@@ -106,8 +80,6 @@ public sealed class DiagnosticAndRecoveryTests
 
         public void Dispose()
         {
-            try { RecoverySessionService.EndCleanly(); } catch { }
-            RecoverySessionService.ClearPendingNotice();
             try { if (Directory.Exists(Root)) Directory.Delete(Root, true); } catch { }
         }
     }

@@ -393,8 +393,7 @@ public sealed class HistoricalPdfImportService
                 continue;
             }
 
-            var school = schools.FirstOrDefault(candidate =>
-                TurkishTextComparison.EqualsIgnoreCase(candidate.Name.Trim(), institutionName));
+            var school = InstitutionResolutionService.Resolve(institutionName, invoiceType, serviceNumber, Guid.Empty, schools);
             var institutionType = school?.InstitutionType ?? InferInstitutionType(institutionName);
 
             // Tarihsel PDF güncel hesapla doğrulanabilir; ancak PDF'nin üretildiği özgün
@@ -403,7 +402,7 @@ public sealed class HistoricalPdfImportService
                 Guid.NewGuid(),
                 reportDate,
                 institutionType,
-                institutionName,
+                school?.Name ?? institutionName,
                 school?.Vkn ?? string.Empty,
                 invoiceType,
                 invoiceNumber,
@@ -415,7 +414,8 @@ public sealed class HistoricalPdfImportService
                 calculation.VatBase,
                 calculation.StampDuty,
                 calculation.PaymentAmount,
-                compensationAmount);
+                compensationAmount,
+                SchoolId: school?.SchoolId ?? Guid.Empty);
             var validation = InvoiceValidationService.Validate(invoice);
             yield return validation.IsValid
                 ? ParsedInvoiceRow.Valid(sequenceNumber, invoice)

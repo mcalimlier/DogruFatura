@@ -1,4 +1,4 @@
-using DogruFatura.Core.Models;
+﻿using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
 using System.Globalization;
 using System.Windows;
@@ -8,7 +8,34 @@ using System.Windows.Media;
 namespace DogruFatura.Wpf;
 
 public partial class MainWindow
-{    private void InstitutionTypeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+{
+    private bool _filteringInstitutions;
+
+    private void InstitutionSearch_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_suppressFormEvents || _filteringInstitutions || e.OriginalSource is not TextBox editor || editor.Name != "PART_EditableTextBox") return;
+        if (InstitutionBox.SelectedItem is SchoolRecord selected && editor.Text == selected.Name) return;
+        var query = editor.Text;
+        var caret = editor.CaretIndex;
+        _filteringInstitutions = true;
+        var previous = _suppressFormEvents; _suppressFormEvents = true;
+        try
+        {
+            var type = InstitutionTypeBox.SelectedItem as string;
+            InstitutionBox.ItemsSource = AllSchools.Where(s => query.Length > 0
+                ? InstitutionResolutionService.MatchesSearch(s.Name, query)
+                : string.IsNullOrEmpty(type) || type == "Tümü" || s.InstitutionType == type)
+                .OrderBy(s => s.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
+            InstitutionBox.SelectedItem = null; InstitutionBox.Text = query;
+            editor.Text = query; editor.CaretIndex = Math.Min(caret, query.Length);
+            if (editor.IsKeyboardFocusWithin) InstitutionBox.IsDropDownOpen = true;
+        }
+        finally { _suppressFormEvents = previous; _filteringInstitutions = false; }
+        ActiveInstitutionText.Text = "Henüz seçilmedi";
+        UpdateAutomaticInstitutionFields();
+    }
+
+    private void InstitutionTypeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_suppressFormEvents) return;
         RefreshInvoiceInstitutionChoices(null);
@@ -17,6 +44,12 @@ public partial class MainWindow
     private void InstitutionBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_suppressFormEvents) return;
+        if (InstitutionBox.SelectedItem is SchoolRecord chosen)
+        {
+            _suppressFormEvents = true;
+            InstitutionTypeBox.SelectedItem = chosen.InstitutionType;
+            _suppressFormEvents = false;
+        }
         ActiveInstitutionText.Text = InstitutionBox.SelectedItem is SchoolRecord school ? school.Name : "Henüz seçilmedi";
         UpdateAutomaticInstitutionFields();
     }
@@ -117,8 +150,6 @@ public partial class MainWindow
         var choices = string.IsNullOrWhiteSpace(type) || type == "Tümü"
             ? AllSchools.OrderBy(x => x.Name).ToArray()
             : AllSchools.Where(x => x.InstitutionType == type).OrderBy(x => x.Name).ToArray();
-        if (!string.IsNullOrWhiteSpace(_institutionSearch.Text))
-            choices = choices.Where(s => CultureInfo.GetCultureInfo("tr-TR").CompareInfo.IndexOf(s.Name, _institutionSearch.Text.Trim(), CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0).ToArray();
 
         var previousSuppression = _suppressFormEvents;
         _suppressFormEvents = true;
@@ -239,22 +270,8 @@ public partial class MainWindow
             }
             else
             {
-                SetInvoiceSaveStatus(
-                    calculatedPercent == 100
-                        ? _editedInvoice is null
-                            ? "Form hazır. Faturayı aktif listeye ekleyebilirsiniz."
-                            : "Form hazır. Seçili fatura kaydını güncelleyebilirsiniz."
-                        : school is null ? "Okul / kurum seçin. Kurum adını yazarak arayabilirsiniz."
-                        : string.IsNullOrWhiteSpace(invoiceType) ? "Fatura türünü seçin."
-                        : string.IsNullOrWhiteSpace(school.GetServiceNumber(invoiceType)) ? "Kurumun ilgili hizmet numarası eksik. Okul / Kurum ekranından tamamlayın."
-                        : !InvoiceDatePicker.SelectedDate.HasValue ? "Fatura tarihini seçin."
-                        : !DueDatePicker.SelectedDate.HasValue ? "Son ödeme tarihini seçin."
-                        : DueDatePicker.SelectedDate < InvoiceDatePicker.SelectedDate ? "Son ödeme tarihi fatura tarihinden önce olamaz."
-                        : !payableValid ? "Sıfırdan büyük, geçerli bir fatura tutarı girin."
-                        : !vatValid ? "Geçerli KDV tutarını girin."
-                        : "Tutar, KDV ve varsa kesinti tazminatını kontrol edin.",
-                    false,
-                    calculatedPercent == 100);
+                InvoiceSaveStatusBorder.Visibility = canSave ? Visibility.Visible : Visibility.Collapsed;
+                if (canSave) SetInvoiceSaveStatus("Fatura kaydedilmeye hazır.", false, true);
             }
         }
         UpdateReadinessRing(displayPercent);
@@ -511,7 +528,6 @@ public partial class MainWindow
             $"Type={invoice.InvoiceType};Rule={invoice.TaxRuleVersion}");
 
         var invoiceReference = InvoiceReference(invoice);
-        _preferences = _preferences with { RecentSchools = new[] { school.SchoolId }.Concat(_preferences.RecentSchools.Where(id => id != school.SchoolId)).Take(8).ToList() };
         SaveWorkbenchPreferences();
         var successMessage = editingInvoice is null
             ? $"{invoiceReference} aktif listeye kaydedildi."
@@ -547,11 +563,8 @@ public partial class MainWindow
     {
         _suppressFormEvents = true;
         InvoiceNumberBox.Clear();
-        if (_keepDates.IsChecked != true)
-        {
-            InvoiceDatePicker.SelectedDate = null;
-            DueDatePicker.SelectedDate = null;
-        }
+        InvoiceDatePicker.SelectedDate = null;
+        DueDatePicker.SelectedDate = null;
         PayableAmountBox.Clear();
         VatAmountBox.Clear();
         InterruptionCompensationBox.Text = "0,00";
@@ -581,12 +594,9 @@ public partial class MainWindow
         ActivePaymentTotalText.Text = NumberParser.Money(ActiveInvoices.Sum(x => x.PaymentAmount));
         InvoiceListEmptyState.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
         ArchiveFromListButton.IsEnabled = count > 0;
+        SavePdfButton.IsEnabled = count > 0;
+        PrintReportButton.IsEnabled = count > 0;
 
-        ReportInvoiceCountText.Text = $"{count} kayıt";
-        ReportInvoiceTypeText.Text = listTypeLabel;
-        ReportPaymentTotalText.Text = NumberParser.Money(ActiveInvoices.Sum(x => x.PaymentAmount));
-        _openedArchiveForReport = null;
-        InvalidateFinalReportPreview();
 
         var selectedRow = selectedInvoiceId.HasValue
             ? ActiveInvoiceRows.FirstOrDefault(row => row.Invoice.Id == selectedInvoiceId.Value)
@@ -596,8 +606,7 @@ public partial class MainWindow
             InvoicesGrid.ScrollIntoView(selectedRow);
         UpdateInvoiceActionState();
         UpdateFormReadiness();
-        UpdateArchiveActiveListState();
-        RefreshControlCenter();
+
         RefreshDashboard();
         ApplyListFilter();
     }

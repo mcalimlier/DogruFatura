@@ -1,6 +1,6 @@
 # DoğruFatura 1.2.0-preview.1
 
-Çalışma masası geliştirme sürümü: günlük iş kartları, seri fatura girişi, Excel gerektirmeyen doğrulamalı toplu yapıştırma, çoklu taslaklar, liste filtreleri/sütun tercihleri/geri alma, uyarlanabilir pencere, PDF kaynak incelemesi ve gerekçeli düzeltme. Kullanım ve paketleme: [Çalışma masası 1.2](docs/CALISMA_MASASI_1.2.md).
+Güncel panel düzeni: salt okunur aktif liste vitrini, kartlarla ayrılan fatura girişi ve hesaplama, Fatura Listesi içinde ayrı PDF/Yazdır/Klasör işlemleri, PDF ve imza bilgileriyle paket kaydı, HYS bekleyen/kapalı paket sekmeleri ve Excel benzeri arşiv tablosu. Güvenlik ile Hakkında/Ayarlar ayrıdır. Ekran profilleri 1024×768, 1366×768, 1920×1080'dir ve Uygula ile etkinleştirilir. Ayrı Raporlar/Kontrol Merkezi sayfaları, önizleme, oturum uyarısı ve Temizle düğmeleri kaldırılmıştır. Güncel kullanım: [Kullanıcı kılavuzu](KULLANICI_KILAVUZU.md).
 
 DoğruFatura; fatura ödeme listelerinin hazırlanması, mali hesap kontrolü, PDF/çıktı üretimi, HYS arşiv yönetimi, istatistik analizi ve kullanıcı verisi güvenliği için geliştirilmiş .NET 8 / WPF Windows masaüstü uygulamasıdır.
 

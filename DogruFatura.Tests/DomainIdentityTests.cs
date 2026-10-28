@@ -87,11 +87,11 @@ public sealed class DomainIdentityTests
         Assert.Equal(ArchiveState.Open, DomainValueText.ParseArchiveState("Açık"));
         Assert.Equal(ArchiveState.Closed, DomainValueText.ParseArchiveState("Kapalı"));
         Assert.Null(DomainValueText.ParseArchiveState("Tümü"));
-        Assert.Equal("Hata", DomainValueText.ToDisplayValue(ControlIssueSeverity.Error));
-        Assert.Equal("Uyarı", DomainValueText.ToDisplayValue(ControlIssueSeverity.Warning));
-        Assert.Equal(ControlIssueSeverity.Error, DomainValueText.ParseControlIssueSeverity("Hata"));
-        Assert.Equal(ControlIssueSeverity.Warning, DomainValueText.ParseControlIssueSeverity("Uyarı"));
-        Assert.Null(DomainValueText.ParseControlIssueSeverity("Tümü"));
+        Assert.Equal("Hata", DomainValueText.ToDisplayValue(InvoiceIssueSeverity.Error));
+        Assert.Equal("Uyarı", DomainValueText.ToDisplayValue(InvoiceIssueSeverity.Warning));
+        Assert.Equal(InvoiceIssueSeverity.Error, DomainValueText.ParseInvoiceIssueSeverity("Hata"));
+        Assert.Equal(InvoiceIssueSeverity.Warning, DomainValueText.ParseInvoiceIssueSeverity("Uyarı"));
+        Assert.Null(DomainValueText.ParseInvoiceIssueSeverity("Tümü"));
         Assert.Equal(school.ElectricityServiceNumber, school.GetServiceNumber(InvoiceKind.Electricity));
     }
 
@@ -104,7 +104,7 @@ public sealed class DomainIdentityTests
             InstitutionName = "Eski Kurum Adı"
         };
 
-        var result = ControlCenterService.Scan(
+        var result = InvoiceConsistencyService.Scan(
             new[] { school },
             new[] { invoice },
             new DateTime(2026, 9, 10));
@@ -118,7 +118,7 @@ public sealed class DomainIdentityTests
         var school = SchoolValidationService.Normalize(School("Legacy Bağ Okulu"));
         var invoice = Invoice("LEGACY-LINK-001", school, "Elektrik") with { SchoolId = Guid.Empty };
 
-        var result = ControlCenterService.Scan(
+        var result = InvoiceConsistencyService.Scan(
             new[] { school },
             new[] { invoice },
             new DateTime(2026, 9, 10));

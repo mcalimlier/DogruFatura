@@ -4,6 +4,16 @@ namespace DogruFatura.Core.Services;
 
 public static class SchoolSeedData
 {
+#if DOGRUFATURA_CLEAN_DISTRIBUTION
+    public static IReadOnlyList<SchoolRecord> Create()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "InitialData", "Okullar.json");
+        if (!File.Exists(path)) return Array.Empty<SchoolRecord>();
+        var schema = DataFileSchemaService.Read(File.ReadAllText(path), DataFileKinds.Schools);
+        return System.Text.Json.JsonSerializer.Deserialize<List<SchoolRecord>>(schema.Data.GetRawText())?
+            .Select(SchoolValidationService.Normalize).ToArray() ?? Array.Empty<SchoolRecord>();
+    }
+#else
     public static IReadOnlyList<SchoolRecord> Create() => new List<SchoolRecord>
     {
         new("İlkokul", "Cumhuriyet İlkokulu", "2160367474", "00001121370", "2766181015", "8847516331", "00000180"),
@@ -34,4 +44,5 @@ public static class SchoolSeedData
         new("Anasınıfı/Anaokulu", "Budaklar Ana Okulu", "1880503884", "00002500840", "", "", ""),
         new("Kurum", "Sivaslı İlçe Milli Eğitim Müdürlüğü", "4710101139", "", "2766181007", "8821991202", "")
     }.Select(SchoolValidationService.Normalize).ToArray();
+#endif
 }

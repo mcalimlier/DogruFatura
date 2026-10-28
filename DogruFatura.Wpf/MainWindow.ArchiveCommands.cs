@@ -1,4 +1,4 @@
-using DogruFatura.Core.Models;
+﻿using DogruFatura.Core.Models;
 using DogruFatura.Core.Services;
 using System.IO;
 using System.Windows;
@@ -8,158 +8,7 @@ namespace DogruFatura.Wpf;
 
 public partial class MainWindow
 {
-    private void ArchiveClosure_Click(object sender, RoutedEventArgs e)
-    {
-        if (ArchiveGrid.SelectedItem is not ArchivedInvoiceList archive)
-        {
-            SetArchiveStatus("Kapatmak için arşivden bir liste seçin.", true);
-            return;
-        }
 
-        ArchivedInvoiceList updated;
-        var pdfMove = PdfMoveResult.None(archive.PdfFileName);
-        string successMessage;
-        if (archive.IsClosed)
-        {
-            var confirmation = MessageBox.Show(this,
-                $"{archive.HysPaymentOrderDocumentNumber} numaralı arşiv kapanışı geri alınacak.\n\n"
-                + "Kayıt Ana Ekran istatistiklerinden çıkarılır; fatura ve HYS bilgileri korunur. Devam edilsin mi?",
-                "DoğruFatura - Arşiv Kapanışını Geri Al",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning,
-                MessageBoxResult.No);
-            if (confirmation != MessageBoxResult.Yes) return;
-
-            try
-            {
-                pdfMove = _documentArchiveStorageService.MoveArchivedOutputToActive(archive);
-            }
-            catch (Exception ex)
-            {
-                SetArchiveStatus("Arşiv PDF'si Aktif Çıktılar klasörüne taşınamadı: " + ex.Message, true);
-                return;
-            }
-
-            updated = archive with
-            {
-                IsClosed = false,
-                ClosedAt = null,
-                PdfFileName = pdfMove.PdfFileName,
-                ClosedSnapshotSha256 = string.Empty
-            };
-            successMessage = pdfMove.Moved
-                ? $"{archive.HysPaymentOrderDocumentNumber} kapanışı geri alındı; PDF Aktif Çıktılar klasörüne taşındı."
-                : $"{archive.HysPaymentOrderDocumentNumber} kapanışı geri alındı; kayıt Ana Ekran istatistiklerinden çıkarıldı.";
-        }
-        else
-        {
-            if (!HysPaymentOrderService.TryNormalize(
-                    ArchiveHysNumberBox.Text,
-                    out var normalizedHysNumber,
-                    out var errorMessage))
-            {
-                SetArchiveStatus(errorMessage, true);
-                ArchiveHysNumberBox.Focus();
-                return;
-            }
-
-            if (ArchivedLists.Any(candidate => candidate.Id != archive.Id
-                                               && string.Equals(
-                                                   candidate.HysPaymentOrderDocumentNumber,
-                                                   normalizedHysNumber,
-                                                   StringComparison.OrdinalIgnoreCase)))
-            {
-                SetArchiveStatus($"{normalizedHysNumber} başka bir arşiv kaydında kullanılıyor.", true);
-                return;
-            }
-
-            var closeConfirmation = MessageBox.Show(this,
-                $"Liste: {archive.ArchiveNumber}\nTür: {archive.InvoiceType}\nFatura: {archive.InvoiceCount}\nToplam ödeme: {NumberParser.Money(archive.PaymentTotal)}\nHYS belge no: {normalizedHysNumber}\n\nHYS kapanışı banka ödeme teyidi değildir. Bu liste kapatılsın mı?",
-                "HYS kapanış kontrolü", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
-            if (closeConfirmation != MessageBoxResult.Yes) return;
-
-            try
-            {
-                pdfMove = _documentArchiveStorageService.MoveActiveOutputToArchive(
-                    archive,
-                    normalizedHysNumber);
-            }
-            catch (Exception ex)
-            {
-                SetArchiveStatus("Aktif PDF arşiv klasörüne taşınamadı: " + ex.Message, true);
-                return;
-            }
-
-            updated = ClosedArchiveSnapshotService.Seal(archive with
-            {
-                HysPaymentOrderDocumentNumber = normalizedHysNumber,
-                IsClosed = true,
-                ClosedAt = DateTime.Now,
-                PdfFileName = pdfMove.PdfFileName
-            });
-            successMessage = pdfMove.Moved
-                ? $"{normalizedHysNumber} kaydedildi; PDF Arşivlenenler klasörüne taşınıp HYS koduyla adlandırıldı."
-                : $"{normalizedHysNumber} kaydedildi; arşiv kapatıldı. Bu listeye ait kayıtlı PDF bulunamadı.";
-        }
-
-        var validation = ArchivedInvoiceListValidationService.Validate(updated);
-        if (!validation.IsValid)
-        {
-            DocumentArchiveStorageService.RollbackMove(pdfMove);
-            SetArchiveStatus("Arşiv kapanışı kaydedilemedi: " + validation.Message, true);
-            return;
-        }
-
-        var index = ArchivedLists.IndexOf(archive);
-        if (index < 0)
-        {
-            DocumentArchiveStorageService.RollbackMove(pdfMove);
-            return;
-        }
-        ArchivedLists[index] = updated;
-        try
-        {
-            _archiveDataStore.Save(ArchivedLists);
-        }
-        catch (Exception ex)
-        {
-            ArchivedLists[index] = archive;
-            DocumentArchiveStorageService.RollbackMove(pdfMove);
-            RefreshArchiveView(archive.Id);
-            SetArchiveStatus("Arşiv kapanışı kaydedilemedi: " + ex.Message, true);
-            return;
-        }
-
-        AppendAudit(
-            updated.IsClosed ? AuditTrailEventType.ArchiveClosed : AuditTrailEventType.ArchiveReopened,
-            AuditTrailEntityType.Archive,
-            updated.Id.ToString("D"),
-            $"State={updated.State};InvoiceCount={updated.InvoiceCount}");
-
-        var synchronization = SynchronizeArchivePdfs(false);
-        var synchronizedArchive = ArchivedLists.FirstOrDefault(candidate => candidate.Id == updated.Id);
-        if (!pdfMove.Moved
-            && synchronization is not null
-            && synchronizedArchive is not null
-            && !string.IsNullOrWhiteSpace(synchronizedArchive.PdfFileName))
-        {
-            successMessage = updated.IsClosed
-                ? $"{updated.HysPaymentOrderDocumentNumber} kaydedildi; eksik PDF Arşivlenenler klasöründe oluşturuldu."
-                : $"{updated.HysPaymentOrderDocumentNumber} kapanışı geri alındı; eksik PDF Aktif Çıktılar klasöründe oluşturuldu.";
-        }
-
-        RefreshArchiveView(updated.Id);
-        RefreshDashboard();
-        if (synchronizedArchive is null || string.IsNullOrWhiteSpace(synchronizedArchive.PdfFileName))
-            SetArchiveStatus(successMessage + " Belge eşitleme daha sonra EŞİTLE düğmesiyle yeniden denenebilir.", true);
-        else if (synchronization is { Errors.Count: > 0 })
-            SetArchiveStatus(successMessage + $" Diğer {synchronization.Errors.Count} arşiv belgesi eşitlenemedi; EŞİTLE ile yeniden deneyebilirsiniz.", true);
-        else
-            SetArchiveStatus(successMessage, false, true);
-    }
-
-    private void ArchiveActiveList_Click(object sender, RoutedEventArgs e) =>
-        TryArchiveActiveList(true);
 
     private bool TryArchiveActiveList(bool askConfirmation)
     {
@@ -174,7 +23,7 @@ public partial class MainWindow
         {
             var confirmation = MessageBox.Show(this,
                 $"{ActiveInvoices.Count} adet {reportValidation.InvoiceType} faturası işlem arşivine açık kayıt olarak kaydedilecek.\n\n"
-                + "Kayıt, HYS Ödeme Emri Belge No girilip kapatılana kadar Ana Ekran istatistiklerine katılmaz. "
+                + "PDF ve imza bilgileri paketle birlikte korunacak. HYS kapanışı daha sonra yapılır. "
                 + "Başarılı kayıttan sonra aktif liste temizlenecek. Devam edilsin mi?",
                 "DoğruFatura - Aktif Listeyi Arşivle",
                 MessageBoxButton.YesNo,
@@ -183,8 +32,29 @@ public partial class MainWindow
             if (confirmation != MessageBoxResult.Yes) return false;
         }
 
+        var check = InvoiceConsistencyService.Scan(AllSchools, ActiveInvoices, DateTime.Today);
+        var invoiceErrors = check.Issues.Where(i => i.Target != InvoiceIssueTarget.School && i.Severity == InvoiceIssueSeverity.Error).ToArray();
+        if (invoiceErrors.Length > 0)
+        {
+            SetArchiveStatus("Paket kaydedilemedi: " + string.Join(" · ", invoiceErrors.Select(i => i.Title + ": " + i.Detail)), true);
+            return false;
+        }
         var archivedAt = DateTime.Now;
-        var activePdfPath = _documentArchiveStorageService.FindActiveOutputPath(ActiveInvoices.ToList());
+        string activePdfPath;
+        try
+        {
+            var data = new FinalReportData(ActiveInvoices.ToArray(), reportValidation.InvoiceType, archivedAt.Date,
+                new ReportSignature("Gerçekleştirme Görevlisi", _authorityProfile.RealizationOfficerName, _authorityProfile.RealizationOfficerTitle),
+                new ReportSignature("Harcama Yetkilisi", _authorityProfile.SpendingAuthorityName, _authorityProfile.SpendingAuthorityTitle));
+            activePdfPath = _documentArchiveStorageService.GetActiveOutputPath(data.Invoices, data.InvoiceType, data.ReportDate);
+            _finalReportPdfService.Save(data, activePdfPath);
+            if (!File.Exists(activePdfPath) || new FileInfo(activePdfPath).Length == 0) throw new IOException("PDF dosyası doğrulanamadı.");
+        }
+        catch (Exception ex)
+        {
+            SetArchiveStatus("Paket PDF'si oluşturulamadı; aktif faturalarınız korunuyor. " + ex.Message, true);
+            return false;
+        }
         var archive = new ArchivedInvoiceList(
             Guid.NewGuid(),
             CreateArchiveNumber(archivedAt),
@@ -410,46 +280,34 @@ public partial class MainWindow
             return;
         }
 
-        _openedArchiveForReport = archive;
-        ShowView("Reports");
-        RefreshFinalReportPreview();
+        try
+        {
+            var folder = archive.IsClosed ? _documentArchiveStorageService.ArchivedOutputDirectory : _documentArchiveStorageService.ActiveOutputDirectory;
+            var path = Path.Combine(folder, Path.GetFileName(archive.PdfFileName));
+            if (!File.Exists(path)) { SetArchiveStatus("Paket PDF'si bulunamadı. PDF Kontrol ile belgeyi yeniden oluşturabilirsiniz.", true); return; }
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
+        }
+        catch (Exception ex) { SetArchiveStatus("Belge açılamadı: " + ex.Message, true); }
     }
 
-    private void RestoreArchivedListToActive_Click(object sender, RoutedEventArgs e)
+    private bool TryRestoreArchiveToActive(ArchivedInvoiceList archive, out string error)
     {
-        if (ArchiveGrid.SelectedItem is not ArchivedInvoiceList archive)
-        {
-            SetArchiveStatus("Düzenlemek için arşivden bir liste seçin.", true);
-            return;
-        }
-
+        error = "";
         if (ActiveInvoices.Count > 0)
         {
             SetArchiveStatus(
                 "Arşiv düzenlemeye alınamadı: Aktif Fatura Listesi boş olmalıdır. "
                 + "Önce mevcut aktif listeyi tamamlayın veya arşive alın.",
                 true);
-            return;
+            error = ArchiveStatusText.Text; return false;
         }
 
         var validation = FinalReportValidationService.Validate(archive.Invoices);
         if (!validation.IsValid)
         {
             SetArchiveStatus("Arşiv düzenlemeye alınamadı: " + validation.Message, true);
-            return;
+            error = ArchiveStatusText.Text; return false;
         }
-
-        var confirmation = MessageBox.Show(
-            this,
-            $"{archive.ArchiveNumber} arşivindeki {archive.InvoiceCount} fatura Aktif Fatura Listesi'ne geri alınacak.\n\n"
-            + "Arşiv kaydı ve ona bağlı eski PDF silinecek; faturaları normal listeden düzenleyebileceksiniz. "
-            + "HYS kapanış bilgisi arşiv kaydıyla birlikte kaldırılacak. Devam edilsin mi?",
-            "DoğruFatura - Arşivi Düzenlemeye Al",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning,
-            MessageBoxResult.No);
-        if (confirmation != MessageBoxResult.Yes)
-            return;
 
         var transactionId = Guid.NewGuid();
         const TransactionJournalOperation operation = TransactionJournalOperation.RestoreArchiveToActive;
@@ -464,7 +322,7 @@ public partial class MainWindow
                 "Arşiv düzenlemeye alınamadı: işlem journal başlatılamadı. Veri değişikliği yapılmadı. "
                 + journalStartError,
                 true);
-            return;
+            error = ArchiveStatusText.Text; return false;
         }
 
         var restoredInvoices = archive.Invoices.ToList();
@@ -480,7 +338,7 @@ public partial class MainWindow
                 archive,
                 operation);
             SetArchiveStatus("Faturalar aktif listeye alınamadı: " + ex.Message, true);
-            return;
+            error = ArchiveStatusText.Text; return false;
         }
 
         if (!TryAppendArchiveTransaction(
@@ -514,7 +372,7 @@ public partial class MainWindow
                     : "İşlem journal güncellenemedi ve aktif liste rollback tamamlanamadı. "
                       + "Uygulamayı kapatmadan veri bütünlüğünü kontrol edin. " + journalActiveError,
                 true);
-            return;
+            error = ArchiveStatusText.Text; return false;
         }
 
         var archiveIndex = ArchivedLists.IndexOf(archive);
@@ -527,7 +385,7 @@ public partial class MainWindow
                 archive,
                 operation);
             SetArchiveStatus("Seçili arşiv kaydı artık listede bulunmuyor.", true);
-            return;
+            error = ArchiveStatusText.Text; return false;
         }
 
         ArchivedLists.RemoveAt(archiveIndex);
@@ -563,7 +421,7 @@ public partial class MainWindow
                     ? string.Empty
                     : " Aktif liste rollback tamamlanamadı; veri bütünlüğünü kontrol edin."),
                 true);
-            return;
+            error = ArchiveStatusText.Text; return false;
         }
 
         if (!TryAppendArchiveTransaction(
@@ -611,7 +469,7 @@ public partial class MainWindow
                     : "İşlem journal güncellenemedi ve rollback tamamlanamadı. Veri bütünlüğünü kontrol edin. "
                       + journalArchiveError,
                 true);
-            return;
+            error = ArchiveStatusText.Text; return false;
         }
 
         var journalWarning = !TryAppendArchiveTransaction(
@@ -638,8 +496,6 @@ public partial class MainWindow
         foreach (var invoice in restoredInvoices)
             ActiveInvoices.Add(invoice);
 
-        if (_openedArchiveForReport?.Id == archive.Id)
-            _openedArchiveForReport = null;
 
         AppendAudit(
             AuditTrailEventType.ArchiveRestoredToActive,
@@ -651,8 +507,6 @@ public partial class MainWindow
         UpdateInvoiceListSummary();
         RefreshArchiveView();
         RefreshDashboard();
-        RefreshControlCenter();
-
         var message = $"{archive.ArchiveNumber} aktif fatura listesine geri alındı. Faturaları artık normal listeden düzenleyebilirsiniz.";
         if (pdfDeleteWarning)
             message += " Eski PDF silinemedi; dosya klasörde kalmış olabilir.";
@@ -661,6 +515,7 @@ public partial class MainWindow
 
         SetInvoiceListStatus(message, pdfDeleteWarning || journalWarning, !(pdfDeleteWarning || journalWarning));
         ShowView("List");
+        return true;
     }
 
     private void DeleteArchivedList_Click(object sender, RoutedEventArgs e)
@@ -717,8 +572,6 @@ public partial class MainWindow
             archive.Id.ToString("D"),
             $"State={archive.State};InvoiceCount={archive.InvoiceCount};Type={archive.InvoiceType};PdfDeleted={pdfDeleted}");
 
-        if (_openedArchiveForReport?.Id == archive.Id)
-            _openedArchiveForReport = null;
 
         RefreshArchiveView();
         RefreshDashboard();
@@ -756,33 +609,4 @@ public partial class MainWindow
         }
     }
 
-    private void ClearInvoiceForm_Click(object sender, RoutedEventArgs e)
-    {
-        var cancelledEdit = _editedInvoice is not null;
-        EndInvoiceEditMode();
-        _suppressFormEvents = true;
-        InstitutionTypeBox.SelectedIndex = -1;
-        InstitutionBox.ItemsSource = Array.Empty<SchoolRecord>();
-        InstitutionBox.SelectedIndex = -1;
-        InvoiceTypeBox.SelectedIndex = -1;
-        InvoiceNumberBox.Clear();
-        VknBox.Clear();
-        ServiceNumberBox.Clear();
-        InvoiceDatePicker.SelectedDate = null;
-        DueDatePicker.SelectedDate = null;
-        PayableAmountBox.Clear();
-        VatAmountBox.Clear();
-        InterruptionCompensationBox.Text = "0,00";
-        _hasInterruptionCompensation = false;
-        _suppressFormEvents = false;
-
-        ActiveInstitutionText.Text = "Henüz seçilmedi";
-        SetServiceStatus("Kurum ve fatura türü seçildiğinde hizmet numarası otomatik gelir.", "#FFB41F");
-        UpdateInterruptionCompensationPresentation(resetWhenUnavailable: true);
-        ResetCalculationDisplay();
-        UpdateFormReadiness();
-        if (cancelledEdit)
-            SetInvoiceSaveStatus("Fatura düzenleme işlemi iptal edildi; form temizlendi.", false, true);
-        ShowView("Invoice");
-    }
 }
