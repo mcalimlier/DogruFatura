@@ -2,8 +2,9 @@ param([string]$DataRoot = '', [string]$OutputFolder = '', [string]$PayloadFolder
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $buildProps = [xml](Get-Content -LiteralPath (Join-Path $projectRoot 'Directory.Build.props') -Raw)
-$version = [string]$buildProps.Project.PropertyGroup[0].VersionPrefix
-$suffix = [string]$buildProps.Project.PropertyGroup[0].VersionSuffix
+$version = [string]$buildProps.Project.PropertyGroup.VersionPrefix
+$suffix = [string]$buildProps.Project.PropertyGroup.VersionSuffix
+if (!$version) { throw 'Directory.Build.props sürümü okunamadı.' }
 if ($suffix) { $version += '-' + $suffix }
 if (!$DataRoot) { $DataRoot = Join-Path ([Environment]::GetFolderPath('Desktop')) 'DoğruFatura' }
 if (Get-Process DogruFatura -ErrorAction SilentlyContinue) { throw 'Tutarlı kişisel paket için önce programı kapatın.' }

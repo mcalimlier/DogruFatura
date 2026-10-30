@@ -3,8 +3,9 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if (!$OutputFolder) {
     $buildProps = [xml](Get-Content -LiteralPath (Join-Path $projectRoot 'Directory.Build.props') -Raw)
-    $version = [string]$buildProps.Project.PropertyGroup[0].VersionPrefix
-    $suffix = [string]$buildProps.Project.PropertyGroup[0].VersionSuffix
+    $version = [string]$buildProps.Project.PropertyGroup.VersionPrefix
+    $suffix = [string]$buildProps.Project.PropertyGroup.VersionSuffix
+    if (!$version) { throw 'Directory.Build.props sürümü okunamadı.' }
     if ($suffix) { $version += '-' + $suffix }
     $OutputFolder = Join-Path $projectRoot ('DAGITIM/' + $version)
 }
