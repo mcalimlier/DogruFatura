@@ -11,6 +11,8 @@
 
 ## Ana ekran
 
+**Kaydet ve Yeni Fatura:** başarılı kayıttan sonra kurum türü, okul/kurum, fatura türü, numara, tarihler, tutarlar ve özel durum alanları sıfırlanır. Kurum kayıtları ve listeye kaydedilen faturalar silinmez. Kayıt başarısız olursa giriş bilgileri korunur.
+
 Yalnızca bilgi verir: aktif fatura sayısı, liste türü, ödeme toplamı, çıktı sayfa sayısı, HYS bekleyen paket adedi, vadesi geçen fatura adedi/tutarı ve farklı kurum sayısı. İşlem veya yönlendirme düğmesi yoktur.
 
 ## Paketler ve geçmiş PDF'ler

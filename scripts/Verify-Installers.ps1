@@ -1,7 +1,13 @@
 param([string]$OutputFolder = '')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-if (!$OutputFolder) { $OutputFolder = Join-Path $projectRoot 'DAGITIM/1.2.0-preview.1' }
+if (!$OutputFolder) {
+    $buildProps = [xml](Get-Content -LiteralPath (Join-Path $projectRoot 'Directory.Build.props') -Raw)
+    $version = [string]$buildProps.Project.PropertyGroup[0].VersionPrefix
+    $suffix = [string]$buildProps.Project.PropertyGroup[0].VersionSuffix
+    if ($suffix) { $version += '-' + $suffix }
+    $OutputFolder = Join-Path $projectRoot ('DAGITIM/' + $version)
+}
 $manifest = Get-Content -LiteralPath (Join-Path $OutputFolder 'PAKETLER.json') -Raw | ConvertFrom-Json
 $verificationRoot = Join-Path $projectRoot ('artifacts/install-verification-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $verificationRoot | Out-Null
@@ -10,6 +16,8 @@ foreach ($entry in $manifest) {
     $setup = Join-Path $OutputFolder $entry.File
     if ((Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash -ne $entry.SHA256) { throw 'Kurulum hash hatalı.' }
     $description = (Get-Item -LiteralPath $setup).VersionInfo.FileDescription
+    $expectedVersion = [IO.Path]::GetFileName([IO.Path]::GetFullPath($OutputFolder).TrimEnd([IO.Path]::DirectorySeparatorChar))
+    if ((Get-Item -LiteralPath $setup).VersionInfo.ProductVersion -ne $expectedVersion) { throw 'Kurulum ürün sürümü klasör sürümüyle uyuşmuyor.' }
     if ($description -ne ('DoğruFatura - ' + $entry.Title)) { throw 'Kurulum başlığı paket türüyle eşleşmiyor.' }
     $target = Join-Path $verificationRoot ([IO.Path]::GetFileNameWithoutExtension($entry.File))
     $install = Start-Process -FilePath $setup -ArgumentList "/S /VERIFYONLY /D=$target" -WindowStyle Hidden -PassThru -Wait

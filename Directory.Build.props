@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- DoğruFatura için tek sürüm kaynağı. Final yayında VersionSuffix boş bırakılır. -->
     <VersionPrefix>1.2.0</VersionPrefix>
-    <VersionSuffix>preview.1</VersionSuffix>
+    <VersionSuffix></VersionSuffix>
     <Version Condition="'$(VersionSuffix)' != ''">$(VersionPrefix)-$(VersionSuffix)</Version>
     <Version Condition="'$(VersionSuffix)' == ''">$(VersionPrefix)</Version>
     <AssemblyVersion>1.2.0.0</AssemblyVersion>

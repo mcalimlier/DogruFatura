@@ -569,6 +569,15 @@ public partial class MainWindow
     private void ClearInvoiceEntryFieldsAfterSave()
     {
         _suppressFormEvents = true;
+        InstitutionTypeBox.SelectedIndex = -1;
+        InstitutionBox.ItemsSource = AllSchools.OrderBy(s => s.Name).ToArray();
+        InstitutionBox.SelectedIndex = -1;
+        InstitutionBox.Text = string.Empty;
+        InvoiceTypeBox.SelectedIndex = -1;
+        WaterRecipientBox.SelectedIndex = 0;
+        VknBox.Clear();
+        ServiceNumberBox.Clear();
+        ActiveInstitutionText.Text = "Henüz seçilmedi";
         InvoiceNumberBox.Clear();
         InvoiceDatePicker.SelectedDate = null;
         DueDatePicker.SelectedDate = null;
@@ -578,6 +587,7 @@ public partial class MainWindow
         _hasInterruptionCompensation = false;
         _suppressFormEvents = false;
         ApplySchoolWaterRecipient();
+        UpdateAutomaticInstitutionFields();
         UpdateInterruptionCompensationPresentation(resetWhenUnavailable: false);
         ResetCalculationDisplay();
         UpdateFormReadiness();

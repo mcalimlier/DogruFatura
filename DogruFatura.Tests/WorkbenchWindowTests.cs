@@ -85,6 +85,14 @@ public sealed class WorkbenchWindowTests
                 ((Button)window.FindName("AddInvoiceButton")).RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
                 Assert.Single(window.ActiveInvoices);
                 Assert.Single(invoices.LoadOrCreate().Invoices);
+                Assert.Null(institution.SelectedItem);
+                Assert.Equal("", institution.Text);
+                Assert.Null(((ComboBox)window.FindName("InstitutionTypeBox")).SelectedItem);
+                Assert.Null(((ComboBox)window.FindName("InvoiceTypeBox")).SelectedItem);
+                foreach (var name in new[] { "InvoiceNumberBox", "VknBox", "ServiceNumberBox", "PayableAmountBox", "VatAmountBox" })
+                    Assert.Equal("", ((TextBox)window.FindName(name)).Text);
+                Assert.Null(((DatePicker)window.FindName("InvoiceDatePicker")).SelectedDate);
+                Assert.Null(((DatePicker)window.FindName("DueDatePicker")).SelectedDate);
                 ((DataGrid)window.FindName("InvoicesGrid")).SelectedIndex = 0;
                 Invoke(window, "EditSelectedInvoice_Click", window, new RoutedEventArgs());
                 ((TextBox)window.FindName("PayableAmountBox")).Text = "1.500,00";
@@ -346,6 +354,9 @@ public sealed class WorkbenchWindowTests
                 Assert.Equal(0m, municipality.VatAmount);
                 Assert.Equal(0m, municipality.StampDuty);
                 Assert.Equal(1200m, municipality.PaymentAmount);
+                ((ComboBox)window.FindName("InstitutionTypeBox")).SelectedItem = waterSchool.InstitutionType;
+                institution.SelectedItem = waterSchool;
+                ((ComboBox)window.FindName("InvoiceTypeBox")).SelectedItem = "Su";
                 waterRecipient.SelectedIndex = 1;
                 Assert.True(vatBox.IsEnabled);
                 Assert.Contains("Su şirketine ödeme", ReadText(window, "TaxPolicyDescription"), StringComparison.Ordinal);
