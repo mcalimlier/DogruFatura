@@ -106,7 +106,8 @@ public static class InvoiceRulesEngine
             invoice.PayableAmount,
             invoice.VatAmount,
             invoice.InvoiceType,
-            invoice.InterruptionCompensationAmount);
+            invoice.InterruptionCompensationAmount,
+            invoice.WaterRecipient);
 
         if (!calculation.IsValid)
         {

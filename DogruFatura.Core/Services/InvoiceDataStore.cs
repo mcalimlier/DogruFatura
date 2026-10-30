@@ -66,7 +66,8 @@ public sealed class InvoiceDataStore
             invoice = Normalize(invoice);
             invoices[index] = invoice;
 
-            if (!TaxCalculationService.IsStampDutyExempt(invoice.InvoiceType)) continue;
+            if (invoice.WaterRecipient != WaterPaymentRecipient.Unspecified
+                || !TaxCalculationService.IsWater(invoice.InvoiceType)) continue;
             var calculation = taxService.Calculate(invoice.PayableAmount, invoice.VatAmount, invoice.InvoiceType, invoice.InterruptionCompensationAmount);
             if (!calculation.IsValid) continue;
             if (invoice.VatBase == calculation.VatBase && invoice.StampDuty == calculation.StampDuty && invoice.PaymentAmount == calculation.PaymentAmount) continue;

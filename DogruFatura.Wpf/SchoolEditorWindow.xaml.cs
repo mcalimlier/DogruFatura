@@ -26,6 +26,7 @@ public partial class SchoolEditorWindow : Window
         TelephoneBox.Text = original?.TelephoneServiceNumber ?? "";
         InternetBox.Text = original?.InternetServiceNumber ?? "";
         WaterBox.Text = original?.WaterServiceNumber ?? "";
+        WaterRecipientBox.SelectedIndex = original?.WaterRecipient == WaterPaymentRecipient.Company ? 1 : 0;
         PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { Close(); e.Handled = true; } };
     }
 
@@ -33,7 +34,8 @@ public partial class SchoolEditorWindow : Window
     {
         if (Saved) return;
         var candidate = SchoolValidationService.Normalize(new SchoolRecord(TypeBox.SelectedItem as string ?? "", NameBox.Text, VknBox.Text,
-            ElectricityBox.Text, TelephoneBox.Text, InternetBox.Text, WaterBox.Text, _original?.SchoolId ?? Guid.NewGuid()));
+            ElectricityBox.Text, TelephoneBox.Text, InternetBox.Text, WaterBox.Text, _original?.SchoolId ?? Guid.NewGuid(),
+            WaterRecipientBox.SelectedIndex == 1 ? WaterPaymentRecipient.Company : WaterPaymentRecipient.Municipality));
         var error = _save(candidate);
         if (error is not null) { ErrorText.Text = error; ErrorText.Visibility = Visibility.Visible; return; }
         Saved = true; Close();

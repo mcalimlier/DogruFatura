@@ -44,6 +44,9 @@ public static class SchoolValidationService
         if (!InstitutionTypes.Contains(school.InstitutionType))
             return Invalid("Geçerli bir kurum türü seçin.");
 
+        if (!Enum.IsDefined(school.WaterRecipient))
+            return Invalid("Geçerli bir su ödeme kuruluşu seçin.");
+
         if (string.IsNullOrWhiteSpace(school.Name))
             return Invalid("Okul / kurum adı boş bırakılamaz.");
 

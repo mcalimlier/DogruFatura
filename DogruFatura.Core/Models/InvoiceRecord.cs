@@ -22,7 +22,9 @@ public sealed record InvoiceRecord(
     Guid SchoolId = default,
     string TaxRuleVersion = "",
     DateOnly? TaxRuleEffectiveFrom = null,
-    decimal AppliedStampDutyRate = 0m)
+    decimal AppliedStampDutyRate = 0m,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    WaterPaymentRecipient WaterRecipient = WaterPaymentRecipient.Unspecified)
 {
     [JsonIgnore]
     public InvoiceKind Kind => DomainValueText.ParseInvoiceKind(InvoiceType);

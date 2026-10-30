@@ -4,12 +4,14 @@
 
 1. **Okul / Kurum:** kartın içindeki Yeni düğmesiyle ayrı kayıt penceresini açın. Tablodan kayıt seçince Düzenle etkinleşir ve seçili bilgileri ayrı pencerede açar. Kaydet kalıcı kaydı yapar ve başarı bildirimi gösterir; Vazgeç veya pencereyi kapatmak değişiklik yapmaz.
 2. **Yetkili / imza:** gerçekleştirme görevlisi ve harcama yetkilisini kaydedin.
-3. **Fatura Girişi:** kurum, tür, tarihler, tutar ve KDV bilgilerini girin. Okul/Kurum alanında kurum adını yazarak seçim yapabilirsiniz. Elektrik kesinti tazminatı ve su damga istisnası hesaplama kartında dikkate alınır.
+3. **Fatura Girişi:** kurum, tür, tarihler, tutar ve KDV bilgilerini girin. Okul/Kurum alanında kurum adını yazarak seçim yapabilirsiniz. Elektrik kesinti tazminatı hesaplama kartında dikkate alınır. Su faturasında ödeme yapılan kuruluşu seçin: Belediye seçildiğinde KDV alanı sıfırlanıp kilitlenir, damga vergisi sıfır olur ve fatura tutarı aynen ödenir. Su Şirketi / Diğer seçildiğinde KDV girilir, damga vergisi standart matrah üzerinden hesaplanır. Kurum kayıt penceresinde bu seçimin varsayılanını belirleyebilirsiniz; faturada değiştirilebilir. Tercih faturayla saklanır ve düzenlemede geri gelir. Arşivdeki eski tutarlar kendiliğinden yeniden hesaplanmaz; yöntemi belirtilmemiş eski faturayı düzenlerken mevcut hesabı koruma seçeneği gösterilir.
 4. **Fatura Listesi:** faturaları düzenleyin, sıralayın, silin veya son silmeyi geri alın. PDF dosyayı kaydeder; Yazdır yazıcı seçimini açar; Klasör ilgili çıktı klasörünü açar. Önizleme alanı bulunmaz.
 5. **Paketi Kaydet ve Gönder:** PDF, faturalar ve o anki imza bilgileri korunur. PDF yazılamazsa aktif faturalar kaldırılmaz. Başarılı kayıt sonrasında aktif liste boşalır; paket arşivde HYS bekleyenler arasında görünür.
 6. **İşlem Arşivi:** HYS Bekleyenler tablosundaki ilgili satırın HYS İle Kapat düğmesine basın. Paket bilgilerini ve faturaları inceleyip HYS belge numarasını Kaydet ile onaylayın. Vazgeç değişiklik yapmaz. Paket HYS İle Kapananlar sekmesine geçer. HYS kapanışı banka ödeme teyidi değildir.
 
 ## Ana ekran
+
+**Kaydet ve Yeni Fatura:** başarılı kayıttan sonra kurum türü, okul/kurum, fatura türü, numara, tarihler, tutarlar ve özel durum alanları sıfırlanır. Kurum kayıtları ve listeye kaydedilen faturalar silinmez. Kayıt başarısız olursa giriş bilgileri korunur.
 
 Yalnızca bilgi verir: aktif fatura sayısı, liste türü, ödeme toplamı, çıktı sayfa sayısı, HYS bekleyen paket adedi, vadesi geçen fatura adedi/tutarı ve farklı kurum sayısı. İşlem veya yönlendirme düğmesi yoktur.
 

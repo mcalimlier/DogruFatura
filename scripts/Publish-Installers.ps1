@@ -1,9 +1,14 @@
 param([string]$DataRoot = '', [string]$OutputFolder = '', [string]$PayloadFolder = '')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
+$buildProps = [xml](Get-Content -LiteralPath (Join-Path $projectRoot 'Directory.Build.props') -Raw)
+$version = [string]$buildProps.Project.PropertyGroup.VersionPrefix
+$suffix = [string]$buildProps.Project.PropertyGroup.VersionSuffix
+if (!$version) { throw 'Directory.Build.props sürümü okunamadı.' }
+if ($suffix) { $version += '-' + $suffix }
 if (!$DataRoot) { $DataRoot = Join-Path ([Environment]::GetFolderPath('Desktop')) 'DoğruFatura' }
 if (Get-Process DogruFatura -ErrorAction SilentlyContinue) { throw 'Tutarlı kişisel paket için önce programı kapatın.' }
-if (!$OutputFolder) { $OutputFolder = Join-Path $projectRoot 'DAGITIM/1.2.0-preview.1' }
+if (!$OutputFolder) { $OutputFolder = Join-Path $projectRoot ('DAGITIM/' + $version) }
 $OutputFolder = [IO.Path]::GetFullPath($OutputFolder)
 $stageRoot = Join-Path $projectRoot ('artifacts/installers-' + [Guid]::NewGuid().ToString('N'))
 $payload = if ($PayloadFolder) { [IO.Path]::GetFullPath($PayloadFolder) } else { Join-Path $stageRoot 'App' }
@@ -59,8 +64,8 @@ $variants = @(
 )
 $manifest = @()
 foreach ($variant in $variants) {
-  $target = Join-Path $OutputFolder ('DogruFatura_1.2.0-preview.1_' + $variant.Code + '_x64_Setup.exe')
-  & $compiler /V2 "/DVERSION=1.2.0-preview.1" "/DVARIANTTITLE=$($variant.Title)" "/DVARIANTSHORT=$($variant.Short)" "/DVARIANTBODY=$($variant.Body)" "/DPERSONAL=$($variant.Personal)" "/DPAYLOAD=$payload" "/DSEEDROOT=$seedFolder" "/DAPPICON=$icon" "/DARTWORK=$(Join-Path $projectRoot 'Kurulum/Assets')" "/DOUTPUTEXE=$target" $template
+  $target = Join-Path $OutputFolder ('DogruFatura_' + $version + '_' + $variant.Code + '_x64_Setup.exe')
+  & $compiler /V2 "/DVERSION=$version" "/DVARIANTTITLE=$($variant.Title)" "/DVARIANTSHORT=$($variant.Short)" "/DVARIANTBODY=$($variant.Body)" "/DPERSONAL=$($variant.Personal)" "/DPAYLOAD=$payload" "/DSEEDROOT=$seedFolder" "/DAPPICON=$icon" "/DARTWORK=$(Join-Path $projectRoot 'Kurulum/Assets')" "/DOUTPUTEXE=$target" $template
   if ($LASTEXITCODE -ne 0 -or !(Test-Path -LiteralPath $target)) { throw 'NSIS başarısız.' }
   $personal = $variant.Personal -eq '1'
   $manifest += [pscustomobject]@{File=(Split-Path $target -Leaf);Title=$variant.Title;SHA256=(Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash;Bytes=(Get-Item -LiteralPath $target).Length;Personal=$personal;Schools=if($personal){$schoolsDocument.Data.Count}else{0};Invoices=if($personal){@($activeDoc.Data).Count}else{0};Archives=if($personal){@($archiveDoc.Data).Count}else{0};ArchivedInvoices=if($personal){($archiveDoc.Data | ForEach-Object { $_.Invoices.Count } | Measure-Object -Sum).Sum}else{0};PrivateSignatures=if($personal){![string]::IsNullOrEmpty($signatureDoc.Data.RealizationOfficerName)}else{$false};Signed=$false}
@@ -72,7 +77,7 @@ TAM_VERILI_KISISEL: Okullar, imzacılar, aktif faturalar, işlem arşivi, ayarla
 TEMIZ_VERISIZ_DAGITIM: Başkasına göndermek içindir. İlk kurulumda okul, fatura, arşiv ve imza kaydı bulunmaz.
 İki sürüm aynı bilgisayarda kurulabilir. Dağıtımın verileri Masaüstü/DoğruFatura - Dağıtım, kişisel veriler Masaüstü/DoğruFatura altında tutulur. Eski kişisel kayıtlar dağıtıma aktarılmaz.
 Mevcut veri dosyaları iki kurulumda da korunur; temiz kurulum var olan kayıtları silmez.
-ÖN İZLEME: 1.2.0-preview.1 geliştirme/deneme sürümü etiketidir.
+SÜRÜM: Kurulum dosyasının adında belirtilen program sürümü kurulur.
 Windows 10/11 x64; .NET/Excel/Visual Studio gerekmez. Kurulum geçerli kullanıcı hesabına yapılır.
 Paketler dijital olarak imzalı değildir; Windows yayıncı uyarısı gösterebilir.
 '@ | Set-Content -LiteralPath (Join-Path $OutputFolder 'HANGI_KURULUM.txt') -Encoding utf8

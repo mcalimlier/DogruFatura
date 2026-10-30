@@ -10,7 +10,9 @@ public sealed record SchoolRecord(
     string TelephoneServiceNumber,
     string InternetServiceNumber,
     string WaterServiceNumber,
-    Guid SchoolId = default)
+    Guid SchoolId = default,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    WaterPaymentRecipient WaterRecipient = WaterPaymentRecipient.Unspecified)
 {
     [JsonIgnore]
     public InstitutionKind Kind => DomainValueText.ParseInstitutionKind(InstitutionType);

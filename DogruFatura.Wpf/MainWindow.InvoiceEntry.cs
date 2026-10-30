@@ -51,13 +51,16 @@ public partial class MainWindow
             _suppressFormEvents = false;
         }
         ActiveInstitutionText.Text = InstitutionBox.SelectedItem is SchoolRecord school ? school.Name : "Henüz seçilmedi";
+        ApplySchoolWaterRecipient();
         UpdateAutomaticInstitutionFields();
+        UpdateCalculation();
     }
 
     private void InvoiceTypeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_suppressFormEvents) return;
         UpdateInterruptionCompensationPresentation(resetWhenUnavailable: true);
+        ApplySchoolWaterRecipient();
         UpdateAutomaticInstitutionFields();
         UpdateCalculation();
     }
@@ -162,7 +165,9 @@ public partial class MainWindow
         ActiveInstitutionText.Text = InstitutionBox.SelectedItem is SchoolRecord selected
             ? selected.Name
             : "Henüz seçilmedi";
+        ApplySchoolWaterRecipient();
         UpdateAutomaticInstitutionFields();
+        UpdateCalculation();
     }
 
     private void UpdateAutomaticInstitutionFields()
@@ -246,7 +251,7 @@ public partial class MainWindow
         var compensationValid = TryGetInterruptionCompensation(out var compensation, out _);
         if (payableValid) completed++;
         if (payableValid && vatValid && compensationValid
-            && _taxService.Calculate(payable, vat, invoiceType, compensation).IsValid) completed++;
+            && _taxService.Calculate(payable, vat, invoiceType, compensation, CurrentWaterRecipient).IsValid) completed++;
 
         var calculatedPercent = (int)Math.Round(completed * 100.0 / criteriaCount, MidpointRounding.AwayFromZero);
         var listTypeResult = InvoiceListTypePolicy.Check(ActiveInvoices, invoiceType, _editedInvoice?.Id);
@@ -302,6 +307,7 @@ public partial class MainWindow
 
     private void UpdateCalculation()
     {
+        UpdateWaterPaymentPresentation();
         UpdateInterruptionCompensationPresentation(resetWhenUnavailable: true);
         UpdateStampDutyPolicyPresentation();
         if (string.IsNullOrWhiteSpace(PayableAmountBox.Text) && string.IsNullOrWhiteSpace(VatAmountBox.Text))
@@ -328,7 +334,7 @@ public partial class MainWindow
         }
 
         var invoiceType = InvoiceTypeBox.SelectedItem as string;
-        var result = _taxService.Calculate(payable, vat, invoiceType, compensation);
+        var result = _taxService.Calculate(payable, vat, invoiceType, compensation, CurrentWaterRecipient);
         if (!result.IsValid)
         {
             SetCalculationError(result.Message);
@@ -340,8 +346,8 @@ public partial class MainWindow
         PaymentAmountText.Text = NumberParser.Money(result.PaymentAmount);
         CalculationMessageText.Text = compensation > 0m
             ? "Kesinti tazminatı yalnız KDV matrahına eklendi; ödeme tutarı fatura tutarından damga vergisi düşülerek hesaplandı."
-            : TaxCalculationService.IsStampDutyExempt(invoiceType)
-                ? "Su faturasına damga vergisi uygulanmadı; ödeme tutarı fatura tutarına eşittir."
+            : TaxCalculationService.IsStampDutyExempt(invoiceType, CurrentWaterRecipient)
+                ? result.Message
                 : "Hesaplama doğru. Ara değerler tam hassasiyetle korunur; görünüm 2 ondalıktır.";
         CalculationMessageText.Foreground = new SolidColorBrush(Color.FromRgb(221, 246, 231));
         CalculationStatusBorder.Background = new SolidColorBrush(Color.FromRgb(20, 77, 68));
@@ -364,9 +370,9 @@ public partial class MainWindow
     {
         if (StampDutyFormulaText is null || StampDutyText is null) return;
 
-        var isExempt = TaxCalculationService.IsStampDutyExempt(InvoiceTypeBox.SelectedItem as string);
+        var isExempt = TaxCalculationService.IsStampDutyExempt(InvoiceTypeBox.SelectedItem as string, CurrentWaterRecipient);
         StampDutyFormulaText.Text = isExempt
-            ? "Su faturasında uygulanmaz"
+            ? CurrentWaterRecipient == WaterPaymentRecipient.Municipality ? "Belediye: KDV ve Damga 0" : "Eski kayıt: Damga uygulanmaz"
             : "Matrah × 0,00948";
         StampDutyText.Foreground = new SolidColorBrush(isExempt
             ? Color.FromRgb(67, 199, 122)
@@ -413,7 +419,7 @@ public partial class MainWindow
             return;
         }
 
-        var calculation = _taxService.Calculate(payable, vat, invoiceType, compensation);
+        var calculation = _taxService.Calculate(payable, vat, invoiceType, compensation, CurrentWaterRecipient);
         if (!calculation.IsValid)
         {
             SetInvoiceSaveStatus(calculation.Message, true);
@@ -448,7 +454,8 @@ public partial class MainWindow
             school.SchoolId,
             calculation.RuleVersion,
             calculation.RuleEffectiveFrom,
-            calculation.AppliedStampDutyRate);
+            calculation.AppliedStampDutyRate,
+            CurrentWaterRecipient);
 
         var validation = InvoiceValidationService.Validate(invoice);
         if (!validation.IsValid)
@@ -562,6 +569,15 @@ public partial class MainWindow
     private void ClearInvoiceEntryFieldsAfterSave()
     {
         _suppressFormEvents = true;
+        InstitutionTypeBox.SelectedIndex = -1;
+        InstitutionBox.ItemsSource = AllSchools.OrderBy(s => s.Name).ToArray();
+        InstitutionBox.SelectedIndex = -1;
+        InstitutionBox.Text = string.Empty;
+        InvoiceTypeBox.SelectedIndex = -1;
+        WaterRecipientBox.SelectedIndex = 0;
+        VknBox.Clear();
+        ServiceNumberBox.Clear();
+        ActiveInstitutionText.Text = "Henüz seçilmedi";
         InvoiceNumberBox.Clear();
         InvoiceDatePicker.SelectedDate = null;
         DueDatePicker.SelectedDate = null;
@@ -570,6 +586,8 @@ public partial class MainWindow
         InterruptionCompensationBox.Text = "0,00";
         _hasInterruptionCompensation = false;
         _suppressFormEvents = false;
+        ApplySchoolWaterRecipient();
+        UpdateAutomaticInstitutionFields();
         UpdateInterruptionCompensationPresentation(resetWhenUnavailable: false);
         ResetCalculationDisplay();
         UpdateFormReadiness();
