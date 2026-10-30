@@ -87,57 +87,57 @@
                         <StackPanel Margin="0,12,0,0">
                             <Button x:Name="NavHome" Style="{StaticResource NavButton}" Tag="Active" Click="NavHome_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30"/>
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30" Foreground="#FFCA64"/>
                                     <TextBlock Text="ANA EKRAN" Style="{StaticResource NavLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Border Height="3" Background="#557A9D" Margin="16,8" CornerRadius="1.5"/>
                             <Button x:Name="NavInvoice" Style="{StaticResource NavButton}" Click="NavInvoice_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30"/>
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30" Foreground="#FFCA64"/>
                                     <TextBlock Text="FATURA GİRİŞİ" Style="{StaticResource NavLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Button x:Name="NavOfficials" Style="{StaticResource NavButton}" Click="NavOfficials_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30"/>
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30" Foreground="#FFCA64"/>
                                     <TextBlock Text="YETKİLİ / İMZA" Style="{StaticResource NavLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Button x:Name="NavList" Style="{StaticResource NavButton}" Click="NavList_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30"/>
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30" Foreground="#FFCA64"/>
                                     <TextBlock Text="FATURA LİSTESİ" Style="{StaticResource NavLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Border Height="3" Background="#557A9D" Margin="16,8" CornerRadius="1.5"/>
                             <Button x:Name="NavSchools" Style="{StaticResource NavButton}" Click="NavSchools_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30"/>
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30" Foreground="#FFCA64"/>
                                     <TextBlock Text="OKUL / KURUM" Style="{StaticResource NavLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Button x:Name="NavArchive" Style="{StaticResource NavButton}" Click="NavArchive_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30"/>
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30" Foreground="#FFCA64"/>
                                     <TextBlock Text="İŞLEM ARŞİVİ" Style="{StaticResource NavLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Button x:Name="NavStatistics" Style="{StaticResource NavButton}" Click="NavStatistics_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30"/>
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30" Foreground="#FFCA64"/>
                                     <TextBlock Text="İSTATİSTİK" Style="{StaticResource NavLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Button x:Name="NavSecurity" Style="{StaticResource NavButton}" Click="NavSecurity_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30"/>
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30" Foreground="#FFCA64"/>
                                     <TextBlock Text="GÜVENLİK" Style="{StaticResource NavLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Button x:Name="NavAbout" Style="{StaticResource NavButton}" Click="NavAbout_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30"/>
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="19" Width="30" Foreground="#FFCA64"/>
                                     <TextBlock Text="HAKKINDA / AYARLAR" Style="{StaticResource NavLabel}"/>
                                 </StackPanel>
                             </Button>
@@ -391,6 +391,14 @@
                                                     <TextBox x:Name="InterruptionCompensationBox" Style="{StaticResource PremiumFieldTextBox}" Text="0,00" IsEnabled="False" TextChanged="MoneyInput_TextChanged" ToolTip="Yalnız elektrik faturalarında, özel durum etkinleştirildiğinde hesaplamaya katılır."/>
                                                 </StackPanel>
                                             </Grid>
+                                            <StackPanel x:Name="WaterRecipientPanel" Visibility="Collapsed" Margin="0,10,0,0">
+                                                <TextBlock Text="Su Ödemesi Yapılan Kuruluş" Style="{StaticResource PremiumFieldLabel}"/>
+                                                <ComboBox x:Name="WaterRecipientBox" Style="{StaticResource PremiumFieldComboBox}" SelectedIndex="0" SelectionChanged="WaterRecipient_SelectionChanged">
+                                                    <ComboBoxItem Content="Belediye — KDV ve Damga Vergisi Yok"/>
+                                                    <ComboBoxItem Content="Su Şirketi / Diğer — Standart Hesaplama"/>
+                                                    <ComboBoxItem x:Name="LegacyWaterRecipientItem" Content="Eski Kayıt — Mevcut Hesabı Koru" Visibility="Collapsed"/>
+                                                </ComboBox>
+                                            </StackPanel>
                                             <Border Background="#123B5B" BorderBrush="#365874" BorderThickness="1" CornerRadius="8" Padding="11,8" Margin="0,14,0,0">
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="●" x:Name="ServiceStatusIcon" Foreground="#FFB41F" FontSize="12.5" Margin="0,0,8,0"/>
@@ -407,7 +415,7 @@
                                                 </Border>
                                                 <TextBlock Text="Canlı Vergi Hesabı" Style="{StaticResource PremiumSectionTitle}"/>
                                             </DockPanel>
-                                            <TextBlock Text="Su faturalarında damga vergisi uygulanmaz." Style="{StaticResource PremiumSectionSubtitle}" Margin="0,3,0,13"/>
+                                            <TextBlock x:Name="TaxPolicyDescription" Text="Seçilen fatura türüne göre hesaplama yapılır." Style="{StaticResource PremiumSectionSubtitle}" Margin="0,3,0,13"/>
                                             <Border Style="{StaticResource PaymentMetricCard}" Padding="14,11" Margin="0,0,0,9">
                                                 <Grid>
                                                     <StackPanel>

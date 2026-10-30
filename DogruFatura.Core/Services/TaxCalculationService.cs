@@ -20,8 +20,15 @@ public sealed class TaxCalculationService
         decimal payableAmount,
         decimal vatAmount,
         string? invoiceType = null,
-        decimal interruptionCompensationAmount = 0m)
+        decimal interruptionCompensationAmount = 0m,
+        WaterPaymentRecipient waterRecipient = WaterPaymentRecipient.Unspecified)
     {
+        if (!Enum.IsDefined(waterRecipient))
+            return Invalid("Geçerli bir su ödeme kuruluşu seçilmelidir.");
+        if (waterRecipient != WaterPaymentRecipient.Unspecified && !IsWater(invoiceType))
+            return Invalid("Su ödeme kuruluşu yalnız su faturalarında kullanılabilir.");
+        if (waterRecipient == WaterPaymentRecipient.Municipality && vatAmount != 0m)
+            return Invalid("Belediyeye ödenen su faturasında KDV tutarı sıfır olmalıdır.");
         if (payableAmount <= 0m)
             return Invalid("Ödenecek tutar sıfırdan büyük olmalıdır.");
         if (vatAmount < 0m)
@@ -40,7 +47,7 @@ public sealed class TaxCalculationService
         // Excel'deki onaylı işleyiş gibi ara değerler tam hassasiyetle korunur.
         // İki ondalık gösterim/yuvarlama yalnız kullanıcı görünümünde ve nihai çıktıda yapılır.
         var vatBase = adjustedVatAmountLimit - vatAmount;
-        var stampDutyExempt = IsStampDutyExempt(invoiceType);
+        var stampDutyExempt = IsStampDutyExempt(invoiceType, waterRecipient);
         var stampDuty = stampDutyExempt ? 0m : vatBase * _activeRule.StampDutyRate;
         var paymentAmount = payableAmount - stampDuty;
         if (paymentAmount < 0m)
@@ -58,7 +65,9 @@ public sealed class TaxCalculationService
             interruptionCompensationAmount > 0m
                 ? "Elektrik kesinti tazminatı KDV matrahına eklenerek hesaplandı."
                 : stampDutyExempt
-                ? "Su faturası damga vergisi istisnasıyla hesaplandı."
+                ? waterRecipient == WaterPaymentRecipient.Municipality
+                    ? "Belediyeye ödeme: KDV ve damga vergisi sıfır; fatura tutarı aynen ödenir."
+                    : "Eski su faturası kayıtlı hesaplama yöntemiyle korundu."
                 : $"Hesaplama {stampDutyRateText} damga vergisi oranıyla yapıldı.",
             _activeRule.Version,
             _activeRule.EffectiveFrom,
@@ -72,8 +81,12 @@ public sealed class TaxCalculationService
             _activeRule.EffectiveFrom,
             _activeRule.StampDutyRate);
 
-    public static bool IsStampDutyExempt(string? invoiceType) =>
+    public static bool IsWater(string? invoiceType) =>
         string.Equals(invoiceType?.Trim(), "Su", StringComparison.OrdinalIgnoreCase);
+
+    public static bool IsStampDutyExempt(string? invoiceType,
+        WaterPaymentRecipient waterRecipient = WaterPaymentRecipient.Unspecified) =>
+        IsWater(invoiceType) && waterRecipient != WaterPaymentRecipient.Company;
 
     public static bool IsInterruptionCompensationAllowed(string? invoiceType) =>
         string.Equals(invoiceType?.Trim(), "Elektrik", StringComparison.OrdinalIgnoreCase);

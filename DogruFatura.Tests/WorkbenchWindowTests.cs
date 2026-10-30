@@ -127,15 +127,18 @@ public sealed class WorkbenchWindowTests
                 var schoolNew = (Window)Invoke(window, "CreateSchoolEditorWindow", new object?[] { null })!;
                 schoolNew.Show(); Pump(schoolNew);
                 ((TextBox)schoolNew.FindName("NameBox")).Text = "Deneme Kurumu";
+                ((ComboBox)schoolNew.FindName("WaterRecipientBox")).SelectedIndex = 1;
                 if (Environment.GetEnvironmentVariable("DOGRUFATURA_SCREENSHOTS") is { } schoolShots) SaveScreenshot(schoolNew, schoolShots, "School-new");
                 Click((Button)schoolNew.FindName("SaveButton"));
                 Assert.Equal(schoolCount + 1, window.AllSchools.Count);
                 var addedSchool = window.AllSchools.Single(item => item.Name == "Deneme Kurumu");
+                Assert.Equal(WaterPaymentRecipient.Company, addedSchool.WaterRecipient);
                 ((DataGrid)window.FindName("SchoolsGrid")).SelectedItem = addedSchool;
                 Assert.True(((Button)window.FindName("EditSchoolButton")).IsEnabled);
                 var schoolEdit = (Window)Invoke(window, "CreateSchoolEditorWindow", addedSchool)!;
                 schoolEdit.Show(); Pump(schoolEdit);
                 Assert.Equal("Deneme Kurumu", ((TextBox)schoolEdit.FindName("NameBox")).Text);
+                Assert.Equal(1, ((ComboBox)schoolEdit.FindName("WaterRecipientBox")).SelectedIndex);
                 ((TextBox)schoolEdit.FindName("NameBox")).Text = "Düzenlenmiş Deneme Kurumu";
                 ((TextBox)schoolEdit.FindName("ElectricityBox")).Text = "00009901";
                 Click((Button)schoolEdit.FindName("SaveButton"));
@@ -321,6 +324,56 @@ public sealed class WorkbenchWindowTests
                 if (!string.IsNullOrEmpty(output)) SaveScreenshot(window, output, "Statistics-data");
                 statsScroll.ScrollToBottom(); Pump(window);
                 if (!string.IsNullOrEmpty(output)) SaveScreenshot(window, output, "Statistics-bottom");
+                Stage("water recipient entry and edit");
+                window.ActiveInvoices.Clear();
+                var waterSchool = window.AllSchools.First(s => !string.IsNullOrEmpty(s.WaterServiceNumber));
+                ((ComboBox)window.FindName("InstitutionTypeBox")).SelectedItem = waterSchool.InstitutionType;
+                institution.SelectedItem = waterSchool;
+                ((ComboBox)window.FindName("InvoiceTypeBox")).SelectedItem = "Su";
+                var waterRecipient = (ComboBox)window.FindName("WaterRecipientBox");
+                waterRecipient.SelectedIndex = 0;
+                var vatBox = (TextBox)window.FindName("VatAmountBox");
+                Assert.False(vatBox.IsEnabled);
+                Assert.Equal("0,00", vatBox.Text);
+                Assert.Contains("Belediyeye ödeme", ReadText(window, "TaxPolicyDescription"), StringComparison.Ordinal);
+                ((DatePicker)window.FindName("InvoiceDatePicker")).SelectedDate = DateTime.Today;
+                ((DatePicker)window.FindName("DueDatePicker")).SelectedDate = DateTime.Today;
+                ((TextBox)window.FindName("InvoiceNumberBox")).Text = "SU-BELEDIYE";
+                ((TextBox)window.FindName("PayableAmountBox")).Text = "1.200,00";
+                Invoke(window, "AddInvoice_Click", window, new RoutedEventArgs());
+                var municipality = Assert.Single(window.ActiveInvoices);
+                Assert.Equal(WaterPaymentRecipient.Municipality, municipality.WaterRecipient);
+                Assert.Equal(0m, municipality.VatAmount);
+                Assert.Equal(0m, municipality.StampDuty);
+                Assert.Equal(1200m, municipality.PaymentAmount);
+                waterRecipient.SelectedIndex = 1;
+                Assert.True(vatBox.IsEnabled);
+                Assert.Contains("Su şirketine ödeme", ReadText(window, "TaxPolicyDescription"), StringComparison.Ordinal);
+                ((DatePicker)window.FindName("InvoiceDatePicker")).SelectedDate = DateTime.Today;
+                ((DatePicker)window.FindName("DueDatePicker")).SelectedDate = DateTime.Today;
+                ((TextBox)window.FindName("InvoiceNumberBox")).Text = "SU-SIRKET";
+                ((TextBox)window.FindName("PayableAmountBox")).Text = "1.200,00";
+                vatBox.Text = "200,00";
+                foreach (var profile in DisplayProfilePolicy.Profiles)
+                {
+                    ((ComboBox)window.FindName("DisplayProfileBox")).SelectedItem = profile;
+                    Invoke(window, "ApplyDisplayProfile_Click", window, new RoutedEventArgs());
+                    Invoke(window, "ShowView", "Invoice"); Pump(window);
+                    Assert.Equal(Visibility.Visible, ((StackPanel)window.FindName("WaterRecipientPanel")).Visibility);
+                    if (!string.IsNullOrEmpty(output)) SaveScreenshot(window, output, "Water-" + profile.Key);
+                }
+                Invoke(window, "AddInvoice_Click", window, new RoutedEventArgs());
+                Assert.Equal(2, window.ActiveInvoices.Count);
+                var company = window.ActiveInvoices.Last();
+                Assert.Equal(WaterPaymentRecipient.Company, company.WaterRecipient);
+                Assert.Equal(9.48m, company.StampDuty);
+                Assert.Equal(1190.52m, company.PaymentAmount);
+                Assert.Equal(2, invoices.LoadOrCreate().Invoices.Count);
+                ((DataGrid)window.FindName("InvoicesGrid")).SelectedIndex = 1;
+                Invoke(window, "EditSelectedInvoice_Click", window, new RoutedEventArgs());
+                Assert.Equal(1, waterRecipient.SelectedIndex);
+                Assert.Equal("200,00", vatBox.Text);
+                Click((Button)window.FindName("CancelInvoiceEditButton")); Pump(window);
                 Stage("close");
                 // Avoid the intentional active-list exit prompt during unattended cleanup.
                 // All persistence assertions above use isolated files and are complete.

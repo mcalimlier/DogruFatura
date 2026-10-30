@@ -91,6 +91,8 @@ public partial class MainWindow
             .ToArray();
         InstitutionBox.SelectedItem = school;
         InvoiceTypeBox.SelectedItem = invoice.InvoiceType;
+        WaterRecipientBox.SelectedIndex = invoice.WaterRecipient == WaterPaymentRecipient.Municipality ? 0
+            : invoice.WaterRecipient == WaterPaymentRecipient.Company ? 1 : 2;
         InvoiceNumberBox.Text = invoice.InvoiceNumber;
         InvoiceDatePicker.SelectedDate = invoice.InvoiceDate;
         DueDatePicker.SelectedDate = invoice.DueDate;

@@ -14,7 +14,7 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <Grid Margin="0,0,8,0">
                     <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="16"/><ColumnDefinition/></Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="14"/><RowDefinition Height="Auto"/><RowDefinition Height="14"/><RowDefinition Height="Auto"/><RowDefinition Height="14"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="14"/><RowDefinition Height="Auto"/><RowDefinition Height="14"/><RowDefinition Height="Auto"/><RowDefinition Height="14"/><RowDefinition Height="Auto"/><RowDefinition Height="14"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <StackPanel><TextBlock Text="Kurum Türü *" Style="{StaticResource PremiumFieldLabel}"/><ComboBox x:Name="TypeBox" Style="{StaticResource PremiumFieldComboBox}"/></StackPanel>
                     <StackPanel Grid.Column="2"><TextBlock Text="Okul / Kurum Adı *" Style="{StaticResource PremiumFieldLabel}"/><TextBox x:Name="NameBox" Style="{StaticResource PremiumFieldTextBox}" MaxLength="200"/></StackPanel>
                     <StackPanel Grid.Row="2" Grid.ColumnSpan="3"><TextBlock Text="Vergi Kimlik No" Style="{StaticResource PremiumFieldLabel}"/><TextBox x:Name="VknBox" Style="{StaticResource PremiumFieldTextBox}" MaxLength="10"/></StackPanel>
@@ -22,6 +22,13 @@
                     <StackPanel Grid.Row="4" Grid.Column="2"><TextBlock Text="Telefon Hizmet No" Style="{StaticResource PremiumFieldLabel}"/><TextBox x:Name="TelephoneBox" Style="{StaticResource PremiumFieldTextBox}" MaxLength="50"/></StackPanel>
                     <StackPanel Grid.Row="6"><TextBlock Text="İnternet Hizmet No" Style="{StaticResource PremiumFieldLabel}"/><TextBox x:Name="InternetBox" Style="{StaticResource PremiumFieldTextBox}" MaxLength="50"/></StackPanel>
                     <StackPanel Grid.Row="6" Grid.Column="2"><TextBlock Text="Su Hizmet No" Style="{StaticResource PremiumFieldLabel}"/><TextBox x:Name="WaterBox" Style="{StaticResource PremiumFieldTextBox}" MaxLength="50"/></StackPanel>
+                    <StackPanel Grid.Row="8" Grid.ColumnSpan="3">
+                        <TextBlock Text="Varsayılan Su Ödeme Kuruluşu" Style="{StaticResource PremiumFieldLabel}"/>
+                        <ComboBox x:Name="WaterRecipientBox" Style="{StaticResource PremiumFieldComboBox}">
+                            <ComboBoxItem Content="Belediye — KDV ve Damga Vergisi Yok"/>
+                            <ComboBoxItem Content="Su Şirketi / Diğer — Standart Hesaplama"/>
+                        </ComboBox>
+                    </StackPanel>
                 </Grid>
             </ScrollViewer>
         </Border>

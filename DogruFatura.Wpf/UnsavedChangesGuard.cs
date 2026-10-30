@@ -13,7 +13,7 @@ internal sealed class UnsavedChangesGuard
     {
         "InstitutionTypeBox", "InstitutionBox", "InvoiceTypeBox", "InvoiceNumberBox",
         "InvoiceDatePicker", "DueDatePicker", "PayableAmountBox", "VatAmountBox",
-        "InterruptionCompensationBox",
+        "InterruptionCompensationBox", "WaterRecipientBox",
         "RealizationOfficerNameBox", "RealizationOfficerTitleBox",
         "SpendingAuthorityNameBox", "SpendingAuthorityTitleBox"
     };
@@ -51,7 +51,7 @@ internal sealed class UnsavedChangesGuard
         var button = FindAncestor<Button>(source);
         if (button?.Content is not string content) return;
 
-        if (content is "Yeni" or "Vazgeç" or "Düzenle" or "YENİ" or "DÜZENLE")
+        if (button.Name == "CancelInvoiceEditButton" || content is "Yeni" or "Vazgeç" or "Düzenle" or "YENİ" or "DÜZENLE")
         {
             _window.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(AcceptCurrentState));
             return;
